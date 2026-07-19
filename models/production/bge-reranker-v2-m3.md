@@ -1,6 +1,6 @@
 # bge-reranker-v2-m3 — Production rerank
 
-**Status:** Production on **TEI XPU-IPEX (`:8008`)**; llama.cpp SYCL (`:8007`) retained as fallback.
+**Status:** Production on **TEI XPU-IPEX (`:8008`)**. llama.cpp SYCL fallback on `:8007` **retired 2026-07-19** after TEI's empty_cache patch demonstrated 10+ hours of steady 1.4 GiB VRAM under real brain traffic. Launcher preserved at `/data/llm/launch/start-llamacpp-rerank.sh` for on-demand relaunch if TEI ever fails.
 **HF:** [`BAAI/bge-reranker-v2-m3`](https://huggingface.co/BAAI/bge-reranker-v2-m3)
 **Launchers:** [`start-tei-rerank.sh`](../../configs/launchers/start-tei-rerank.sh) (prod, :8008) · [`start-llamacpp-rerank.sh`](../../configs/launchers/start-llamacpp-rerank.sh) (fallback, :8007)
 
@@ -36,7 +36,7 @@ docker run -d --name tei-rerank \
 
 **VRAM leak — fixed 2026-07-19.** Original `tei:xpu-ipex-fix` image leaked ~840 MB/hour under brain workload (2.5 → 10.9 GiB in 10 hours). Root cause: IPEX allocator holds intermediate tensors in a caching pool and TEI never called `torch.xpu.empty_cache()` between batches. Replaced with [`tei:xpu-ipex-nomemleak`](../../configs/images/tei-xpu-ipex-nomemleak/README.md) which adds the release call to `ClassificationModel.predict()` and the gRPC error path. **Confirmed working after 9 hours of real brain traffic**: VRAM 1.43 GiB flat vs unpatched projection of ~10 GiB. Fix validated empirically.
 
-### 2. llama.cpp SYCL on `:8007` (fallback)
+### 2. llama.cpp SYCL on `:8007` (retired 2026-07-19; on-demand fallback only)
 
 | Metric | Value |
 |---|---|

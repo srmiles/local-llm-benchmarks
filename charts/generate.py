@@ -122,9 +122,9 @@ vram_models = [
     ("Gemma 4 26B-A4B\n+ MTP",                       22.9),
     ("Qwen 3.6-27B\n(dense)",                        20.2),
 ]
-OVERHEAD = 2.4  # embed 0.5 + rerank 0.5 + tei 1.4
+OVERHEAD = 1.9  # embed 0.5 + tei 1.4 (llama.cpp rerank retired 2026-07-19)
 CEILING = 24.0
-BUDGET = CEILING - OVERHEAD  # 21.6
+BUDGET = CEILING - OVERHEAD  # 22.1
 
 fig, ax = plt.subplots(figsize=(12, 6.5))
 names_v = [m[0] for m in vram_models]

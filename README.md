@@ -10,8 +10,9 @@ All numbers below are measured on the same physical card. The stack has shifted 
 |---|---|---|---|
 | 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + categorise + pi.dev agent (dual-role) |
 | 8004 | `llamacpp-embed` | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
-| 8007 | `llamacpp-rerank` | [bge-reranker-v2-m3 Q8_0](models/production/bge-reranker-v2-m3.md) | rerank fallback (llama.cpp path) |
-| 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX, 7–9× faster) |
+| 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX patched, no leak) |
+
+**Retired 2026-07-19:** `llamacpp-rerank` on `:8007` (llama.cpp SYCL bge-reranker path). Kept as fallback for the first day after TEI's empty_cache patch shipped; retired after TEI proved stable at 1.4 GiB flat over 10+ hours. Launcher preserved at `/data/llm/launch/start-llamacpp-rerank.sh` for on-demand relaunch if TEI ever fails.
 
 **Reasoning fallback:** [Gemma 4 26B-A4B Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) — launcher on disk, not running by default.
 
@@ -56,17 +57,18 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 ## VRAM co-residence budget
 
-Isolated bench numbers are misleading — production has to fit all services simultaneously. **Non-chat steady-state stack**:
+Isolated bench numbers are misleading — production has to fit all services simultaneously. **Non-chat steady-state stack** (as of 2026-07-19, after llama.cpp rerank retirement):
 
 | Container | VRAM steady |
 |---|---|
 | llamacpp-embed (EmbeddingGemma-300M) | 0.5 GiB |
-| llamacpp-rerank (bge-reranker fallback) | 0.5 GiB idle (3-4 active) |
-| tei-rerank (patched image) | 1.4 GiB |
-| **Non-chat total** | **~2.4 GiB** |
-| **Available for chat model** | **~21.6 GiB / 24 GiB** |
+| tei-rerank (patched image, no leak) | 1.4 GiB |
+| **Non-chat total** | **~1.9 GiB** |
+| **Available for chat model** | **~22.1 GiB / 24 GiB** |
 
-Any candidate that reports isolated VRAM > 21.6 GiB either won't fit alongside prod, or needs a smaller quant / context / rerank-eviction trade-off. See individual model pages for per-candidate co-residence analysis.
+Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside prod, or needs a smaller quant / context / eviction trade-off. See individual model pages for per-candidate co-residence analysis.
+
+**Historical (pre-2026-07-19)**: budget was 21.6 GiB while `llamacpp-rerank` fallback ran on `:8007`. Freed 0.5 GiB steady when retired; nothing above the ceiling suddenly fits, but 35B-A3B candidates have marginally more room, and Qwen 3.6-35B-A3B Claude APEX-MTP Compact now co-resides with **2.7 GiB headroom** instead of 2.2.
 
 ## Key findings
 
