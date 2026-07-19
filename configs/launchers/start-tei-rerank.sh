@@ -5,7 +5,7 @@
 set -euo pipefail
 
 NAME=tei-rerank
-IMAGE=tei:xpu-ipex-fix
+IMAGE=tei:xpu-ipex-nomemleak
 MODEL_PATH=/data/llm/bge-reranker-v2-m3-hf
 PORT=8008
 

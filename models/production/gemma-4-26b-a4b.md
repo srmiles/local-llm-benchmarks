@@ -19,9 +19,22 @@
 
 ## Benchmarks
 
+### On b10068 build (2026-07-19, isolated)
+
+| Metric | Q4_K_M + MTP (Config C) |
+|---|---|
+| Cold 12K prefill | **20.0 s @ 650 tok/s** (was 21.5s @ 655 on b9948) |
+| 5K prefill | **971 tok/s** (was ~830 on b9948, +17%) |
+| Decode (peak, MTP-accepted) | **53.0 tok/s** (was ~50 on b9948, +6%) |
+| MTP draft acceptance | 37–89% (highly prompt-dependent) |
+| VRAM (loaded, 128K KV Q8 + drafter) | 22.9 GiB |
+| Correctness (chat + tool call) | ✓ |
+
+### Historical baselines (kept for reference)
+
 | Metric | Q4_K_M base | + MTP (Config C) |
 |---|---|---|
-| Decode (steady-state) | 44.1 tok/s | **50.0 tok/s** (+15.6%) |
+| Decode (steady-state) | 44.1 tok/s | 50.0 tok/s (+15.6%) |
 | Cold 12K prefill | 22.8s @ 632 tok/s | ~21.5s @ 655 tok/s |
 | Warm follow-up | 0.55s | 0.55s |
 | Concurrent 2×4K | 13.9s | ~13.9s |

@@ -25,14 +25,14 @@ docker run -d --name tei-rerank \
   -p 0.0.0.0:8008:80 \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   -e PYTORCH_XPU_ALLOC_CONF=max_split_size_mb:256 \
-  tei:xpu-ipex-fix \
+  tei:xpu-ipex-nomemleak \
   --model-id /data --port 80 --dtype float16 --auto-truncate \
   --max-client-batch-size 64 \
   --max-batch-tokens 32768 \
   --max-concurrent-requests 128
 ```
 
-**Restart cadence:** VRAM grew from 2.5 GB → 12 GB over 4 days without the caps, and 2.5 GB → 9 GB even with them over 2 days. Weekly restart recommended.
+**VRAM leak — fixed 2026-07-19.** Original `tei:xpu-ipex-fix` image leaked ~840 MB/hour under brain workload (2.5 → 10.9 GiB in 10 hours). Root cause: IPEX allocator holds intermediate tensors in a caching pool and TEI never called `torch.xpu.empty_cache()` between batches. Replaced with [`tei:xpu-ipex-nomemleak`](../../configs/images/tei-xpu-ipex-nomemleak/README.md) which adds the release call to `ClassificationModel.predict()` and the gRPC error path. Baseline VRAM now steady at ~1.4 GiB.
 
 ### 2. llama.cpp SYCL on `:8007` (fallback)
 

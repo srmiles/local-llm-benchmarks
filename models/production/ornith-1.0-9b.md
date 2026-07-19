@@ -19,11 +19,26 @@
 
 ## Benchmarks
 
+### On b10068 build (2026-07-19, isolated, single-user)
+
+| Metric | Value | vs b9948 |
+|---|---|---|
+| **Cold 12K prefill** | **12.1 s @ 896 tok/s** | **-47% wall time / +42% throughput** |
+| **Decode (12K cold, MTP)** | **51.8 tok/s** | +4% |
+| **5K prefill** | **1,213 tok/s** | +46% |
+| Warm follow-up (cache hit) | ~0.55 s | flat |
+| VRAM (loaded @ 128K KV Q8) | 10.86 GiB (target + drafter + KV) | flat |
+| Correctness (chat + tool call) | ✓ | identical |
+
+The XMX+oneDNN FA path (llama.cpp #25222) and `fattn_vec_nthreads=256` Battlemage tuning (#25205) land squarely on Ornith's dense-9B GQA attention. This is the single biggest cold-prefill win since the original 6.5× journey.
+
+### Historical baselines (kept for reference)
+
 | Metric | Value |
 |---|---|
-| Decode (single-stream) | ~50 tok/s (base), 65–70 tok/s est. w/ MTP |
-| Prefill @ 6.7K | 1,310 tok/s |
-| VRAM (loaded) | 4.1 GB (base) + ~2.5 GB drafter |
+| Decode (single-stream, b9948) | ~50 tok/s (base), 65–70 tok/s est. w/ MTP |
+| Prefill @ 6.7K (b9948) | 1,310 tok/s |
+| VRAM (loaded, older builds) | 4.1 GB (base) + ~2.5 GB drafter |
 | KB dual-eval score | .80 (36/45) — best local |
 | pi.dev win rate (finalized) | 66.7% |
 
@@ -66,3 +81,4 @@ docker run -d --name llamacpp-sycl \
 - `--reasoning off` avoids PEG parser edge cases; Ornith uses inline reasoning tags via Qwen 3.5 template
 - Dual-role: serves both categorise and agent chat; FIFO queue (`--parallel 1`) means brain ingest can briefly stall pi.dev on cold prefill
 - `--cache-ram 8192` enables in-RAM prefix cache (was 0 during early SWA hang bug, now safe on Ornith)
+- **b10068 upgrade (2026-07-19)** — silent Q4_K get_rows correctness fix (#25656) is in this build, closing a subtle bug in Q4_K row gather that affected Ornith decodes in earlier builds. No perceptible quality change post-swap, but it's closed regardless.

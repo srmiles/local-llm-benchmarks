@@ -1,0 +1,22 @@
+{
+  "providers": {
+    "minicpm5-local": {
+      "baseUrl": "http://192.168.1.253:8009/v1",
+      "api": "openai-completions",
+      "apiKey": "dummy-key",
+      "compat": {
+        "supportsDeveloperRole": true,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "/models/MiniCPM5-1B-Q4_K_M.gguf",
+          "contextWindow": 131072,
+          "maxTokens": 4096,
+          "reasoning": false,
+          "input": ["text"]
+        }
+      ]
+    }
+  }
+}

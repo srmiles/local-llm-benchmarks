@@ -2,7 +2,7 @@
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on `llama.cpp:sycl-f16` (custom build, `GGML_SYCL_F16=ON`, oneAPI 2026.1 base, `-DCMAKE_BUILD_TYPE=Release`) with `-fa on`, KV Q8, `-ub 2048 -b 2048`, `--parallel 1`, `--jinja`.
+All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (custom build **b10068**, `GGML_SYCL_F16=ON`, oneAPI 2025.3.3 base, `-DCMAKE_BUILD_TYPE=Release`, includes XMX+oneDNN FA + `fattn_vec_nthreads=256` Battlemage tuning + fused top-k MoE + Q4_K get_rows correctness fix) with `-fa on`, KV Q8, `-ub 2048 -b 2048`, `--parallel 1`, `--jinja`.
 
 ## Current production stack
 
@@ -23,8 +23,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
+| [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
 | [Qwen 3.6-35B-A3B](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | tested 2026-07-19; no MTP head shipped |
-| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | **50.0** | 655 @ 12K | 22.8 GB | reasoning fallback (Config C + MTP) |
+| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | **53.0** (peak) | **971 @ 5K / 650 @ 12K cold** | 22.9 GB | reasoning fallback; b10068 refresh |
 | Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
 | Gemma 4 26B-A4B QAT | Q4_0 | 26B / 4B | 40.1 | 602 @ 12K | 18.2 GB | beaten by K-quant on Battlemage |
 | **[Ornith 1.0 9B](models/production/ornith-1.0-9b.md)** | Q4_K_M | 9B dense | **~50** (65–70 w/MTP est.) | 1,310 @ 6.7K | 4.1 GB | **production chat** |
@@ -57,6 +58,8 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 5. **`-fa on` is mandatory** — turns 36s "warm" re-prefills into 0.55s cache hits.
 6. **TEI XPU-IPEX crushes llama.cpp for rerank** — 7–9× on 25-pair batches. Requires periodic restart (weekly) to reclaim VRAM growth.
 7. **`--jinja` is mandatory for tool-calling reliability** — the built-in template handler doesn't emit Gemma 4's tool delimiters.
+8. **XMX+oneDNN FA (llama.cpp b10068) is a big win on dense-GQA models** — Ornith 9B cold 12K prefill dropped from 22.8s to 12.1s (-47% wall time, +42% throughput). Effect on Gemma 4 MoE is much smaller (~3-17% depending on prompt) — the MoE path was already well-optimized.
+9. **b10068 also carries a silent Q4_K get_rows correctness fix** — the older build had a subtle bug in Q4_K row gather that affected Ornith and MiniCPM5 decodes. No perceptible quality change post-swap, but it's closed regardless.
 
 ## Journey summary
 
@@ -67,9 +70,10 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | + FA on, `-ub 2048` (Config D) | 38.6 tok/s | 30s @ 477 tok/s | 0.66s |
 | + `GGML_SYCL_F16=ON` rebuild | 40.1 tok/s | 24s @ 602 tok/s | 0.61s |
 | + Q4_K_M post-training | 44.1 tok/s | 22.8s @ 632 tok/s | 0.55s |
-| + Config C + MTP (bare-metal) | **50.0 tok/s** | ~21.5s @ ~655 tok/s | ~0.55s |
+| + Config C + MTP (bare-metal, b9948) | 50.0 tok/s | ~21.5s @ ~655 tok/s | ~0.55s |
+| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | **51.8 tok/s** | **12.1s @ 896 tok/s** | ~0.55s |
 
-**Overall vs LM Studio start: 6.5× cold prefill, 65× warm-path, +49% decode.**
+**Overall vs LM Studio start: 10.5× cold prefill, ~65× warm-path, +54% decode.**
 
 ## Repo layout
 
@@ -85,6 +89,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 │   │   └── qwen3-4b-instruct-2507.md
 │   └── tested/                     ← benched, not adopted
 │       ├── qwen3.6-35b-a3b.md
+│       ├── minicpm5-1b.md
 │       ├── qwen3-coder-30b-a3b.md
 │       ├── devstral-small-2-24b.md
 │       ├── qwen3.6-27b.md
@@ -93,12 +98,16 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 │       ├── gemma-4-e4b.md
 │       ├── gemma-3-4b.md
 │       └── qwen2.5-coder-14b-awq.md
+├── configs/images/                ← Docker image build docs + patches
+│   ├── llama.cpp-sycl-f16/         (build.sh, README.md, flags used)
+│   └── tei-xpu-ipex-nomemleak/     (VRAM leak patch)
 └── configs/launchers/              ← docker run scripts (mirror of /data/llm/launch/ on llm.local)
     ├── start-llamacpp-sycl-ornith.sh
     ├── start-llamacpp-sycl-gemma4-mtp.sh
     ├── start-llamacpp-embed.sh
     ├── start-llamacpp-rerank.sh
     ├── start-tei-rerank.sh
+    ├── start-llamacpp-minicpm5.sh          (candidate on :8009)
     └── start-llamacpp-sycl-categorise.sh   (retired)
 ```
 
