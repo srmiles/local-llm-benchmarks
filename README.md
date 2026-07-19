@@ -24,7 +24,12 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
 | [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
-| [Qwen 3.6-35B-A3B](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | tested 2026-07-19; no MTP head shipped |
+| [**Qwen 3.6-35B-A3B-MTP**](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K cold / 974 @ 5K | **24.4 GB (won't fit prod)** | Ornith-parity speed at 4× params; need smaller quant for co-residence |
+| [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-Q4_K_S | 35.5B / 3B | 37.7 | 820 @ 12K cold / 985 @ 5K | 24.1 GB (still fails co-res) | tested 2026-07-19; only saves 0.3 GB vs Q4_K_XL; prefill wins but decode -23% due to MTP acceptance drop |
+| [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-IQ4_XS | 35.5B / 3B | 31.6 | 776 @ 12K / 918 @ 5K | 21.1 GB (fits prod with 0.5 GB headroom) | tested 2026-07-19; -36% decode + -22pp MTP acceptance vs Q4_K_XL; IQ quants underperform K quants on B60 |
+| [Qwen 3.6-35B-A3B Claude 4.7 Opus Distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | tight-reasoning distillation; only 35B-A3B that co-resides cleanly |
+| [Qwen 3.6-35B-A3B Kimi K2.6 Distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB (0.2 GB co-res headroom) | fastest cold prefill benched; verbose reasoning; no MTP |
+| [Qwen 3.6-35B-A3B (base)](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | superseded by MTP variant above |
 | [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | **53.0** (peak) | **971 @ 5K / 650 @ 12K cold** | 22.9 GB | reasoning fallback; b10068 refresh |
 | Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
 | Gemma 4 26B-A4B QAT | Q4_0 | 26B / 4B | 40.1 | 602 @ 12K | 18.2 GB | beaten by K-quant on Battlemage |
@@ -49,6 +54,20 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | **TEI XPU-IPEX :8008** | **109 ms / 25 pairs** | 2.5 GB | prod (7–9× faster than llama.cpp) |
 | [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | llama.cpp SYCL :8007 | 800–1,000 ms / 25 pairs | ~4 GB | fallback |
 
+## VRAM co-residence budget
+
+Isolated bench numbers are misleading — production has to fit all services simultaneously. **Non-chat steady-state stack**:
+
+| Container | VRAM steady |
+|---|---|
+| llamacpp-embed (EmbeddingGemma-300M) | 0.5 GiB |
+| llamacpp-rerank (bge-reranker fallback) | 0.5 GiB idle (3-4 active) |
+| tei-rerank (patched image) | 1.4 GiB |
+| **Non-chat total** | **~2.4 GiB** |
+| **Available for chat model** | **~21.6 GiB / 24 GiB** |
+
+Any candidate that reports isolated VRAM > 21.6 GiB either won't fit alongside prod, or needs a smaller quant / context / rerank-eviction trade-off. See individual model pages for per-candidate co-residence analysis.
+
 ## Key findings
 
 1. **MoE beats dense on Battlemage.** 26B-4B-active decodes ~2× faster than 12B dense at similar quality.
@@ -60,6 +79,11 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 7. **`--jinja` is mandatory for tool-calling reliability** — the built-in template handler doesn't emit Gemma 4's tool delimiters.
 8. **XMX+oneDNN FA (llama.cpp b10068) is a big win on dense-GQA models** — Ornith 9B cold 12K prefill dropped from 22.8s to 12.1s (-47% wall time, +42% throughput). Effect on Gemma 4 MoE is much smaller (~3-17% depending on prompt) — the MoE path was already well-optimized.
 9. **b10068 also carries a silent Q4_K get_rows correctness fix** — the older build had a subtle bug in Q4_K row gather that affected Ornith and MiniCPM5 decodes. No perceptible quality change post-swap, but it's closed regardless.
+10. **MTP variants matter more than base model choice for A3B MoEs.** Qwen 3.6-35B-A3B base was 31 tok/s decode; same architecture with MTP head enabled (via the `-MTP-GGUF` sibling repo) jumps to 49 tok/s — **+58% purely from picking the right repo.** Always check for `-MTP-GGUF` variants of MoE candidates.
+11. **b10068's XMX FA win doesn't scale to dense-27B.** Ornith dense-9B GQA got +42% cold prefill from b10068. Qwen 3.6-27B dense-27B got flat-to-slightly-negative. b10068's XMX FA optimises FA vec kernels — small models can afford the launch overhead, larger dense models are still bandwidth-bound.
+12. **Co-residence budget dominates viability.** A 24 GiB isolated bench that beats Ornith is meaningless if it leaves 0 GiB for embed + rerank + TEI. Always subtract ~2.4 GiB of non-chat services before deciding if a candidate can actually ship. See the [VRAM co-residence budget](#vram-co-residence-budget) section.
+13. **MTP acceptance is quant-sensitive** — same architecture, same base weights, same MTP head, but changing from Q4_K_XL → Q4_K_S drops MTP acceptance from 77.8% → 71%, and IQ4_XS drops it further to 60.8%. The drafter head's calibration against the target degrades faster than raw quant math would suggest. Meaningful lesson for anyone hoping "just quantise smaller" is a free move on MTP models.
+14. **Smaller K-quant can be FASTER on prefill.** Counter-intuitive but measured: Q4_K_S beats Q4_K_XL on cold 12K prefill (820 vs 798 tok/s) and 5K prefill (985 vs 974). The smaller weights let more of the model stay in cache during prefill's memory-bound phase. Decode reverses this — larger K-quant wins because MTP acceptance recovers.
 
 ## Journey summary
 
@@ -89,6 +113,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 │   │   └── qwen3-4b-instruct-2507.md
 │   └── tested/                     ← benched, not adopted
 │       ├── qwen3.6-35b-a3b.md
+│       ├── qwen3.6-35b-a3b-mtp.md         (2026-07-19 retest with MTP)
+│       ├── qwen3.6-35b-a3b-claude-distilled.md
+│       ├── qwen3.6-35b-a3b-kimi-distilled.md
 │       ├── minicpm5-1b.md
 │       ├── qwen3-coder-30b-a3b.md
 │       ├── devstral-small-2-24b.md
