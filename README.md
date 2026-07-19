@@ -1,4 +1,4 @@
-# local-llm-benchmarks
+# Local LLM Benchmarks (B60 Pro)
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
