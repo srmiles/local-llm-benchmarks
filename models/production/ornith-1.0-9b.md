@@ -32,6 +32,21 @@
 
 The XMX+oneDNN FA path (llama.cpp #25222) and `fattn_vec_nthreads=256` Battlemage tuning (#25205) land squarely on Ornith's dense-9B GQA attention. This is the single biggest cold-prefill win since the original 6.5× journey.
 
+### Live production observations (2026-07-19, ~30 min under real brain workload)
+
+Sampled during heavy queue traffic (`processing=1 deferred=1`, sustained):
+
+| Metric | Observed under load |
+|---|---|
+| Decode (with MTP) | **50.4–53.4 tok/s** (matches isolated bench) |
+| Prefill on fresh prompts (3–4K tokens) | **1,113–1,119 tok/s** |
+| Prefill on cache hits (4 tokens) | 22–46 tok/s (submission floor, tiny) |
+| MTP draft acceptance | 68.9–76.1% |
+| Mean accepted per draft | 3.07–3.28 tokens |
+| GPU Compute Engine util | 99% (pegged) |
+
+The b10068 isolated bench numbers hold up under real workload — no thermal throttle, no cache eviction penalty from single-slot FIFO. MTP acceptance 70–76% is the sustained range under real prompts (previous "78% average" estimate slightly optimistic; real is 70–76%).
+
 ### Historical baselines (kept for reference)
 
 | Metric | Value |

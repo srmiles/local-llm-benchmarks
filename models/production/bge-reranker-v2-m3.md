@@ -10,10 +10,12 @@
 
 | Metric | Value |
 |---|---|
-| Latency (25 pairs) | **109 ms** |
-| VRAM (steady) | 2.5 GB |
+| Latency (25 pairs, isolated bench) | **109 ms** |
+| Latency (observed, real brain workload) | 49–221 ms/batch (median ~130 ms) |
+| Queue time (real workload) | 30–100 ms |
+| VRAM (steady, patched image) | **1.43 GiB** (holding flat over 9+ hours real workload) |
 | Format | HF safetensors (float16) |
-| Backend | text-embeddings-inference on Intel XPU + IPEX |
+| Backend | text-embeddings-inference on Intel XPU + IPEX (empty_cache patched) |
 
 ```bash
 docker run -d --name tei-rerank \
@@ -32,7 +34,7 @@ docker run -d --name tei-rerank \
   --max-concurrent-requests 128
 ```
 
-**VRAM leak — fixed 2026-07-19.** Original `tei:xpu-ipex-fix` image leaked ~840 MB/hour under brain workload (2.5 → 10.9 GiB in 10 hours). Root cause: IPEX allocator holds intermediate tensors in a caching pool and TEI never called `torch.xpu.empty_cache()` between batches. Replaced with [`tei:xpu-ipex-nomemleak`](../../configs/images/tei-xpu-ipex-nomemleak/README.md) which adds the release call to `ClassificationModel.predict()` and the gRPC error path. Baseline VRAM now steady at ~1.4 GiB.
+**VRAM leak — fixed 2026-07-19.** Original `tei:xpu-ipex-fix` image leaked ~840 MB/hour under brain workload (2.5 → 10.9 GiB in 10 hours). Root cause: IPEX allocator holds intermediate tensors in a caching pool and TEI never called `torch.xpu.empty_cache()` between batches. Replaced with [`tei:xpu-ipex-nomemleak`](../../configs/images/tei-xpu-ipex-nomemleak/README.md) which adds the release call to `ClassificationModel.predict()` and the gRPC error path. **Confirmed working after 9 hours of real brain traffic**: VRAM 1.43 GiB flat vs unpatched projection of ~10 GiB. Fix validated empirically.
 
 ### 2. llama.cpp SYCL on `:8007` (fallback)
 
