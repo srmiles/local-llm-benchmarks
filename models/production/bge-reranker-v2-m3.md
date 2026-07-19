@@ -1,0 +1,75 @@
+# bge-reranker-v2-m3 — Production rerank
+
+**Status:** Production on **TEI XPU-IPEX (`:8008`)**; llama.cpp SYCL (`:8007`) retained as fallback.
+**HF:** [`BAAI/bge-reranker-v2-m3`](https://huggingface.co/BAAI/bge-reranker-v2-m3)
+**Launchers:** [`start-tei-rerank.sh`](../../configs/launchers/start-tei-rerank.sh) (prod, :8008) · [`start-llamacpp-rerank.sh`](../../configs/launchers/start-llamacpp-rerank.sh) (fallback, :8007)
+
+## Two serving paths
+
+### 1. TEI XPU-IPEX on `:8008` (production, 7–9× faster)
+
+| Metric | Value |
+|---|---|
+| Latency (25 pairs) | **109 ms** |
+| VRAM (steady) | 2.5 GB |
+| Format | HF safetensors (float16) |
+| Backend | text-embeddings-inference on Intel XPU + IPEX |
+
+```bash
+docker run -d --name tei-rerank \
+  --restart unless-stopped \
+  --device /dev/dri \
+  --group-add "$(getent group render|cut -d: -f3)" \
+  --shm-size=4g --ipc=host \
+  -v /data/llm/bge-reranker-v2-m3-hf:/data:ro \
+  -p 0.0.0.0:8008:80 \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
+  -e PYTORCH_XPU_ALLOC_CONF=max_split_size_mb:256 \
+  tei:xpu-ipex-fix \
+  --model-id /data --port 80 --dtype float16 --auto-truncate \
+  --max-client-batch-size 64 \
+  --max-batch-tokens 32768 \
+  --max-concurrent-requests 128
+```
+
+**Restart cadence:** VRAM grew from 2.5 GB → 12 GB over 4 days without the caps, and 2.5 GB → 9 GB even with them over 2 days. Weekly restart recommended.
+
+### 2. llama.cpp SYCL on `:8007` (fallback)
+
+| Metric | Value |
+|---|---|
+| Latency (25 pairs) | 800–1,000 ms (7–9× slower) |
+| VRAM | ~4 GB |
+| Format | GGUF Q8_0 |
+| Context | 65,536 |
+| Slots | 8 |
+
+```bash
+docker run -d --name llamacpp-rerank \
+  --device=/dev/dri \
+  -v /data/llm/bge-reranker-v2-m3:/models:ro \
+  -p 8007:8000 \
+  --restart unless-stopped \
+  -e ZES_ENABLE_SYSMAN=1 \
+  --health-cmd 'curl -fsS http://localhost:8000/health >/dev/null 2>&1 || exit 1' \
+  --health-interval 30s --health-timeout 5s --health-start-period 120s --health-retries 3 \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
+  llama.cpp:sycl-f16 \
+  -m /models/bge-reranker-v2-m3-Q8_0.gguf \
+  --reranking \
+  -ngl 99 \
+  -c 65536 \
+  --parallel 8 \
+  --host 0.0.0.0 --port 8000 \
+  -b 2048 -ub 2048 \
+  --no-mmap \
+  --metrics
+```
+
+## Notes
+
+- TEI wins because IPEX's fused encoder-attention kernel beats llama.cpp's generic BERT path on this exact workload — reranker is encoder-only, no autoregressive decode, so llama.cpp's decode-focused optimizations don't help
+- Title-prefix truncation bug (fixed in July) required verifying at `-c 16384` — could silently invert scores
+- Custom TEI image (`tei:xpu-ipex-fix`) applies IPEX patches missing from upstream tei-xpu image
+- Endpoints: Tailscale `http://100.70.193.48:8008/rerank`, LAN `http://192.168.1.253:8008`
+- Both containers can coexist; brain hybrid-search rerank stage points at `:8008` by default
