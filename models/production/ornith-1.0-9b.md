@@ -23,14 +23,27 @@
 
 | Metric | Value | vs b9948 |
 |---|---|---|
-| **Cold 12K prefill** | **12.1 s @ 896 tok/s** | **-47% wall time / +42% throughput** |
+| **Cold 12K prefill** | **12.1 s @ 896 tok/s** | see revision below |
 | **Decode (12K cold, MTP)** | **51.8 tok/s** | +4% |
-| **5K prefill** | **1,213 tok/s** | +46% |
+| **5K prefill** | **1,213 tok/s** | see revision below |
 | Warm follow-up (cache hit) | ~0.55 s | flat |
 | VRAM (loaded @ 128K KV Q8) | 10.86 GiB (target + drafter + KV) | flat |
 | Correctness (chat + tool call) | ✓ | identical |
 
-The XMX+oneDNN FA path (llama.cpp #25222) and `fattn_vec_nthreads=256` Battlemage tuning (#25205) land squarely on Ornith's dense-9B GQA attention. This is the single biggest cold-prefill win since the original 6.5× journey.
+The XMX+oneDNN FA path (llama.cpp #25222) and `fattn_vec_nthreads=256` Battlemage tuning (#25205) land squarely on Ornith's dense-9B GQA attention.
+
+### Revised b10068 vs b9948 (2026-07-20, methodology-matched probe)
+
+The initial "+42% throughput / -47% wall time" cold-prefill claim above was overstated — that number came from comparing a cold-start b9948 bench against a post-warm b10068 bench (not a true isolated A/B). Follow-up probe with identical prompts, `cache_prompt=false`, unique UUID prefix per sample, 3 samples per size, server-side `prompt_ms` as the load-bearing metric, run on both builds during an exclusive coordination window:
+
+| Size | b10068 mean | b9948 mean | Δ |
+|---|---|---|---|
+| ~500 tok  | 927 tok/s  | 1027 tok/s (excl. cold sample) | flat |
+| ~2K tok   | 1254 tok/s | 1249 tok/s | flat |
+| ~8K tok   | 1106 tok/s | 1075 tok/s | **+3%** |
+| ~12K tok  | 969 tok/s  | 938 tok/s  | **+3%** |
+
+**Real uplift is ~3% at long context, flat at short.** Still a genuine improvement — the XMX+oneDNN FA path IS helping — but nowhere near the original claim. Kept on b10068 for the small uplift plus the Q4_K get_rows correctness fix.
 
 ### Live production observations (2026-07-19, ~30 min under real brain workload)
 
@@ -97,5 +110,8 @@ docker run -d --name llamacpp-sycl \
 - Dual-role: serves both categorise and agent chat; FIFO queue (`--parallel 1`) means brain ingest can briefly stall pi.dev on cold prefill
 - `--cache-ram 8192` enables in-RAM prefix cache (was 0 during early SWA hang bug, now safe on Ornith)
 - **b10068 upgrade (2026-07-19)** — silent Q4_K get_rows correctness fix (#25656) is in this build, closing a subtle bug in Q4_K row gather that affected Ornith decodes in earlier builds. No perceptible quality change post-swap, but it's closed regardless.
-- **b10068 MTP acceptance under investigation (2026-07-20)** — brain-eval flagged an acceptance drop on b10068 (46% vs 64% baseline) via a 5-sample temp=0/cache_prompt=false bench. Attempted rollback to b9948 initially seemed to recover (68-74%), but that was only 2 tasks — too small to attribute causation. Our own b10068 log data spans 44-84% acceptance depending on workload, ruling out "b10068 is systematically broken." **Rolled forward to b10068 while coordinating a proper methodology-aligned A/B with brain-eval** — same prompt corpus, same sampling config, both builds tested identically. Hypotheses under investigation: (a) temp=0 greedy mode is uniquely sensitive to b10068's XMX FA numerical determinism drift; (b) real workload prompt distribution shifted; (c) something else. See brain handoff 12eb5d317b9 / reply 89b93f252af.
+- **b10068 MTP acceptance investigation resolved (2026-07-20)** — brain-eval flagged an acceptance drop on b10068 (46% vs 64% baseline) via a 5-sample temp=0/cache_prompt=false bench. Full A/B investigation with methodology-matched probes:
+  - **Determinism probe:** Both b9948 and b10068 produce 10 unique hashes across 10 identical greedy runs (temp=0, seed=42, cache off, same prompt). Non-determinism is pre-existing from SYCL non-associative FP reductions, not b10068-introduced.
+  - **Prefill probe:** Server-side prompt_ms across 4 sizes × 3 samples on both builds. b10068 shows ~3% uplift at 8K/12K, flat at smaller sizes — no regression.
+  - **Conclusion:** b10068 is not broken. The "46% acceptance" was small-N greedy variance on a non-deterministic path, not a build issue. Prod acceptance range under real workload (68-76%) is the ground truth. See brain handoff 12eb5d317b9 / reply 89b93f252af / probe results 73c09662d14.
 - **Version stamping bug documented** — `build_info` reports `579 (074944998)` on b9948 and `699 (571d0d540)` on b10068. Commit hashes are correct; version integers are bogus (llama.cpp's fallback numbering fired because our build didn't pass `-DLLAMA_BUILD_NUMBER=<tag>` at cmake time). Fix on next build.

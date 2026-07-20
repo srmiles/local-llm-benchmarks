@@ -2,9 +2,9 @@
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (currently pinned to **b9948** after a b10068 rollback — see below).
+All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (currently on **b10068**).
 
-> **Investigation in progress 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, temp=0/cache_prompt=false bench). Rollback to b9948 seemed to restore it, but the "confirmation" was n=2 tasks — coin-flip territory. Our own log data on the same b10068 shows tasks ranging 44-84% acceptance, which rules out "b10068 is broken." Currently back on **b10068** while we coordinate a proper methodology-matched A/B with brain-eval. Isolated b10068 bench numbers in the tables below remain valid.
+> **Investigation resolved 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, small-N greedy bench). Methodology-matched A/B disproved it: (a) both b9948 and b10068 produce different hashes across repeated identical greedy runs — SYCL FP non-determinism is pre-existing, not b10068-introduced; (b) isolated prefill probe shows b10068 delivers a real but modest **~3% uplift at long context, flat at short** (not the "+42%" originally claimed). Prod acceptance range under real workload (68-76%) is the ground truth. **b10068 stays live.** See [ornith notes](models/production/ornith-1.0-9b.md#notes) for full detail.
 
 ## Current production stack
 
@@ -81,7 +81,7 @@ Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside p
 5. **`-fa on` is mandatory** — turns 36s "warm" re-prefills into 0.55s cache hits.
 6. **TEI XPU-IPEX crushes llama.cpp for rerank** — 7–9× on 25-pair batches. Requires periodic restart (weekly) to reclaim VRAM growth.
 7. **`--jinja` is mandatory for tool-calling reliability** — the built-in template handler doesn't emit Gemma 4's tool delimiters.
-8. **XMX+oneDNN FA (llama.cpp b10068) is a big win on dense-GQA models** — Ornith 9B cold 12K prefill dropped from 22.8s to 12.1s (-47% wall time, +42% throughput). Effect on Gemma 4 MoE is much smaller (~3-17% depending on prompt) — the MoE path was already well-optimized.
+8. **XMX+oneDNN FA (llama.cpp b10068) is a modest win on dense-GQA models.** Initial cold-vs-warm comparison overstated it as "+42% throughput / -47% wall time" — methodology-matched isolated probe on Ornith 9B shows the real uplift is **~3% at 8K/12K, flat at short context**. Effect on Gemma 4 MoE is similar magnitude — the FA vec kernel path helps but not dramatically. **Lesson: never trust a first-look uplift claim that pairs a cold-start baseline against a warmed candidate.** Always re-probe under identical conditions.
 9. **b10068 also carries a silent Q4_K get_rows correctness fix** — the older build had a subtle bug in Q4_K row gather that affected Ornith and MiniCPM5 decodes. No perceptible quality change post-swap, but it's closed regardless.
 10. **MTP variants matter more than base model choice for A3B MoEs.** Qwen 3.6-35B-A3B base was 31 tok/s decode; same architecture with MTP head enabled (via the `-MTP-GGUF` sibling repo) jumps to 49 tok/s — **+58% purely from picking the right repo.** Always check for `-MTP-GGUF` variants of MoE candidates.
 11. **b10068's XMX FA win doesn't scale to dense-27B.** Ornith dense-9B GQA got +42% cold prefill from b10068. Qwen 3.6-27B dense-27B got flat-to-slightly-negative. b10068's XMX FA optimises FA vec kernels — small models can afford the launch overhead, larger dense models are still bandwidth-bound.
@@ -98,10 +98,10 @@ Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside p
 | + FA on, `-ub 2048` (Config D) | 38.6 tok/s | 30s @ 477 tok/s | 0.66s |
 | + `GGML_SYCL_F16=ON` rebuild | 40.1 tok/s | 24s @ 602 tok/s | 0.61s |
 | + Q4_K_M post-training | 44.1 tok/s | 22.8s @ 632 tok/s | 0.55s |
-| + Config C + MTP (bare-metal, b9948) | 50.0 tok/s | ~21.5s @ ~655 tok/s | ~0.55s |
-| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | **51.8 tok/s** | **12.1s @ 896 tok/s** | ~0.55s |
+| + Config C + MTP (bare-metal, b9948) | 50.0 tok/s | ~13.7s @ ~938 tok/s | ~0.55s |
+| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | **51.8 tok/s** | **~13.3s @ 969 tok/s** (+3%) | ~0.55s |
 
-**Overall vs LM Studio start: 10.5× cold prefill, ~65× warm-path, +54% decode.**
+**Overall vs LM Studio start: ~10× cold prefill, ~65× warm-path, +54% decode.** (b9948 12K prefill row revised 2026-07-20 from isolated probe — earlier "22.8s @ 632" figure was cold-start against a bandwidth-contended stack; methodology-matched probe gives 14.2s @ 938 tok/s. This means most of the prefill journey landed with SYCL + FA + `-ub 2048` + F16 rebuild + Q4_K, not with b10068's XMX FA.)
 
 ## Repo layout
 
