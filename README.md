@@ -2,7 +2,9 @@
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (custom build **b10068**, `GGML_SYCL_F16=ON`, oneAPI 2025.3.3 base, `-DCMAKE_BUILD_TYPE=Release`, includes XMX+oneDNN FA + `fattn_vec_nthreads=256` Battlemage tuning + fused top-k MoE + Q4_K get_rows correctness fix) with `-fa on`, KV Q8, `-ub 2048 -b 2048`, `--parallel 1`, `--jinja`.
+All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (currently pinned to **b9948** after a b10068 rollback — see below).
+
+> **Rolled back 2026-07-20:** b10068 upgrade caused an MTP acceptance regression on Ornith 9B (64% → 46%, decode 50 → 41 tok/s). Rolled `docker tag llama.cpp:sycl-f16-b9948 llama.cpp:sycl-f16` + restarted Ornith; acceptance recovered to 68-74%, decode to 49-51 tok/s. Trade-off: we lose the b10068 cold-prefill lift (22.8s → 12.1s) but recover the sustained-workload MTP throughput. **Isolated b10068 bench numbers in the tables below remain valid** — they were captured during the ~10-hour window b10068 was in prod — but production-observed numbers reflect b9948 again.
 
 ## Current production stack
 
