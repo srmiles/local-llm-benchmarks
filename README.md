@@ -4,7 +4,7 @@ Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)
 
 All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) (currently pinned to **b9948** after a b10068 rollback — see below).
 
-> **Rolled back 2026-07-20:** b10068 upgrade caused an MTP acceptance regression on Ornith 9B (64% → 46%, decode 50 → 41 tok/s). Rolled `docker tag llama.cpp:sycl-f16-b9948 llama.cpp:sycl-f16` + restarted Ornith; acceptance recovered to 68-74%, decode to 49-51 tok/s. Trade-off: we lose the b10068 cold-prefill lift (22.8s → 12.1s) but recover the sustained-workload MTP throughput. **Isolated b10068 bench numbers in the tables below remain valid** — they were captured during the ~10-hour window b10068 was in prod — but production-observed numbers reflect b9948 again.
+> **Investigation in progress 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, temp=0/cache_prompt=false bench). Rollback to b9948 seemed to restore it, but the "confirmation" was n=2 tasks — coin-flip territory. Our own log data on the same b10068 shows tasks ranging 44-84% acceptance, which rules out "b10068 is broken." Currently back on **b10068** while we coordinate a proper methodology-matched A/B with brain-eval. Isolated b10068 bench numbers in the tables below remain valid.
 
 ## Current production stack
 
