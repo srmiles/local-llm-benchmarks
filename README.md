@@ -10,7 +10,7 @@ All numbers below are measured on the same physical card. The stack has shifted 
 
 | Port | Container | Model | Purpose |
 |---|---|---|---|
-| 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + categorise + pi.dev agent (dual-role) |
+| 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + categorise + pi.dev agent |
 | 8004 | `llamacpp-embed` | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX patched, no leak) |
 
@@ -18,7 +18,9 @@ All numbers below are measured on the same physical card. The stack has shifted 
 
 **Reasoning fallback:** [Gemma 4 26B-A4B Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) — launcher on disk, not running by default.
 
-**Retired:** [`llamacpp-categorise` (Qwen3-4B on :8006)](models/retired/qwen3-4b-instruct-2507.md) — brain env vars now point to `:8002`; the container is still up with 6+ days uptime but receives no traffic. Candidate for shutdown.
+**Historical:** original `llamacpp-categorise` on `:8006` ran [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) until quality regressed (2026-07-19).
+
+**Categorise slot experiment 2026-07-22 — reverted same day.** Stood up [Gemma 4 E2B QAT on :8006](models/parked/gemma-4-e2b-categorise.md) as a dedicated categorise slot to relieve Ornith `:8002`. Diagnostic proved severe cross-process SYCL contention on the single B60 (Ornith 52 → 16 tps and Gemma 88 → 12 tps when both active — 3× throughput loss both sides). Reverted to Ornith-served categorise. Gemma launcher preserved at `/data/llm/launch/start-llamacpp-categorise-e2b.sh` for future use when a **second B60 is added** — then split-slot architecture becomes viable with each SYCL context owning its own GPU. See [candidate hunt](models/tested/categorise-candidates.md) for the candidate bench data.
 
 ## Chat / instruct benchmarks
 
@@ -27,6 +29,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
 | [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
+| [Ornith 1.0-35B MTP APEX](models/tested/ornith-1.0-35b-mtp-apex.md) | APEX I-Compact (IQ) | 35B / 3B | 35.4 | 816 @ 5K / 802 @ 12K | ~19 GB (fits co-res, 3 GiB headroom) | tested 2026-07-22; scale-up of prod Ornith 9B; **-32% decode** vs 9B; IQ-quant penalty; VLM-capable; waiting on K-quant MTP variant |
 | [**Qwen 3.6-35B-A3B-MTP**](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K cold / 974 @ 5K | **24.4 GB (won't fit prod)** | Ornith-parity speed at 4× params; need smaller quant for co-residence |
 | [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-Q4_K_S | 35.5B / 3B | 37.7 | 820 @ 12K cold / 985 @ 5K | 24.1 GB (still fails co-res) | tested 2026-07-19; only saves 0.3 GB vs Q4_K_XL; prefill wins but decode -23% due to MTP acceptance drop |
 | [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-IQ4_XS | 35.5B / 3B | 31.6 | 776 @ 12K / 918 @ 5K | 21.1 GB (fits prod with 0.5 GB headroom) | tested 2026-07-19; -36% decode + -22pp MTP acceptance vs Q4_K_XL; IQ quants underperform K quants on B60 |
@@ -53,9 +56,12 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Server | Throughput / latency | VRAM | Notes |
 |---|---|---|---|---|
-| [EmbeddingGemma-300M](models/production/embeddinggemma-300m.md) | llama.cpp SYCL :8004 | ~5,000 tok/s, batch 2048 | ~2 GB | prod embed |
-| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | **TEI XPU-IPEX :8008** | **109 ms / 25 pairs** | 2.5 GB | prod (7–9× faster than llama.cpp) |
-| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | llama.cpp SYCL :8007 | 800–1,000 ms / 25 pairs | ~4 GB | fallback |
+| [EmbeddingGemma-300M](models/production/embeddinggemma-300m.md) | llama.cpp SYCL :8004 | 23,208 tok/s @ 1800 tok, 253 emb/s batch 64 short | 0.5 GB | **prod embed** (dim 768, ~57 RTEB) |
+| [Nemotron-3-Embed-1B (Q4_K_M)](models/tested/nemotron-3-embed-1b.md) | llama.cpp SYCL (isolated bench) | 3,361 tok/s @ 1800 tok, 29 emb/s batch 64 short | 1.0 GB | tested 2026-07-22; dim 2048, multilingual, RTEB 72.4; **6–9× slower** than EG on B60 (FA broken on ministral3 arch) |
+| [LFM2.5-Embedding-350M (Q8_0)](models/tested/lfm2.5-embedding-350m.md) | llama.cpp SYCL (isolated bench) | 21,717 tok/s @ 1800 tok, 80 emb/s batch 64 short | 0.6 GB | tested 2026-07-22; dim 1024, 11 languages; parity single, EG wins batched 3.2× |
+| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | **TEI XPU-IPEX :8008** | **109 ms / 25 pairs** | 1.4 GB | prod (7–9× faster than llama.cpp) |
+| [LFM2.5-ColBERT-350M (Q8_0)](models/tested/lfm2.5-colbert-350m.md) | llama.cpp SYCL (isolated bench) | 293.6 ms / 25 pairs (MaxSim, `-fa off`) | 0.6 GB | tested 2026-07-22; 11 languages; **2.7× slower than bge**; per-token vector storage 21× if used as retriever |
+| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | llama.cpp SYCL :8007 | 800–1,000 ms / 25 pairs | ~4 GB | retired fallback (2026-07-19) |
 
 ## VRAM co-residence budget
 
@@ -67,6 +73,8 @@ Isolated bench numbers are misleading — production has to fit all services sim
 | tei-rerank (patched image, no leak) | 1.4 GiB |
 | **Non-chat total** | **~1.9 GiB** |
 | **Available for chat model** | **~22.1 GiB / 24 GiB** |
+
+Note: reverted to the pre-2026-07-22 budget after the categorise split experiment showed cross-process SYCL contention on single B60. When a second B60 is added, the dedicated categorise slot (~2 GiB, Gemma 4 E2B QAT) will move to that card, keeping the primary B60 chat-model budget at 22.1 GiB.
 
 Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside prod, or needs a smaller quant / context / eviction trade-off. See individual model pages for per-candidate co-residence analysis.
 
@@ -88,6 +96,29 @@ Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside p
 12. **Co-residence budget dominates viability.** A 24 GiB isolated bench that beats Ornith is meaningless if it leaves 0 GiB for embed + rerank + TEI. Always subtract ~2.4 GiB of non-chat services before deciding if a candidate can actually ship. See the [VRAM co-residence budget](#vram-co-residence-budget) section.
 13. **MTP acceptance is quant-sensitive** — same architecture, same base weights, same MTP head, but changing from Q4_K_XL → Q4_K_S drops MTP acceptance from 77.8% → 71%, and IQ4_XS drops it further to 60.8%. The drafter head's calibration against the target degrades faster than raw quant math would suggest. Meaningful lesson for anyone hoping "just quantise smaller" is a free move on MTP models.
 14. **Smaller K-quant can be FASTER on prefill.** Counter-intuitive but measured: Q4_K_S beats Q4_K_XL on cold 12K prefill (820 vs 798 tok/s) and 5K prefill (985 vs 974). The smaller weights let more of the model stay in cache during prefill's memory-bound phase. Decode reverses this — larger K-quant wins because MTP acceptance recovers.
+15. **Two SYCL processes on a single B60 contend severely.** Split-slot experiment 2026-07-22: running `llamacpp-sycl` (Ornith) and `llamacpp-categorise` (Gemma 4 E2B) concurrently on the same B60 drops both from isolated speed to ~30% (Ornith 52 → 16 tps, Gemma 88 → 12 tps). Verified by stopping the second container mid-session — the first immediately recovered from 17 to 55 tps decode. Combined throughput of the split (28 tps) is *worse* than a single process alternating (52 tps FIFO). Root cause is Level Zero context-switch overhead + shared kernel dispatch queue; not a llama.cpp-fixable issue. **Split-slot architecture on B60 requires a dedicated GPU per SYCL process** — future direction: add a second B60 and pin the categorise slot to `level_zero:1`.
+16. **Google QAT Q4_0 beats post-hoc K-quants at 2-4B on B60.** Gemma 4 E2B QAT hit 88 tps decode vs Qwen3-4B and Agents-A1-4B post-training K-quants at 79 tps. QAT preserves output distribution better than post-training quants at small sizes, AND Q4_0 layout dispatches faster than Q4_K_M on Battlemage. Reverses at ≥26B where K-quants pull ahead again (already documented in finding #2).
+17. **Reasoning-tuned models (Gemma 4, Agents-A1) route output to `reasoning_content` by default** — `content` is empty, breaking any structured-JSON workflow. Fix: pass `--reasoning off` to `llama-server`. Without it, 0/10 JSON parseability. With it, 10/10. Small (~5%) decode-speed cost.
+18. **Prefill/decode asymmetry matters more than raw decode tps for model choice.** Same B60 (456 GB/s bandwidth), same workload shape (5K prompt + 200 gen), measured under real skill_server load:
+
+    | Model | Prefill tps | Decode tps | Decode % of BW ceiling | Notes |
+    |---|---|---|---|---|
+    | Gemma 4 E2B QAT Q4_0 (3.35 GB) | **1,600** | 30 | 22% | fast prefill, no MTP |
+    | Ornith 9B + MTP Q4_K_M (5.0 GB) | 1,000 | **50** | 55% | slower prefill, +2× MTP boost |
+
+    The disparity comes from two things Ornith has and Gemma doesn't: (a) protoLabsAI's MTP drafter accelerates decode ~2× via speculative decoding at 68-80% acceptance; (b) K-quant super-blocks amortize dequantization better than Q4_0's simpler layout for the single-token latency of decode. Q4_0 wins prefill (large batched matmul), Q4_K_M wins decode.
+
+    **Workload-shape total-time math** — the categorise/summarise/chat winner flips depending on output length:
+
+    | Workload | Prompt | Gen | Gemma total | Ornith total | Winner |
+    |---|---|---|---|---|---|
+    | Categorise (short JSON) | 5K | 200 | 3.1 + 6.7 = 9.8s | 5.0 + 4.0 = 9.0s | ~tie |
+    | Summarise | 5K | 500 | 3.1 + 16.7 = 19.8s | 5.0 + 10 = 15.0s | Ornith |
+    | Chat/agent | 3K | 800 | 1.9 + 26.7 = 28.6s | 3.0 + 16 = 19.0s | Ornith |
+
+    **Lesson: never pick a small model purely on prefill/isolated-decode headline numbers.** Compute total-time for the actual workload shape. For anything with >200 output tokens on this stack, a 9B + MTP beats a 2B without MTP even when the 2B is "faster" on both isolated axes. This is also why the split-slot experiment for categorise didn't help much — brain routes both categorise (Gemma-favorable shape) AND summarise (Ornith-favorable shape) to the same categorise endpoint. Model choice should follow workload shape, not the "small model for cheap tasks" instinct.
+
+    **Track prefill/decode ratio in future benches**, not just headline decode tps. Add a column to the model comparison table with the workload-time calculation.
 
 ## Journey summary
 

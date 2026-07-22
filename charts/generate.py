@@ -33,6 +33,7 @@ models_perf = [
     ("Qwen 3.6-35B-A3B\nMTP UD-IQ4_XS",              31.6,  776, "tested, not adopted"),
     ("Qwen 3.6-35B-A3B\nKimi Distilled IQ4_XS",     30.6,  904, "prefill king"),
     ("Qwen 3.6-35B-A3B\nClaude APEX-MTP Compact",   36.9,  763, "fits prod"),
+    ("Ornith 1.0-35B\nMTP APEX I-Compact",           35.4,  802, "tested, not adopted"),
     ("Gemma 4 26B-A4B\n+ MTP",                       53.0,  650, "reasoning fallback"),
     ("Qwen 3.6-35B-A3B\n(base, no MTP)",             31.1,  823, "superseded"),
     ("Qwen 3.6-27B\n(dense)",                        18.0,  374, "dense penalty"),
@@ -115,6 +116,7 @@ print("wrote", OUT / "decode_vs_prefill.png")
 vram_models = [
     ("Ornith 9B + MTP\n(prod)",                    10.9),
     ("Qwen 3.6-35B-A3B\nClaude APEX-MTP",           19.4),
+    ("Ornith 1.0-35B\nMTP APEX I-Compact",           19.0),
     ("Qwen 3.6-35B-A3B\nKimi IQ4_XS",               21.4),
     ("Qwen 3.6-35B-A3B\nMTP UD-Q4_K_XL",             24.4),
     ("Qwen 3.6-35B-A3B\nMTP UD-Q4_K_S",               24.1),
