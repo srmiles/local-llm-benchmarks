@@ -31,10 +31,12 @@ docker run -d --name tei-rerank \
   --model-id /data --port 80 --dtype float16 --auto-truncate \
   --max-client-batch-size 64 \
   --max-batch-tokens 32768 \
-  --max-concurrent-requests 128
+  --max-concurrent-requests 512
 ```
 
 **VRAM leak — fixed 2026-07-19.** Original `tei:xpu-ipex-fix` image leaked ~840 MB/hour under brain workload (2.5 → 10.9 GiB in 10 hours). Root cause: IPEX allocator holds intermediate tensors in a caching pool and TEI never called `torch.xpu.empty_cache()` between batches. Replaced with [`tei:xpu-ipex-nomemleak`](../../configs/images/tei-xpu-ipex-nomemleak/README.md) which adds the release call to `ClassificationModel.predict()` and the gRPC error path. **Confirmed working after 9 hours of real brain traffic**: VRAM 1.43 GiB flat vs unpatched projection of ~10 GiB. Fix validated empirically.
+
+**Concurrent-requests limit — bumped 128 → 512 (2026-07-24).** Brain's mrs entity consolidation sweep fires rerank calls in tight bursts (many parallel calls per categorise for retrieval). Hit `try_acquire_permit: no permits available` errors → HTTP 429 → brain fails the consolidate step. Bumping to 512 gives 4× semaphore headroom; TEI still batches internally under `--max-batch-tokens 32768`, so real GPU load is bounded by batch-tokens not permits. Small mem uptick expected (~5-6 GiB warmup) then settles.
 
 ### 2. llama.cpp SYCL on `:8007` (retired 2026-07-19; on-demand fallback only)
 
