@@ -109,20 +109,29 @@ Google released official MTP drafters for Gemma 4 E2B/E4B on 2026-05-05. We buil
 - Converted GGUF: `/data/llm/gemma-4-E2B-it-assistant-GGUF/gemma-4-E2B-it-assistant-official.bf16.gguf` (170 MB)
 - Community GGUFs (AtomicChat etc.) use the wrong `gemma4_assistant` underscore arch name — incompatible with upstream. **Only Google-official-converted GGUF works.**
 
-### Bench on b10215 (single B60, isolated, categorise workload)
+### Bench on b10215 (single B60, isolated, categorise + prefill probe)
 
-8-sample categorise bench, taxonomy JSON output:
+Extended 2026-07-31 bench to all three Google MTP-drafter combos:
 
-| Config | Decode median | MTP acceptance | Wall/task |
-|---|---|---|---|
-| Gemma 4 E2B alone (no MTP) | 88 tps | — | ~1.15s |
-| **Gemma 4 E2B + Google MTP drafter** | **135.6 tps** | **68.4%** | **0.72s** |
-| Ornith 9B + MTP (current prod baseline) | 56 tps | 76.3% | 1.25s |
+| Model + drafter | Params | Decode | MTP acc | Wall/task | Prefill 500t | Prefill 2Kt | VRAM |
+|---|---|---|---|---|---|---|---|
+| **Gemma 4 E2B + Google MTP** | 2B eff | **138.8 tps** | 67.8% | 0.72s | 1,862 tps | **3,681 tps** | ~4.5 GiB |
+| **Gemma 4 E4B + Google MTP** | 4B eff | 114.1 tps | 66.7% | **0.69s** | 1,396 tps | 2,319 tps | ~7 GiB |
+| **Gemma 4 12B + Google MTP** | 12B dense | 70.4 tps | 69.7% | 2.18s | 428 tps | 1,053 tps | ~8 GiB |
+| Gemma 4 E2B alone (no MTP) | 2B eff | 88 tps | — | ~1.15s | — | — | ~4.5 GiB |
+| Ornith 9B + MTP (current prod) | 9B dense | 56 tps | 76.3% | 1.25s | ~1,600 tps* | — | ~10.9 GiB |
 
-**Speedups:**
-- +54% decode vs Gemma alone (Google's claim was up to 3×; we see 1.54× on this categorise workload)
-- **2.4× decode vs Ornith 9B + MTP on categorise workload, in 40% of the VRAM**
-- 1.7× faster per-task wall time
+*Ornith prefill from live-brain observation, not measured in this session
+
+**Observations:**
+- MTP acceptance stays flat at 67-70% across all three sizes — Google's drafters are well-calibrated per size, no quality degradation as target scales
+- **12B + MTP hits 70 tps decode** — matches Ornith 9B decode at similar VRAM class. Was previously written off as too slow; MTP resurrected it as a viable Ornith competitor.
+- **E2B is the prefill king** — 3,681 tps @ 2K is ~50% of theoretical B60 FP16 memory-bandwidth ceiling for a 3.35 GB model
+- Per-workload winners by output length:
+  - Short JSON output (~200 tok): E4B narrowly beats E2B (0.69s vs 0.72s wall)
+  - Medium generations (200-500 tok): E2B best (decode dominates)
+  - Long chat/agent (800+ tok): Ornith 9B still best (higher MTP acceptance, better on high-entropy long output)
+  - Reasoning-heavy needing 12B+ params: 12B + MTP now viable at ~2s per task
 
 ### Redeployment plan when 2nd B60 arrives
 
