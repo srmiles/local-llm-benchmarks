@@ -101,6 +101,53 @@ Restart brain-categorise consumer after the change.
 - **Second B60 added to llm.local:** relaunch with `ONEAPI_DEVICE_SELECTOR=level_zero:1` to bind to the second card; Ornith stays on `:0`. No cross-process contention because different physical GPUs = different SYCL contexts.
 - Bench config already validated (see [candidate hunt](../tested/categorise-candidates.md)). Model + quant + reasoning-off flag ready to go.
 
+## Google MTP drafter now available (2026-07-31)
+
+Google released official MTP drafters for Gemma 4 E2B/E4B on 2026-05-05. We built `llama.cpp:sycl-f16-next-eb41d503b` (b10215) which supports the `gemma4-assistant` architecture, then converted Google's HF safetensors directly with the new build's `convert_hf_to_gguf.py`:
+
+- Source: [`google/gemma-4-E2B-it-assistant`](https://huggingface.co/google/gemma-4-E2B-it-assistant) (BF16 safetensors, 158 MB)
+- Converted GGUF: `/data/llm/gemma-4-E2B-it-assistant-GGUF/gemma-4-E2B-it-assistant-official.bf16.gguf` (170 MB)
+- Community GGUFs (AtomicChat etc.) use the wrong `gemma4_assistant` underscore arch name — incompatible with upstream. **Only Google-official-converted GGUF works.**
+
+### Bench on b10215 (single B60, isolated, categorise workload)
+
+8-sample categorise bench, taxonomy JSON output:
+
+| Config | Decode median | MTP acceptance | Wall/task |
+|---|---|---|---|
+| Gemma 4 E2B alone (no MTP) | 88 tps | — | ~1.15s |
+| **Gemma 4 E2B + Google MTP drafter** | **135.6 tps** | **68.4%** | **0.72s** |
+| Ornith 9B + MTP (current prod baseline) | 56 tps | 76.3% | 1.25s |
+
+**Speedups:**
+- +54% decode vs Gemma alone (Google's claim was up to 3×; we see 1.54× on this categorise workload)
+- **2.4× decode vs Ornith 9B + MTP on categorise workload, in 40% of the VRAM**
+- 1.7× faster per-task wall time
+
+### Redeployment plan when 2nd B60 arrives
+
+```bash
+docker run -d --name llamacpp-categorise \
+  --restart unless-stopped --memory=6g \
+  --device /dev/dri \
+  --group-add "$(getent group render|cut -d: -f3)" \
+  --group-add "$(getent group video |cut -d: -f3)" \
+  -v /data/llm/gemma-4-E2B-it-GGUF:/models:ro \
+  -v /data/llm/gemma-4-E2B-it-assistant-GGUF:/drafter:ro \
+  -p 0.0.0.0:8006:8000 \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:1 \
+  llama.cpp:sycl-f16 \
+  -m /models/gemma-4-E2B_q4_0-it.gguf \
+  --model-draft /drafter/gemma-4-E2B-it-assistant-official.bf16.gguf \
+  --spec-type draft-mtp --spec-draft-n-max 3 \
+  -ngl 99 -c 32768 --parallel 2 \
+  --host 0.0.0.0 --port 8000 --metrics \
+  --cache-type-k q8_0 --cache-type-v q8_0 -fa on -ub 2048 -b 2048 \
+  --jinja --reasoning off --temp 0.0
+```
+
+Then brain env `CATEGORISE_URL=http://192.168.1.253:8006/v1/chat/completions`.
+
 ## Prefill/decode asymmetry finding (2026-07-22, under real brain load)
 
 The split-slot experiment surfaced a subtle-but-important observation about model-choice trade-offs:
