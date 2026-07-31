@@ -2,8 +2,9 @@
 
 Custom llama.cpp SYCL image tuned for **Intel Arc Pro B60 (Battlemage / Xe2)**. Serves all four llama.cpp containers in the stack (chat, embed, rerank, plus any ad-hoc bench containers).
 
-**Current tag → build:** `llama.cpp:sycl-f16` → **b10068** (2026-07-19)
-**Previous prod tag (rollback):** `llama.cpp:sycl-f16-b9948-prev`
+**Current tag → build:** `llama.cpp:sycl-f16` → **b10215** (2026-07-31, commit `eb41d503b`)
+**Previous prod tag (rollback):** `llama.cpp:sycl-f16-b10068-safe`
+**LLAMA_BUILD_NUMBER fix landed** — version now reports correctly as `10215` (was stuck on legacy `699` under b10068 because prior builds didn't inject the number at cmake time). New build script passes `--build-arg APP_VERSION="b${BUILD_NUM}"` where `BUILD_NUM=$(git rev-list --count HEAD)`.
 
 ## Why we build our own
 
@@ -81,7 +82,26 @@ sudo /data/llm/launch/start-llamacpp-rerank.sh
 
 Rollback is one retag + one restart per container.
 
-## What's in b10068 that we care about (SYCL / Battlemage)
+## What's in b10215 (upgrade from b10068, 2026-07-31)
+
+**147 commits ahead of b10068.** Notable SYCL/Battlemage/MTP-relevant merges:
+
+| SHA | Title | Why it matters |
+|---|---|---|
+| `9d9a6d29f` | SYCL: add oneMKL GEMM flash attention for XMX-accelerated prompt processing (#25025) | Additional XMX FA path via oneMKL. Complements the earlier `32b741c` oneDNN FA — may boost prefill on prompt-heavy workloads. |
+| `82dbc4f01` | llama : load MTP tensors only if they are really used (#26296) | MTP tensor loading optimization. Reduces model init memory pressure for `--spec-type draft-mtp` configs. |
+| `000547513` | server: correct accepted tokens when need draft token replay (#26320) | **MTP acceptance counter fix.** Previous counts may have been slightly over- or under-reported when the draft token replay path was hit; new build's acceptance metrics are more accurate. |
+| `d5d3e05bf` | [SYCL] support the missed types in cpy (#26005) | Completeness fix for SYCL cpy operations. |
+| `1c5b89ff6` | sycl : support dev2dev memcpy by DEV2DEV_MEMCPY_FORWARD (#26234) | **Multi-GPU SYCL support.** Directly relevant to planned 2nd B60 deployment — enables efficient cross-GPU tensor transfers. |
+| `a2be61dc8` | [SYCL] Support q2 mul_mat (#26231) | Q2 quantization now supported on SYCL. |
+| `155372596` | sycl: fuse RMS_NORM + MUL (#26015) | Kernel fusion perf win. |
+| PRs #22738, #23211, #24282 | gemma4-assistant MTP drafter architecture support | **Enables Google's official Gemma 4 E2B/E4B MTP drafters** (once we convert HF safetensors to GGUF with the correct `gemma4-assistant` arch string — community GGUFs use the wrong `gemma4_assistant` underscore convention and don't load). |
+
+**Cutover 2026-07-31:** promoted from b10068 to b10215. Ornith prod on `:8002` restarted with new image. Real-workload decode + MTP acceptance identical to b10068 baseline within measurement noise (~38-40 tps decode, ~40% MTP on the synthetic bench; historical 50-58 tps came from live brain traffic with different prompt shapes). No regressions observed, no crashes, no garbled output. Rollback available via `docker tag llama.cpp:sycl-f16-b10068-safe llama.cpp:sycl-f16 && sudo /data/llm/launch/start-llamacpp-sycl-ornith.sh` (<1 min).
+
+**Known integration gap:** Community Gemma 4 E2B MTP drafter GGUFs (e.g. `AtomicChat/gemma-4-E2B-it-assistant-GGUF`) use `gemma4_assistant` (underscore) arch string, but upstream registered it as `gemma4-assistant` (hyphen). Loading fails with `unknown model architecture: 'gemma4_assistant'`, and even patching that string exposes `gemma4-assistant.context_length` metadata-key mismatch (all keys need converting). To use MTP with Gemma 4: convert `google/gemma-4-E2B-it-assistant` BF16 safetensors to GGUF ourselves via this build's `convert_hf_to_gguf.py`. Not blocking prod — categorise runs on Ornith anyway; only relevant when 2nd B60 arrives for a dedicated Gemma slot.
+
+## What was in b10068 that we care about (SYCL / Battlemage)
 
 Between b9948 and b10068 (291 commits), the hot ones for our stack:
 
@@ -118,12 +138,9 @@ The Ornith cold-prefill win is the killer number. The XMX FA path is disproporti
 ## Build artifacts + tags
 
 ```
-llama.cpp:sycl-f16              → current prod (b10068)
-llama.cpp:sycl-f16-b10068       → explicit b10068 tag
-llama.cpp:sycl-f16-b9948-prev   → previous prod, kept for rollback
-llama.cpp:sycl-f16-b9948        → explicit b9948 tag
-llama.cpp:sycl-f16-b9777-backup → older baseline
-llama.cpp:sycl-f16-full         → full-target variant (has CLI + tools; ~4.25 GB)
+llama.cpp:sycl-f16                     → current prod (b10215 / eb41d503b)
+llama.cpp:sycl-f16-next-eb41d503b      → explicit b10215 tag
+llama.cpp:sycl-f16-b10068-safe         → previous prod, kept for instant rollback
 ```
 
 Prune old tags with `docker image prune -a --filter "until=90d"` when the `/data/llm/docker` mount gets tight. Currently ~13 GB of llama.cpp images cached.
