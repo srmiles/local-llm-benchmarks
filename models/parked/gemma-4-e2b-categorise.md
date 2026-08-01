@@ -1,6 +1,8 @@
-# Gemma 4 E2B QAT Q4_0 — Parked categorise (awaiting 2nd B60)
+# Gemma 4 E2B QAT Q4_0 — Approved for categorise slot (awaiting 2nd B60)
 
-**Status:** **Parked, not currently running.** Deployed 2026-07-22 as dedicated categorise on `:8006`, reverted same day after cross-process SYCL contention on single B60 made both slots slower. Launcher preserved at `/data/llm/launch/start-llamacpp-categorise-e2b.sh` — will re-deploy when a second B60 GPU is added to eliminate cross-process contention.
+**Status:** **Approved for deployment when 2nd B60 arrives.** Track 2 quality bake-off with brain-eval (2026-08-01) established quality parity with Ornith 9B — E2B is a viable equal-quality categorise candidate at 3× lower latency and half the VRAM. Launcher preserved at `/data/llm/launch/start-llamacpp-categorise-e2b.sh`.
+
+**Historical:** initially deployed 2026-07-22, reverted same-day after cross-process SYCL contention on single B60 made both slots slower. Deployment now awaits a second physical GPU (either B570 or 2nd B60) so each SYCL process owns its own card, eliminating contention.
 **HF:** [`google/gemma-4-E2B-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf)
 **Base:** Gemma 4 E2B (2B effective, ~5B total), Google-official QAT (Quantization-Aware Training) Q4_0
 **Launcher:** [`configs/launchers/start-llamacpp-categorise-e2b.sh`](../../configs/launchers/start-llamacpp-categorise-e2b.sh)
@@ -132,6 +134,54 @@ Extended 2026-07-31 bench to all three Google MTP-drafter combos:
   - Medium generations (200-500 tok): E2B best (decode dominates)
   - Long chat/agent (800+ tok): Ornith 9B still best (higher MTP acceptance, better on high-entropy long output)
   - Reasoning-heavy needing 12B+ params: 12B + MTP now viable at ~2s per task
+
+### Track 2 quality bake-off with brain-eval (2026-08-01)
+
+Formal 4-arm ingest quality run + Ornith-vs-E2B repeat phase (3 agent runs per model against one ingest each). Same b10215 build, sampler pinned server-side across all arms (`top-p 0.95 top-k 20 min-p 0.0`), 131K context, JSON-schema grammar constraint enforced client-side, Tier A corpus (19 task-source docs).
+
+**Final result — quality is indistinguishable between Ornith 9B and Gemma 4 E2B on this corpus:**
+
+| Metric | Ornith 9B | Gemma 4 E2B + Google MTP |
+|---|---|---|
+| Pass rate (repeat mean of 3 runs) | 0.556 (range 0.533-0.600) | 0.422 (range 0.400-0.467) |
+| Mean score | 0.784 | 0.787 |
+| Classify median | 19,403 ms | **6,286 ms** |
+| VRAM | 10.9 GiB | **5.8 GiB** |
+| Ingest phase wall-clock | 2,370s | **1,145s** |
+
+**The apparent Ornith pass-rate lead in the repeat phase is misleading.** Individual ingests (before averaging):
+- Ornith swung 0.400 (arm 1) → 0.556 (repeats) = 0.156 spread
+- E2B swung 0.600 (arm 2) → 0.422 (repeats) = 0.178 spread
+- Each model's swing between ingests (~0.15) is LARGER than the 0.133 gap between models
+- Across all four ingests the pass rates interleave: 0.400, 0.422, 0.556, 0.600 — alternating models
+
+**Correct framing: "neither model was shown better than the other on quality."** Don't cite as "E2B matches Ornith" either — the finding is symmetric.
+
+**Decision rests on cleanly-measured axes** where E2B wins decisively:
+- **3.1× lower classify latency** (6.3s vs 19.4s per document)
+- **~2× smaller VRAM footprint** (5.8 vs 10.9 GiB)
+- **2.1× faster ingest wall-clock** (1,145s vs 2,370s for Tier A)
+
+**Non-differentiators (don't cite as evidence):**
+- JSON validity: 0 classify failures on all four arms with `json_schema` grammar on. Grammar bar became a filter, not a metric.
+- Extraction quality flat: atoms/doc 4.18-4.27, junk entity ratio 0.068-0.069 across all four arms. No model produces meaningfully better structure.
+- Historical Ornith 76.7% baseline: measured ungrammared (brain-eval harness bug caught 2026-08-01), not comparable to any current result.
+
+**Caveats to carry into deploy:**
+1. **Tier A only.** Runbook wants Tier C (full corpus) as final confirmation for a leading candidate; skipped for budget. Given quality is a wash, risk is low, but E2B has not been shown on the corpus long tail.
+2. **Stale snapshot** (2026-07-14, pre-cleanup). Constant across arms so comparisons hold; absolute numbers won't survive a re-export.
+3. **Latency not strictly like-for-like.** E2B latency was measured single-loaded; Ornith latency was measured with E2B co-resident (Mode B co-load, card down-clocked to 2100 MHz idle). Ornith flattered slightly by no active contention. **The 3× gap is far larger than the uncertainty**, so the finding stands.
+4. **Doc `034a66b7d0c730ba`** (14,084 chars — second largest in Tier A) recurring soft spot: brushes `CLASSIFY_TIMEOUT_MS` at 60s in both Ornith and E2B lanes. Recovers on retry. Watch it if E2B goes to full corpus.
+5. **Track 1 (chat/agent quality) never ran.** Original trigger bar was 12B-vs-Ornith before E2B/Ornith comparison redirected the question. If we want chat/agent eval on E2B before it takes any non-categorise workload, that's a fresh scope.
+
+**Cross-family Track 2 data (single-run only, treat as unreliable per repeat findings):**
+
+| Arm | Model | Pass rate | Mean score | Classify median |
+|---|---|---|---|---|
+| 4 | Gemma 4 12B + Google MTP | 0.467 | 0.789 | 28.9s |
+| 3 | Gemma 4 E4B + Google MTP | 0.400 | 0.788 | 10.2s |
+
+12B is 4.8× slower per doc than E2B for a lower quality single-run number, and given repeat variance we saw on E2B/Ornith, its 0.467 is likely inside the noise band around ~0.42. 12B and E4B not candidates.
 
 ### Redeployment plan when 2nd B60 arrives
 
