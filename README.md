@@ -124,6 +124,26 @@ Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside p
 
 19. **b10215 delivers ~2× prefill via SYCL oneMKL GEMM XMX FA (#25025), invisible to short-prompt/decode-only benches.** Discovered 2026-08-01 during brain-eval Track 2 ingest arm — both Ornith 9B and Gemma 4 E2B independently hit ~3,000 tps prefill on real 2-5K token brain-ingest prompts vs historical ~1,600 tps on b10068. The pre-cutover synthetic decode bench (300-token `ignore_eos` generation, 60-token prompts) showed "no meaningful change" and would have missed this entirely — real workload is what surfaced the win. Not Gemma-specific; benefits every arch that uses standard attention, only above ~1K prompt tokens (below that, launch overhead dominates and the XMX GEMM path isn't reached). **Meta-lesson: post-upgrade validation needs to include production-shape prompts, not just decode microbenches.** Ties into #8 — the b10068 "+42% prefill" claim we retracted was cold-vs-warm methodology; the b10215 "+2× prefill" claim IS the real methodology-matched result under real workload.
 
+20. **B60 draws ~100W actual vs 220W TDP under sustained LLM load — compute engines pinned but half the die is idle.** Measured 2026-08-01 during brain-eval Track 2 arm 3 (Gemma 4 E4B + Google MTP, 2-5K token prompts, structured JSON output) via `xpu-smi stats`:
+
+    | Metric | Value | Interpretation |
+    |---|---|---|
+    | Power | **97-98W** of 220W cap | 44% of design TDP |
+    | GPU frequency | **2,400 MHz** (RP0 boost, max) | Card is at max clock, not throttled |
+    | Core temp | 53°C | Cold — no thermal headroom concern |
+    | Memory temp | 54°C | Cold |
+    | Compute engine util | **99.99%** | Pinned — every XMX + Xe-core doing math |
+    | Copy engine util | 90% | Active |
+    | Media engine util | 0% | Idle (no video work) |
+    | 3D render util | 0% | Idle (no graphics) |
+    | Memory BW util | 20% | 91 of 456 GB/s |
+
+    The 55% TDP headroom is unused because the die area for **media encoders, 3D pipeline, ray tracing units, and display controllers** sits idle under LLM inference — those transistors aren't LLM-relevant. What matters (XMX + Xe-cores) is already pinned at 99.99%.
+
+    **The interesting number is 20% memory BW + 100% compute** — the current SYCL kernels are compute-limited, not memory-limited. That means future llama.cpp kernel improvements (like the #25025 oneMKL win for prefill) can still lift decode without any hardware change. Theoretical decode ceiling for Ornith 9B Q4_K_M on 456 GB/s: 91 tps; we're at 56 tps (61% of memory ceiling), which means the kernel path has ~50% headroom to grow into.
+
+    **Practical implication for other B60 users:** B60 runs cool and quiet under LLM load (thermal and acoustic headroom is not the constraint) and cards can be packed tighter than TDP suggests for multi-card setups. Don't undersize your PSU based on TDP × N; sizing based on measured LLM load × N + spike margin is the more accurate approach. Also don't confuse "GPU util 21%" reported by xpu-smi with under-utilization — that metric averages the 100%-pinned compute engine with the 0%-idle media/3D/display engines, which is misleading for LLM workloads. Look at `ENGINE_GROUP_COMPUTE_ALL_UTILIZATION` (99.99%) instead.
+
 ## Journey summary
 
 | Stage | Decode | Cold 12K prefill | Warm follow-up |
