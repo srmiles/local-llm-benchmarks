@@ -42,7 +42,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Qwen 3.6-35B-A3B Claude 4.7 Opus Distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | tight-reasoning distillation; only 35B-A3B that co-resides cleanly |
 | [Qwen 3.6-35B-A3B Kimi K2.6 Distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB (0.2 GB co-res headroom) | fastest cold prefill benched; verbose reasoning; no MTP |
 | [Qwen 3.6-35B-A3B (base)](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | superseded by MTP variant above |
-| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | **53.0** (peak) | **971 @ 5K / 650 @ 12K cold** | 22.9 GB | reasoning fallback; b10068 refresh |
+| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | 53.0 (peak, b10068) | 971 @ 5K / 650 @ 12K cold (b10068) | 22.9 GB | reasoning fallback; **not re-benched on b10215** — expect ~2× real-workload prefill uplift per finding #19 when re-run |
 | Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
 | Gemma 4 26B-A4B QAT | Q4_0 | 26B / 4B | 40.1 | 602 @ 12K | 18.2 GB | beaten by K-quant on Battlemage |
 | **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10215) | Q4_K_M | 9B dense | **56** (76.3% MTP acc) | **~3,000 @ 2-5K** (real workload) / 1,310 @ 6.7K (synthetic) | 10.9 GiB (w/ MTP head) | **production chat** — real-workload prefill ~2× on b10215 vs b10068 (#25025 SYCL oneMKL GEMM XMX FA) |
@@ -50,9 +50,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | tested; dense penalty visible |
 | [Qwen3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | tested; bartowski build |
 | [Mistral-Small-3.1-24B](models/tested/mistral-small-3.1-24b.md) | Q4_K_M | 24B dense | ~19 | ~350 | ~15 GB | tested (Vulkan era) |
-| [Gemma 4 12B (QAT)](models/tested/gemma-4-12b-qat.md) | Q4_0 | 12B dense | 19.7 | 167 @ 1K | ~9 GB | tested; 12B dense < 26B-4B MoE |
-| [Gemma 4 E4B (QAT)](models/tested/gemma-4-e4b.md) | Q4_0 | ~4B | 73.9 | 376 | ~3 GB | tested; QAT wins decode at small size |
-| [Gemma 4 E4B](models/tested/gemma-4-e4b.md) | Q4_K_M | ~4B | 68.3 | 466 | ~3 GB | tested; QAT-vs-K-quant reversal @ 4B |
+| [Gemma 4 12B (QAT) — no MTP baseline](models/tested/gemma-4-12b-qat.md) | Q4_0 | 12B dense | 19.7 (b10068) | 167 @ 1K | ~9 GB | superseded by **+ Google MTP** row above: **+257% decode / +530% prefill** on b10215 |
+| [Gemma 4 E4B (QAT) — no MTP baseline](models/tested/gemma-4-e4b.md) | Q4_0 | ~4B | 73.9 (b10068) | 376 | ~3 GB | superseded by **+ Google MTP** row above: **+54% decode / +517% prefill** on b10215 |
+| [Gemma 4 E4B — no MTP baseline](models/tested/gemma-4-e4b.md) | Q4_K_M | ~4B | 68.3 (b10068) | 466 | ~3 GB | retained; K-quant vs QAT reversal @ 4B (see finding #2); superseded on speed by Google MTP variant |
 | [Gemma 3 4B](models/tested/gemma-3-4b.md) | Q4_K_M | 4B | ~78 | — | ~3 GB | tested; system-role template issue |
 | [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) | Q4_K_M | 4B | ~94 (60s under 4-way) | 766 aggregate | ~1 GB | **retired** (was categorise prod) |
 | [Qwen2.5-Coder-14B AWQ (vLLM-XPU)](models/tested/qwen2.5-coder-14b-awq.md) | AWQ int4 | 14B | 22.9 peak / 13–15 typical | **1,891** peak | ~11 GB | retired; cross-stack reference |
