@@ -31,9 +31,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
-| [**Gemma 4 E2B + Google MTP**](models/parked/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) | **3,681 @ 2K** | 4.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter; approved categorise, awaiting 2nd B60 |
-| [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 (66.7% MTP acc) | 2,319 @ 2K | 7 GiB | benched 2026-07-31 on b10215; Google official MTP drafter |
-| [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 (69.7% MTP acc) | 1,053 @ 2K | 8.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter; 12B QAT beats 12B dense despite finding #2 (drafter shifts balance) |
+| [**Gemma 4 E2B + Google MTP**](models/parked/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) | **3,681 @ 2K** | 4.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF)); approved categorise, awaiting 2nd B60 |
+| [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 (66.7% MTP acc) | 2,319 @ 2K | 7 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E4B-it-assistant-GGUF)) |
+| [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 (69.7% MTP acc) | 1,053 @ 2K | 8.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-12B-it-assistant-GGUF)); 12B QAT beats 12B dense despite finding #2 (drafter shifts balance) |
 | [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
 | [Ornith 1.0-35B MTP APEX](models/tested/ornith-1.0-35b-mtp-apex.md) | APEX I-Compact (IQ) | 35B / 3B | 35.4 | 816 @ 5K / 802 @ 12K | ~19 GB (fits co-res, 3 GiB headroom) | tested 2026-07-22; scale-up of prod Ornith 9B; **-32% decode** vs 9B; IQ-quant penalty; VLM-capable; waiting on K-quant MTP variant |
 | [**Qwen 3.6-35B-A3B-MTP**](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K cold / 974 @ 5K | **24.4 GB (won't fit prod)** | Ornith-parity speed at 4× params; need smaller quant for co-residence |
@@ -85,6 +85,16 @@ Note: reverted to the pre-2026-07-22 budget after the categorise split experimen
 Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside prod, or needs a smaller quant / context / eviction trade-off. See individual model pages for per-candidate co-residence analysis.
 
 **Historical (pre-2026-07-19)**: budget was 21.6 GiB while `llamacpp-rerank` fallback ran on `:8007`. Freed 0.5 GiB steady when retired; nothing above the ceiling suddenly fits, but 35B-A3B candidates have marginally more room, and Qwen 3.6-35B-A3B Claude APEX-MTP Compact now co-resides with **2.7 GiB headroom** instead of 2.2.
+
+## Working Gemma 4 MTP drafter GGUFs on HF
+
+The community GGUFs of Google's Gemma 4 MTP assistants use a broken architecture string (`gemma4_assistant` underscore vs upstream `gemma4-assistant` hyphen) and fail to load on any modern `llama.cpp` build. During this benching effort I converted Google's official BF16 safetensors from scratch with `llama.cpp`'s own `convert_hf_to_gguf.py` (b10215) and uploaded the working GGUFs:
+
+- [`srmiles/gemma-4-E2B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF) — 170 MB, pairs with `google/gemma-4-E2B-it`
+- [`srmiles/gemma-4-E4B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-E4B-it-assistant-GGUF) — 172 MB, pairs with `google/gemma-4-E4B-it`
+- [`srmiles/gemma-4-12B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-12B-it-assistant-GGUF) — 862 MB, pairs with `google/gemma-4-12B-it`
+
+All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/hf-uploads/gemma-4-assistant-drafters.md) for full detail (conversion recipe, bench numbers, usage).
 
 ## Track 2 quality bake-off: Ornith 9B vs Gemma 4 E2B (2026-08-01)
 
