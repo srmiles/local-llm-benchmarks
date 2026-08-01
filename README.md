@@ -2,9 +2,9 @@
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) — **currently on b10215 (commit `eb41d503b`, upgraded 2026-07-31 from b10068)**.
+All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) — **all llama.cpp services now on b10215 (commit `eb41d503b`, cutover completed 2026-08-01: Ornith `:8002`, embed `:8004`, bench-eval `:8009` all on same build)**.
 
-**b10215 impact:** decode + MTP acceptance unchanged from b10068 within noise (verified on decode-only synthetic bench pre-cutover), but **~2× prefill uplift under real workload** discovered 2026-08-01 during brain-eval Track 2 ingest bake-off. Both Ornith 9B and Gemma 4 E2B hit ~3,000 tps prefill on 2-5K token brain-ingest prompts vs historical ~1,600 tps on b10068. Root cause: SYCL oneMKL GEMM flash attention for XMX (#25025) merged post-b10068. Only surfaces on prompts >1K tokens (small prompts stay launch-overhead-bound). **Lesson: decode-only or short-prompt synthetic benches miss real prefill wins — always re-verify with production-shape workload.**
+**b10215 impact:** decode + MTP acceptance unchanged from b10068 within noise (verified on decode-only synthetic bench pre-cutover), but **~2× prefill uplift under real workload** discovered 2026-08-01 during brain-eval Track 2 ingest bake-off. Both Ornith 9B and Gemma 4 E2B hit ~3,000 tps prefill on 2-5K token brain-ingest prompts vs historical ~1,600 tps on b10068. Root cause: SYCL oneMKL GEMM flash attention for XMX (#25025) merged post-b10068. Only surfaces on prompts >1K tokens (small prompts stay launch-overhead-bound). **Lesson: decode-only or short-prompt synthetic benches miss real prefill wins — always re-verify with production-shape workload.** See [`charts/b10215_prefill_uplift.png`](charts/b10215_prefill_uplift.png).
 
 > **Investigation resolved 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, small-N greedy bench). Methodology-matched A/B disproved it: (a) both b9948 and b10068 produce different hashes across repeated identical greedy runs — SYCL FP non-determinism is pre-existing, not b10068-introduced; (b) isolated prefill probe shows b10068 delivers a real but modest **~3% uplift at long context, flat at short** (not the "+42%" originally claimed). Prod acceptance range under real workload (68-76%) is the ground truth. **b10068 stays live.** See [ornith notes](models/production/ornith-1.0-9b.md#notes) for full detail.
 
@@ -15,6 +15,7 @@ All numbers below are measured on the same physical card. The stack has shifted 
 | 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + categorise + pi.dev agent |
 | 8004 | `llamacpp-embed` | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX patched, no leak) |
+| 8009 | `llamacpp-sycl-gemma4-e2b` | [Gemma 4 E2B QAT Q4_0 + Google MTP](models/parked/gemma-4-e2b-categorise.md) | **warm-standby**; approved for categorise cutover when 2nd B60 arrives — currently VRAM-resident but only dispatches when brain-eval routes to it (Mode B co-load, avoids parallel dispatch) |
 
 **Retired 2026-07-19:** `llamacpp-rerank` on `:8007` (llama.cpp SYCL bge-reranker path). Kept as fallback for the first day after TEI's empty_cache patch shipped; retired after TEI proved stable at 1.4 GiB flat over 10+ hours. Launcher preserved at `/data/llm/launch/start-llamacpp-rerank.sh` for on-demand relaunch if TEI ever fails.
 
@@ -30,6 +31,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
+| [**Gemma 4 E2B + Google MTP**](models/parked/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) | **3,681 @ 2K** | 4.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter; approved categorise, awaiting 2nd B60 |
+| [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 (66.7% MTP acc) | 2,319 @ 2K | 7 GiB | benched 2026-07-31 on b10215; Google official MTP drafter |
+| [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 (69.7% MTP acc) | 1,053 @ 2K | 8.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter; 12B QAT beats 12B dense despite finding #2 (drafter shifts balance) |
 | [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
 | [Ornith 1.0-35B MTP APEX](models/tested/ornith-1.0-35b-mtp-apex.md) | APEX I-Compact (IQ) | 35B / 3B | 35.4 | 816 @ 5K / 802 @ 12K | ~19 GB (fits co-res, 3 GiB headroom) | tested 2026-07-22; scale-up of prod Ornith 9B; **-32% decode** vs 9B; IQ-quant penalty; VLM-capable; waiting on K-quant MTP variant |
 | [**Qwen 3.6-35B-A3B-MTP**](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K cold / 974 @ 5K | **24.4 GB (won't fit prod)** | Ornith-parity speed at 4× params; need smaller quant for co-residence |
@@ -81,6 +85,20 @@ Note: reverted to the pre-2026-07-22 budget after the categorise split experimen
 Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside prod, or needs a smaller quant / context / eviction trade-off. See individual model pages for per-candidate co-residence analysis.
 
 **Historical (pre-2026-07-19)**: budget was 21.6 GiB while `llamacpp-rerank` fallback ran on `:8007`. Freed 0.5 GiB steady when retired; nothing above the ceiling suddenly fits, but 35B-A3B candidates have marginally more room, and Qwen 3.6-35B-A3B Claude APEX-MTP Compact now co-resides with **2.7 GiB headroom** instead of 2.2.
+
+## Track 2 quality bake-off: Ornith 9B vs Gemma 4 E2B (2026-08-01)
+
+Head-to-head brain-eval on real Tier A corpus, grammar-constrained (JSON schema server-side), sampler pinned, 131K context matched across arms, 3-repeat ingests to control variance. Judge: DeepSeek-V3.2 with retry-with-backoff.
+
+| Metric | Ornith 9B + MTP | Gemma 4 E2B + Google MTP | Delta |
+|---|---|---|---|
+| Pass rate (3-repeat mean) | 0.556 | 0.422 | quality noise-band overlap |
+| Mean score (LLM-judge) | 0.784 | 0.787 | ~tie |
+| Classify median latency | 19,403 ms | 6,286 ms | **3.1× faster** |
+| VRAM steady | 10.9 GiB | 5.8 GiB | **1.9× smaller** |
+| Full-ingest wall-clock | 2,370s | 1,145s | **2.1× faster** |
+
+**Interpretation: quality is indistinguishable inside ingest-run variance** (individual ingests swung 0.400–0.600 across all four runs regardless of model — ingest variance dominates model gap). E2B wins latency, VRAM, and wall-clock. **Decision: E2B is approved to move into the categorise slot when a 2nd B60 arrives** — cross-process SYCL contention on a single card (finding #15) still forbids concurrent dispatch today, so E2B stays warm-standby on `:8009`. See [`charts/track2_quality_vs_speed.png`](charts/track2_quality_vs_speed.png), [`charts/gemma_google_mtp.png`](charts/gemma_google_mtp.png), and [`models/parked/gemma-4-e2b-categorise.md`](models/parked/gemma-4-e2b-categorise.md) for full methodology and caveats (Tier A only; Tier C confirmation pending; Track 1 chat/agent eval not run).
 
 ## Key findings
 
