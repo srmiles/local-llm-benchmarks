@@ -45,7 +45,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | **53.0** (peak) | **971 @ 5K / 650 @ 12K cold** | 22.9 GB | reasoning fallback; b10068 refresh |
 | Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
 | Gemma 4 26B-A4B QAT | Q4_0 | 26B / 4B | 40.1 | 602 @ 12K | 18.2 GB | beaten by K-quant on Battlemage |
-| **[Ornith 1.0 9B](models/production/ornith-1.0-9b.md)** | Q4_K_M | 9B dense | **~50** (65–70 w/MTP est.) | 1,310 @ 6.7K | 4.1 GB | **production chat** |
+| **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10215) | Q4_K_M | 9B dense | **56** (76.3% MTP acc) | **~3,000 @ 2-5K** (real workload) / 1,310 @ 6.7K (synthetic) | 10.9 GiB (w/ MTP head) | **production chat** — real-workload prefill ~2× on b10215 vs b10068 (#25025 SYCL oneMKL GEMM XMX FA) |
 | [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | tested; capability too poor for pi.dev |
 | [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | tested; dense penalty visible |
 | [Qwen3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | tested; bartowski build |
@@ -172,9 +172,12 @@ Head-to-head brain-eval on real Tier A corpus, grammar-constrained (JSON schema 
 | + `GGML_SYCL_F16=ON` rebuild | 40.1 tok/s | 24s @ 602 tok/s | 0.61s |
 | + Q4_K_M post-training | 44.1 tok/s | 22.8s @ 632 tok/s | 0.55s |
 | + Config C + MTP (bare-metal, b9948) | 50.0 tok/s | ~13.7s @ ~938 tok/s | ~0.55s |
-| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | **51.8 tok/s** | **~13.3s @ 969 tok/s** (+3%) | ~0.55s |
+| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | 51.8 tok/s | ~13.3s @ 969 tok/s (+3%) | ~0.55s |
+| + **b10215 rebuild** (oneMKL GEMM XMX FA #25025, Ornith prod, real workload) | **56 tok/s** | **~4.3s @ ~3,000 tok/s** (2K-5K real prompt, **~2× prefill**) | ~0.55s |
 
-**Overall vs LM Studio start: ~10× cold prefill, ~65× warm-path, +54% decode.** (b9948 12K prefill row revised 2026-07-20 from isolated probe — earlier "22.8s @ 632" figure was cold-start against a bandwidth-contended stack; methodology-matched probe gives 14.2s @ 938 tok/s. This means most of the prefill journey landed with SYCL + FA + `-ub 2048` + F16 rebuild + Q4_K, not with b10068's XMX FA.)
+**Overall vs LM Studio start: ~30× real-workload prefill, ~65× warm-path, +67% decode.** The b10215 jump is the biggest single-build prefill win on the journey since the original Vulkan → SYCL transition — but only visible on production-shape prompts (>1K tokens), which is why the pre-cutover synthetic decode-only microbench flagged "no change". Real workload surfaced it during brain-eval Track 2 (both Ornith 9B and Gemma 4 E2B independently hit ~3,000 tps prefill). See finding #19 + [`charts/b10215_prefill_uplift.png`](charts/b10215_prefill_uplift.png).
+
+(b9948 12K prefill row revised 2026-07-20 from isolated probe — earlier "22.8s @ 632" figure was cold-start against a bandwidth-contended stack; methodology-matched probe gives 14.2s @ 938 tok/s. This means most of the prefill journey landed with SYCL + FA + `-ub 2048` + F16 rebuild + Q4_K, then b10215's XMX GEMM FA more than doubled it again under real load.)
 
 ## Repo layout
 
