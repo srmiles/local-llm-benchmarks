@@ -42,9 +42,10 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Qwen 3.6-35B-A3B Claude 4.7 Opus Distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | tight-reasoning distillation; only 35B-A3B that co-resides cleanly |
 | [Qwen 3.6-35B-A3B Kimi K2.6 Distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB (0.2 GB co-res headroom) | fastest cold prefill benched; verbose reasoning; no MTP |
 | [Qwen 3.6-35B-A3B (base)](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | superseded by MTP variant above |
-| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M | 26B / 4B | 53.0 (peak, b10068) | 971 @ 5K / 650 @ 12K cold (b10068) | 22.9 GB | reasoning fallback; **not re-benched on b10215** — expect ~2× real-workload prefill uplift per finding #19 when re-run |
-| Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
-| Gemma 4 26B-A4B QAT | Q4_0 | 26B / 4B | 40.1 | 602 @ 12K | 18.2 GB | beaten by K-quant on Battlemage |
+| [**Gemma 4 26B-A4B QAT + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ | QAT Q4_0 + community MTP Q8_0 | 26B / 4B | **54.2** (100% MTP acc) | **1,164 @ 5K** (real workload, b10215) | **17.5 GiB** | **new best reasoning-fallback config 2026-08-01**; overtakes Q4_K_M+MTP on decode and VRAM despite finding #2 |
+| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M + community MTP Q8_0 | 26B / 4B | 49.0 (96% MTP acc, b10215) | 1,180 @ 5K (b10215, +21.5% vs b10068) | 19.7 GiB | reasoning fallback; historical peak 53.0 tps on b10068 was 22.9 GiB |
+| Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 (b10068) | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
+| Gemma 4 26B-A4B QAT (no MTP baseline) | Q4_0 | 26B / 4B | 40.1 (b10068) | 602 @ 12K | 18.2 GB | superseded by **+MTP + b10215** row above: +35% decode, +93% prefill |
 | **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10215) | Q4_K_M | 9B dense | **56** (76.3% MTP acc) | **~3,000 @ 2-5K** (real workload) / 1,310 @ 6.7K (synthetic) | 10.9 GiB (w/ MTP head) | **production chat** — real-workload prefill ~2× on b10215 vs b10068 (#25025 SYCL oneMKL GEMM XMX FA) |
 | [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | tested; capability too poor for pi.dev |
 | [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | tested; dense penalty visible |
@@ -113,7 +114,7 @@ Head-to-head brain-eval on real Tier A corpus, grammar-constrained (JSON schema 
 ## Key findings
 
 1. **MoE beats dense on Battlemage.** 26B-4B-active decodes ~2× faster than 12B dense at similar quality.
-2. **Post-training K-quant beats QAT Q4_0 at ≥26B.** Reverses at 4B — the winner is model-size-dependent.
+2. **Post-training K-quant beats QAT Q4_0 at ≥26B — with caveat.** Reverses at 4B (finding was model-size-dependent). **Also reverses at 26B-A4B on b10215+MTP** (2026-08-01 re-bench): QAT Q4_0 + community MTP hits 54.2 tps decode / 1,164 tps prefill / 17.5 GiB, beating Q4_K_M+MTP on the same build (49.0 tps / 1,180 tps / 19.7 GiB) by +10.6% decode and saving 2.2 GiB VRAM. The b10068 win for K-quant at 26B was measured *without MTP*; the new SYCL oneMKL XMX GEMM path in b10215 (PR#25025) apparently maps to Q4_0's simpler layout better than K-quant's super-block structure. Bottom line: K-quant still wins for dense models at 27B (finding #11); QAT wins for MoE-26B on b10215+MTP; QAT wins at small (≤4B) sizes.
 3. **MTP drafters are worth +5–15%** when a purpose-built head exists (Gemma 4 official, Ornith community).
 4. **`-ub 2048` is the SYCL sweet spot.** 4096 regresses on this card; monotonic climb from 16 → 2048 then plateau.
 5. **`-fa on` is mandatory** — turns 36s "warm" re-prefills into 0.55s cache hits.
