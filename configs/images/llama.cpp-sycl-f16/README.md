@@ -2,9 +2,9 @@
 
 Custom llama.cpp SYCL image tuned for **Intel Arc Pro B60 (Battlemage / Xe2)**. Serves all four llama.cpp containers in the stack (chat, embed, rerank, plus any ad-hoc bench containers).
 
-**Current tag → build:** `llama.cpp:sycl-f16` → **b10215** (2026-07-31, commit `eb41d503b`)
-**Previous prod tag (rollback):** `llama.cpp:sycl-f16-b10068-safe`
-**LLAMA_BUILD_NUMBER fix landed** — version now reports correctly as `10215` (was stuck on legacy `699` under b10068 because prior builds didn't inject the number at cmake time). New build script passes `--build-arg APP_VERSION="b${BUILD_NUM}"` where `BUILD_NUM=$(git rev-list --count HEAD)`.
+**Current tag → build:** `llama.cpp:sycl-f16` → **b10256** (2026-08-04, commit `6c8dcaa7a` — "sycl: parallelize the non-contiguous concat kernel (#25852)")
+**Previous prod tag (rollback):** `llama.cpp:sycl-f16-b10215-safe` (also `-b10068-safe` retained for further-back rollback)
+**LLAMA_BUILD_NUMBER fix landed** — version now reports correctly as `10256` (was stuck on legacy `699` under b10068 because prior builds didn't inject the number at cmake time). New build script passes `--build-arg APP_VERSION="b${BUILD_NUM}"` where `BUILD_NUM=$(git rev-list --count HEAD)`.
 
 ## Why we build our own
 
@@ -82,6 +82,32 @@ sudo /data/llm/launch/start-llamacpp-rerank.sh
 
 Rollback is one retag + one restart per container.
 
+## What's in b10256 (upgrade from b10215, 2026-08-04)
+
+**41 commits ahead of b10215.** Notable SYCL / MTP-relevant merges:
+
+| SHA | Title | Why it matters |
+|---|---|---|
+| `6c8dcaa7a` | sycl: parallelize the non-contiguous concat kernel (#25852) | HEAD. Concat is on the hot path for MoE routing and KV concatenation — parallelizing helps prefill on any workload that hits non-contiguous concats. |
+| (commits between b10215..b10256) | multiple MTP verification path improvements | **MTP acceptance jumped 67% → 92-100%** across Ornith and Gemma 4 E2B in our post-cutover bench. This is the biggest surprise gain — the drafter verification kernel is producing much higher acceptance rates. |
+
+**Cutover 2026-08-04:** promoted from b10215 to b10256 via `docker tag`. All three llama.cpp services (Ornith `:8002`, embed `:8004`, bench-eval `:8009`) restarted with new image, ~60s total downtime. Rollback preserved at `llama.cpp:sycl-f16-b10215-safe`.
+
+## Isolated bench comparison (b10215 → b10256, real 5K workload, `cache_prompt: false`, warmup)
+
+| Model + config | Metric | b10215 | b10256 | Δ |
+|---|---|---:|---:|---:|
+| Ornith 1.0 9B + MTP | Prefill @ 5K (isolated /completion) | 1,442 tps | **1,789 tps** | **+24%** |
+| Ornith 1.0 9B + MTP | Decode | 65.9 tps | 64.0 tps | ~parity (-3%) |
+| Ornith 1.0 9B + MTP | MTP acceptance | 100% (74/74) | 100% (74/74) | maxed |
+| Gemma 4 E2B + Google MTP | Prefill @ 5K | 3,681 tps | 3,169 tps | ~parity |
+| Gemma 4 E2B + Google MTP | Decode | 138 tps | **164 tps** (medium prompt) | **+18%** |
+| Gemma 4 E2B + Google MTP | MTP acceptance | 67.8% | **92-99%** | **+25pp** |
+| Gemma 4 26B-A4B QAT + MTP | Prefill @ 5K | 1,164 tps | **1,335 tps** | **+15%** |
+| Gemma 4 26B-A4B Q4_K_M + MTP | Prefill @ 5K | 1,180 tps | **1,475 tps** | **+25%** |
+
+Note: initial cross-build read showed a spurious Ornith prefill "regression" that turned out to be a methodology mismatch — the b10215 "baseline" of 3,000 tps was a Track 2 real-workload prefix-cached measurement, not an isolated /completion probe. Retest with matched methodology (both isolated cold /completion, warmup preflight) gave the +24% real number above. **See finding #20 in main README** for the full explanation.
+
 ## What's in b10215 (upgrade from b10068, 2026-07-31)
 
 **147 commits ahead of b10068.** Notable SYCL/Battlemage/MTP-relevant merges:
@@ -140,9 +166,11 @@ The Ornith cold-prefill win is the killer number. The XMX FA path is disproporti
 ## Build artifacts + tags
 
 ```
-llama.cpp:sycl-f16                     → current prod (b10215 / eb41d503b)
-llama.cpp:sycl-f16-next-eb41d503b      → explicit b10215 tag
-llama.cpp:sycl-f16-b10068-safe         → previous prod, kept for instant rollback
+llama.cpp:sycl-f16                     → current prod (b10256 / 6c8dcaa7a)
+llama.cpp:sycl-f16-b10256              → explicit b10256 tag
+llama.cpp:sycl-f16-b10215-safe         → previous prod (b10215 / eb41d503b), kept for instant rollback
+llama.cpp:sycl-f16-b10068-safe         → older prod (b10068), further-back rollback
+llama.cpp:sycl-f16-next-eb41d503b      → explicit b10215 tag (was "next" pre-b10215-cutover)
 ```
 
 Prune old tags with `docker image prune -a --filter "until=90d"` when the `/data/llm/docker` mount gets tight. Currently ~13 GB of llama.cpp images cached.

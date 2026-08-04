@@ -19,6 +19,18 @@
 
 ## Benchmarks
 
+### On b10256 build (2026-08-04, isolated `/completion`, warmup preflight, `cache_prompt: false`, real-workload prompts)
+
+| Metric | **QAT Q4_0 + MTP** | **Q4_K_M + MTP** ⭐ |
+|---|---|---|
+| Prefill @ 5K real prompt | 1,335 tps | **1,475 tps** |
+| Decode (5K + 100 gen) | 53.5 tps | 47.9 tps |
+| MTP acceptance (5K bench) | 100% (74/74) | 96% (73/76) |
+| VRAM (loaded, 8K ctx KV Q8) | 17.6 GiB | 19.9 GiB |
+| Power draw under load | 115 W | 57 W |
+
+**b10215 → b10256 delta:** QAT prefill +15% (1,164 → 1,335), Q4_K_M prefill +25% (1,180 → 1,475), decode ~parity for both. **On b10256, Q4_K_M pulls ahead of QAT on prefill by +10%** (1,475 vs 1,335), reverting the b10215-only finding that QAT wins on 26B-A4B. QAT still wins on VRAM (-2.3 GiB), decode is at parity. **New picture: choose based on VRAM headroom, not prefill.** Finding #2's "K-quant beats QAT at ≥26B" is restored on b10256; the b10215 exception was build-specific.
+
 ### On b10215 build (2026-08-01, isolated, real-workload prompts, `--cache-type-k/v q8_0`, `-c 8192`)
 
 | Metric | **QAT Q4_0 + MTP** ⭐ | Q4_K_M + MTP |
