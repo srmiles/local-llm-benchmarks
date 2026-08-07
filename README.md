@@ -21,6 +21,8 @@ Universal win across all four configs. Prefill 15-25% up on 3/4, ~parity on E2B 
 
 > **Investigation resolved 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, small-N greedy bench). Methodology-matched A/B disproved it: (a) both b9948 and b10068 produce different hashes across repeated identical greedy runs — SYCL FP non-determinism is pre-existing, not b10068-introduced; (b) isolated prefill probe shows b10068 delivers a real but modest **~3% uplift at long context, flat at short** (not the "+42%" originally claimed). Prod acceptance range under real workload (68-76%) is the ground truth. **b10068 stays live.** See [ornith notes](models/production/ornith-1.0-9b.md#notes) for full detail.
 
+> **📖 2nd B60 arriving week of 2026-08-11.** Playbook for the dual-card cutover — including Sergio Barrientos's vLLM XPU + MTP finding (5.2× prefill / 1.8× decode over llama.cpp on same-card MoE), deferred candidates now unblocked, day-1 through day-7 test sequence, and card 1 / card 2 split recommendation — lives at [`docs/2nd-b60-arrival-playbook.md`](docs/2nd-b60-arrival-playbook.md).
+
 ## Current production stack
 
 | Port | Container | Model | Purpose |
