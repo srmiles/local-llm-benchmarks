@@ -170,6 +170,7 @@ Everything currently blocked on single-B60 constraints. Priority order for retes
 | Laguna XS.2 Q4_K_M (llama.cpp) | 22.1 GiB co-res-hostile, no DFlash | ✅ VRAM ✓, DFlash still missing | P2 — coding bake-off if agent quality matters |
 | gpt-oss-20b Q4_K_M | Slow decode (25 tps, no MTP) | Partial — dedicated slot fine but decode still slow | P3 — agentic tool-calling quality gamble |
 | Qwen3.8-27B (rumored MoE + MTP) | Not released yet | ✅ if MoE — vLLM path candidate | P0 when it lands (scheduled watcher active) |
+| Muse Glimmer-30B + DFlash (Meta, multimodal) | Bandwidth-bound at ~25 tps decode + fresh SYCL arch (kernels un-optimized) | Partial — dedicated card + kernel maturation | P4 today, **P2 if a vision workload emerges** — only vision-capable option in the lineup, retain on disk |
 
 ## Upstream items to watch
 
