@@ -2,9 +2,9 @@
 
 Custom llama.cpp SYCL image tuned for **Intel Arc Pro B60 (Battlemage / Xe2)**. Serves all four llama.cpp containers in the stack (chat, embed, rerank, plus any ad-hoc bench containers).
 
-**Current tag → build:** `llama.cpp:sycl-f16` → **b10256** (2026-08-04, commit `6c8dcaa7a` — "sycl: parallelize the non-contiguous concat kernel (#25852)")
-**Previous prod tag (rollback):** `llama.cpp:sycl-f16-b10215-safe` (also `-b10068-safe` retained for further-back rollback)
-**LLAMA_BUILD_NUMBER fix landed** — version now reports correctly as `10256` (was stuck on legacy `699` under b10068 because prior builds didn't inject the number at cmake time). New build script passes `--build-arg APP_VERSION="b${BUILD_NUM}"` where `BUILD_NUM=$(git rev-list --count HEAD)`.
+**Current tag → build:** `llama.cpp:sycl-f16` → **b10433** (2026-08-14, commit `9b05354ec` — master HEAD at time of build; includes recent SYCL Mamba/gated-delta-net optimizations)
+**Rollback tags:** `llama.cpp:sycl-f16-b10256-safe`, `-b10215-safe`, `-b10068-safe`
+**Explicit tags on disk:** `-b10433` (current), `-qwen38` (identical to `-b10433`), `-b10308`, `-b10256`, `-muse` (b10256+PR#26841 for Muse Glimmer), `-b10215-safe`, `-b10068-safe`
 
 ## Why we build our own
 
@@ -81,6 +81,37 @@ sudo /data/llm/launch/start-llamacpp-rerank.sh
 ```
 
 Rollback is one retag + one restart per container.
+
+## What's in b10433 (upgrade from b10256, 2026-08-14)
+
+**125 commits ahead of b10256.** Motivating factor: Qwen 3.8-27B release (Mamba-hybrid arch), plus two recent SYCL optimizations for Mamba-family ops:
+
+| SHA / PR | Title | Why it matters |
+|---|---|---|
+| `#26612` | sycl: coalesce the ssm_conv window loads | Mamba conv op optimized |
+| `#26643` | sycl: fuse the gated-delta-net state writeback cpy | GatedDeltaNet op fused (relevant for Qwen 3.8, Nemotron 3.5) |
+| `#23174` | SYCL: gated_delta_net K>1 (base) | Mature at this build |
+| `#22149` | sycl: FILL/CUMSUM/DIAG/SOLVE_TRI/SSM_SCAN/GATED_DELTA_NET | All SSM+Mamba ops on SYCL |
+| `9b05354ec` | HEAD (sync : ggml) | Latest master at time of build |
+
+### Bench comparison (b10256 → b10433, 5K real workload, warm)
+
+| Model + config | Metric | b10256 | b10433 | Δ |
+|---|---|---:|---:|---:|
+| Ornith 1.0 9B + MTP (Q4_K_M) | Prefill @ 5K | 1,789 | **1,911** | **+7%** |
+| Ornith 1.0 9B + MTP | Decode | 64.0 | **67.9** | **+6%** |
+| Ornith 1.0 9B + MTP | MTP acc | 100% | 100% | — |
+| Gemma 4 E2B + Google MTP | Prefill @ 5K | 3,169 | **3,425** | **+8%** |
+| Gemma 4 E2B + Google MTP | Decode | 136.7 | 136.1 | parity |
+| Gemma 4 26B-A4B Q4_K_M + MTP | Prefill @ 5K | 1,475 | 1,473 | parity |
+| Gemma 4 26B-A4B Q4_K_M + MTP | Decode | 47.9 | 47.7 | parity |
+| Gemma 4 26B-A4B **QAT Q4_0** + MTP | Prefill | 1,335 | 1,377 | +3% |
+| Gemma 4 26B-A4B **QAT Q4_0** + MTP | Decode | 53.5 | **50.5** | **-6% ⚠** |
+| Gemma 4 26B-A4B **QAT Q4_0** + MTP | MTP acc | 100% | 94.8% | **-5pp ⚠** |
+
+**Q4_0-specific regression flagged.** K-quant (Q4_K_M, Q8_0) untouched. Nothing in current prod uses Q4_0 so cutover is safe. If Q4_0 becomes needed later (rare — K-quant is preferred at ≥26B per finding #2), consider staying on `b10256-safe` for that specific service.
+
+**Cutover 2026-08-14:** promoted b10433 → `llama.cpp:sycl-f16` alias. All 3 llama.cpp services restarted, ~60s downtime total.
 
 ## What's in b10256 (upgrade from b10215, 2026-08-04)
 

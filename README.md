@@ -2,7 +2,18 @@
 
 Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) — **all llama.cpp services now on b10256 (commit `6c8dcaa7a`, cutover completed 2026-08-04)**. Rollback tag `llama.cpp:sycl-f16-b10215-safe` preserved on disk.
+All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) — **all llama.cpp services now on b10433 (commit `9b05354ec`, cutover completed 2026-08-14)**. Rollback tags `llama.cpp:sycl-f16-b10256-safe` and `-b10215-safe` preserved on disk.
+
+**b10433 impact (measured 2026-08-14, isolated `/completion` probes on 5K real-workload prompts, warmup preflight):**
+
+| Model | b10256 → b10433 | Notes |
+|---|---|---|
+| Ornith 9B + MTP (K-quant) | prefill **+7%** (1,789 → 1,911), decode **+6%** (64.0 → 67.9), MTP 100% held | Biggest winner; SYCL Mamba/gated-delta-net optimizations (PRs #26612, #26643) benefit adjacent standard-attention kernels too |
+| Gemma 4 E2B + Google MTP | prefill **+8%** (3,169 → 3,425), decode parity | Small consistent win |
+| Gemma 4 26B QAT Q4_0 + MTP | prefill +3%, **decode -6%** (53.5 → 50.5), MTP acc -5pp | Q4_0-specific regression — see below |
+| Gemma 4 26B **Q4_K_M** + MTP | **parity across all axes** (1,473 tps prefill / 47.7 tps decode / 96.1% MTP acc) | K-quant path unaffected |
+
+The Q4_0 regression is confined to Gemma 4 26B's QAT variant; Q4_K_M is untouched. Nothing in current prod uses Q4_0. If Q4_0 becomes a needed path later (e.g. reasoning-fallback swap-in), consider staying on b10256 for that specific model.
 
 **b10256 impact (measured 2026-08-04, isolated `/completion` probes on 5K real-workload prompts, `cache_prompt: false`, warmup preflight):**
 
@@ -57,11 +68,11 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Qwen 3.6-35B-A3B Claude 4.7 Opus Distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | tight-reasoning distillation; only 35B-A3B that co-resides cleanly |
 | [Qwen 3.6-35B-A3B Kimi K2.6 Distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB (0.2 GB co-res headroom) | fastest cold prefill benched; verbose reasoning; no MTP |
 | [Qwen 3.6-35B-A3B (base)](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | superseded by MTP variant above |
-| [**Gemma 4 26B-A4B QAT + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ | QAT Q4_0 + community MTP Q8_0 | 26B / 4B | **54.2** (100% MTP acc) | **1,164 @ 5K** (real workload, b10215) | **17.5 GiB** | **new best reasoning-fallback config 2026-08-01**; overtakes Q4_K_M+MTP on decode and VRAM despite finding #2 |
-| [Gemma 4 26B-A4B (it) Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) | Q4_K_M + community MTP Q8_0 | 26B / 4B | 49.0 (96% MTP acc, b10215) | 1,180 @ 5K (b10215, +21.5% vs b10068) | 19.7 GiB | reasoning fallback; historical peak 53.0 tps on b10068 was 22.9 GiB |
+| [**Gemma 4 26B-A4B Q4_K_M + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ (b10433) | Q4_K_M + community MTP Q8_0 | 26B / 4B | **47.7** (96.1% MTP acc) | **1,473 @ 5K** (b10433, parity w/ b10256) | 19.7 GiB | reasoning fallback — K-quant confirmed as preferred on b10433 (finding #2 restored) |
+| [Gemma 4 26B-A4B QAT + MTP](models/production/gemma-4-26b-a4b.md) | QAT Q4_0 + community MTP Q8_0 | 26B / 4B | 50.5 (94.8% MTP acc, b10433) / 54.2 (b10256) | 1,377 @ 5K (b10433) / 1,164 (b10215) | 17.5 GiB | **Q4_0-specific decode regression on b10433** (-6% vs b10256); stay on b10256 if using this variant |
 | Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 (b10068) | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
 | Gemma 4 26B-A4B QAT (no MTP baseline) | Q4_0 | 26B / 4B | 40.1 (b10068) | 602 @ 12K | 18.2 GB | superseded by **+MTP + b10215** row above: +35% decode, +93% prefill |
-| **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10256) | Q4_K_M | 9B dense | **64** (100% MTP acc) | **1,789 @ 5K** (isolated `/completion`) / ~3,000 tps under real-workload prefix-cached ingest | 10.9 GiB (w/ MTP head) | **production chat** — b10256 delivers +24% isolated prefill over b10215 same-methodology bench; +15% decode vs b10215 baseline of 56 tps |
+| **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10433) | Q4_K_M | 9B dense | **67.9** (100% MTP acc) | **1,911 @ 5K** (isolated `/completion`) / ~3,000 tps under real-workload prefix-cached ingest | 10.9 GiB (w/ MTP head) | **production chat** — b10433 delivers +7% prefill / +6% decode over b10256 (SYCL Mamba adjacency wins) |
 | [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | tested; capability too poor for pi.dev |
 | [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | tested; dense penalty visible |
 | [Qwen3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | tested; bartowski build |

@@ -19,6 +19,17 @@
 
 ## Benchmarks
 
+### On b10433 build (2026-08-14, isolated `/completion`, warmup preflight, `cache_prompt: false`, real-workload prompts)
+
+| Metric | **QAT Q4_0 + MTP** | **Q4_K_M + MTP** ⭐ (recommended) |
+|---|---|---|
+| Prefill @ 5K real prompt | 1,377 tps | **1,473 tps** |
+| Decode (5K + 100 gen) | 50.5 tps ⚠ | 47.7 tps |
+| MTP acceptance (5K bench) | 94.8% ⚠ | 96.1% |
+| VRAM (loaded, 8K ctx KV Q8) | 17.5 GiB | 19.7 GiB |
+
+**b10256 → b10433 delta:** K-quant path (Q4_K_M) is at parity — no change. **QAT Q4_0 regressed: decode -6% (53.5 → 50.5), MTP acceptance -5pp (100% → 94.8%).** The regression is localized to Q4_0 dequant/matmul kernel in b10433. If you need Q4_0 specifically, use rollback image `llama.cpp:sycl-f16-b10256-safe`. Otherwise Q4_K_M is the recommended path on b10433 and finding #2 ("K-quant wins at ≥26B") is fully restored.
+
 ### On b10256 build (2026-08-04, isolated `/completion`, warmup preflight, `cache_prompt: false`, real-workload prompts)
 
 | Metric | **QAT Q4_0 + MTP** | **Q4_K_M + MTP** ⭐ |
