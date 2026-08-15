@@ -1,11 +1,83 @@
-# Gemma 4 E2B QAT Q4_0 — Approved for categorise slot (awaiting 2nd B60)
+# Gemma 4 E2B QAT Q4_0 + MTP — Production categorise slot, card 2
 
-**Status:** **Approved for deployment when 2nd B60 arrives.** Track 2 quality bake-off with brain-eval (2026-08-01) established quality parity with Ornith 9B — E2B is a viable equal-quality categorise candidate at 3× lower latency and half the VRAM. Launcher preserved at `/data/llm/launch/start-llamacpp-categorise-e2b.sh`.
+**Status:** **PRODUCTION on card 2 (`level_zero:1`) port `:8010` as of 2026-08-15.** Serves the 99% of workload that is brain categorisation. Physically isolated from Ornith on card 1 — zero SYCL context contention. Container name `llamacpp-categorise` (reuses the retired `:8006` slot name; no port conflict).
 
-**Historical:** initially deployed 2026-07-22, reverted same-day after cross-process SYCL contention on single B60 made both slots slower. Deployment now awaits a second physical GPU (either B570 or 2nd B60) so each SYCL process owns its own card, eliminating contention.
-**HF:** [`google/gemma-4-E2B-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf)
+**HF:** [`google/gemma-4-E2B-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf) · **MTP drafter:** [`srmiles/gemma-4-E2B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF) (BF16, converted from Google's official assistant HF)
 **Base:** Gemma 4 E2B (2B effective, ~5B total), Google-official QAT (Quantization-Aware Training) Q4_0
-**Launcher:** [`configs/launchers/start-llamacpp-categorise-e2b.sh`](../../configs/launchers/start-llamacpp-categorise-e2b.sh)
+**Launcher:** [`configs/launchers/start-llamacpp-sycl-categorise-card2.sh`](../../configs/launchers/start-llamacpp-sycl-categorise-card2.sh)
+
+## Cutover result (2026-08-15, head-to-head vs Ornith on 1.5K token categorise prompt)
+
+Both endpoints uncontended at bench time; delta grows once chat/pi.dev load hits Ornith.
+
+| Metric | E2B card 2 :8010 (new) | Ornith card 1 :8002 (previous) | Δ |
+|---|---|---|---|
+| **Wall clock** | **1.00 s** | 4.69 s | **4.7× faster** |
+| Prefill | **3,040 tps** | 427 tps | **7.1×** |
+| Decode | 71.5 tps | 45.7 tps | 1.56× |
+| MTP acceptance | 25.0% | 56.9% | Ornith wins per-token, loses on totals |
+| VRAM | 3.4 GiB (card 2) | 12.9 GiB (card 1) | -73% |
+| Compute engine util during bench | 99% (card 2) | ~80% (card 1, shared) | isolation win |
+| Response | correct clean JSON | correct clean JSON | ✓ |
+
+**Why the prefill delta is so large:** E2B is 4× smaller than Ornith AND has fewer attention layers, so prefill scales super-linearly with size. 3,040 tps @ 1.5K prompt is close to E2B's ceiling on the B60 (previously benched at 3,681 tps @ 2K).
+
+**Post-cutover VRAM headroom:**
+- Card 1: 12.9 GiB used (Ornith + embed + TEI) / 24 GiB = **~11 GiB free**
+- Card 2: 3.4 GiB used (E2B alone) / 24 GiB = **~20 GiB free** — room to co-load Ornith once RAM upgrade lands 2026-08-22
+
+## Current production config (`start-llamacpp-sycl-categorise-card2.sh`)
+
+```bash
+NAME=llamacpp-categorise
+IMAGE=llama.cpp:sycl-f16   # b10433
+MODEL_DIR=/data/llm/gemma-4-E2B-it-GGUF
+DRAFT_DIR=/data/llm/gemma-4-E2B-it-assistant-GGUF
+PORT=8010
+
+docker run -d --name "$NAME" \
+  --restart unless-stopped \
+  --memory=10g --memory-swap=12g \
+  --device /dev/dri \
+  --group-add "$(getent group render | cut -d: -f3)" \
+  --group-add "$(getent group video  | cut -d: -f3)" \
+  --health-cmd 'curl -fsS http://localhost:8000/health >/dev/null 2>&1 || exit 1' \
+  --health-interval 30s --health-timeout 5s --health-start-period 120s \
+  -v "$MODEL_DIR":/models:ro \
+  -v "$DRAFT_DIR":/drafter:ro \
+  -p "0.0.0.0:${PORT}:8000" \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:1 \
+  -e LLAMA_ARG_HOST=0.0.0.0 \
+  "$IMAGE" \
+  -m /models/gemma-4-E2B_q4_0-it.gguf \
+  --model-draft /drafter/gemma-4-E2B-it-assistant-official.bf16.gguf \
+  --spec-type draft-mtp --spec-draft-n-max 3 \
+  -ngl 99 -ngld 99 \
+  -c 131072 --parallel 2 \
+  --host 0.0.0.0 --port 8000 --metrics \
+  --cache-type-k q8_0 --cache-type-v q8_0 -fa on -ub 2048 -b 2048 \
+  --jinja --reasoning off \
+  --top-p 0.95 --top-k 20 --min-p 0.0
+```
+
+## Brain integration (route change 2026-08-15)
+
+Update brain env:
+```bash
+CATEGORISE_URL=http://192.168.1.253:8010/v1/chat/completions
+# or Tailscale:
+CATEGORISE_URL=http://100.70.193.48:8010/v1/chat/completions
+```
+
+Fallback: :8002 (Ornith) remains healthy and can serve categorise if :8010 goes down.
+
+## Next: dual-load post-RAM-upgrade (Sat 2026-08-22)
+
+64 GiB RAM upgrade unlocks co-loading Ornith + E2B on **both** cards with an nginx/haproxy in front for round-robin. Doubles ceiling on both chat and categorise workloads. Design decision (same-model per card vs cross-model split) deferred to that day; probably same-model per card for simplicity.
+
+---
+
+## Historical: pre-cutover status
 
 ## Specs
 
