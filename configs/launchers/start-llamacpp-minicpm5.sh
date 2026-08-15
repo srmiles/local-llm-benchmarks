@@ -24,6 +24,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/MiniCPM5-1B-Q4_K_M.gguf \
+  --alias MiniCPM5-1B \
   -ngl 99 \
   -c 131072 \
   --parallel 1 \

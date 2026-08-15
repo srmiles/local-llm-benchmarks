@@ -27,6 +27,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/gemma-4-26B-A4B-it-Q4_K_M.gguf \
+  --alias gemma-4-26B-A4B-it \
   --model-draft /draft/gemma-4-26B-A4B-it-qat-assistant-MTP-Q8_0.gguf \
   --spec-type draft-mtp \
   -ngl 99 -ngld 99 \

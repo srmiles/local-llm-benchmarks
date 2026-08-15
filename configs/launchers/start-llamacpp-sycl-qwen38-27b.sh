@@ -36,6 +36,7 @@ docker run -d --name "$NAME" \
   -e LLAMA_ARG_HOST=0.0.0.0 \
   "$IMAGE" \
   -m /models/Qwen3.8-27B-Q4_K_M.gguf \
+  --alias Qwen3.8-27B \
   --model-draft /models/mtp-Qwen3.8-27B-Q4_0.gguf \
   --spec-type draft-mtp --spec-draft-n-max 3 \
   --mmproj /models/mmproj-Qwen3.8-27B-Q8_0.gguf \

@@ -21,7 +21,8 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   -e PYTORCH_XPU_ALLOC_CONF=max_split_size_mb:256 \
   "$IMAGE" \
-  --model-id /data --port 80 --dtype float16 --auto-truncate \
+  --model-id /data --served-model-name bge-reranker-v2-m3 \
+  --port 80 --dtype float16 --auto-truncate \
   --max-client-batch-size 64 \
   --max-batch-tokens 32768 \
   --max-concurrent-requests 128

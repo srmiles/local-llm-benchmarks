@@ -22,6 +22,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/embeddinggemma-300m-qat-Q8_0.gguf \
+  --alias embeddinggemma-300M-qat \
   -ngl 99 \
   -c 8192 \
   --parallel 4 \

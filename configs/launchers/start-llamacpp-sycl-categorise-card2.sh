@@ -33,6 +33,7 @@ docker run -d --name "$NAME" \
   -e LLAMA_ARG_HOST=0.0.0.0 \
   "$IMAGE" \
   -m /models/gemma-4-E2B_q4_0-it.gguf \
+  --alias gemma-4-E2B-it \
   --model-draft /drafter/gemma-4-E2B-it-assistant-official.bf16.gguf \
   --spec-type draft-mtp --spec-draft-n-max 3 \
   -ngl 99 -ngld 99 \

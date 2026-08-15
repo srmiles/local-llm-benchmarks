@@ -24,6 +24,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/Qwen3-4B-Instruct-2507-Q4_K_M.gguf \
+  --alias Qwen3-4B-Instruct-2507 \
   -ngl 99 \
   -c 32768 \
   --cache-type-k q8_0 --cache-type-v q8_0 \

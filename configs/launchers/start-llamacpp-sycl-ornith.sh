@@ -23,6 +23,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/ornith-1.0-9b-Q4_K_M.gguf \
+  --alias Ornith-1.0-9B \
   -ngl 99 \
   -c 131072 \
   --cache-ram 8192 \

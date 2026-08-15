@@ -23,6 +23,7 @@ docker run -d --name "$NAME" \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/bge-reranker-v2-m3-Q8_0.gguf \
+  --alias bge-reranker-v2-m3 \
   --reranking \
   -ngl 99 \
   -c 65536 \
