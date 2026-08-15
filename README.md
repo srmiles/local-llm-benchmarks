@@ -38,16 +38,17 @@ Universal win across all four configs. Prefill 15-25% up on 3/4, ~parity on E2B 
 
 | Port | Container | Model | Purpose |
 |---|---|---|---|
-| 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + pi.dev agent (categorise moved to card 2 :8010 on 2026-08-15); fallback for categorise if :8010 down |
+| 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + pi.dev agent (categorise moved to card 2 :8009 on 2026-08-15); fallback for categorise if :8009 down |
 | 8004 | `llamacpp-embed` | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX patched, no leak) |
-| 8010 | `llamacpp-categorise` | [Gemma 4 E2B QAT Q4_0 + Google MTP](models/production/gemma-4-e2b-categorise.md) ⭐ | **card 2 (`level_zero:1`)** — dedicated categorise slot for 99% of workload; cutover 2026-08-15 delivered **4.7× wall-clock** vs Ornith on 1.5K prompt (7.1× prefill, 1.56× decode); 3.4 GiB VRAM leaves ~20 GiB free on card 2 for future dual-load |
+| 8009 | `llamacpp-categorise` | [Gemma 4 E2B QAT Q4_0 + Google MTP](models/production/gemma-4-e2b-categorise.md) ⭐ | **card 2 (`level_zero:1`)** — dedicated categorise slot for 99% of workload; cutover 2026-08-15 delivered **4.7× wall-clock** vs Ornith on 1.5K prompt (7.1× prefill, 1.56× decode); 3.4 GiB VRAM leaves ~20 GiB free on card 2 for future dual-load |
+| 8010 | *reserved* | — | Reserved for future card-2 Ornith replica once RAM upgrade lands (Sat 2026-08-22, 64 GiB). Empty today. |
 
 **Retired 2026-07-19:** `llamacpp-rerank` on `:8007` (llama.cpp SYCL bge-reranker path). Kept as fallback for the first day after TEI's empty_cache patch shipped; retired after TEI proved stable at 1.4 GiB flat over 10+ hours. Launcher preserved at `/data/llm/launch/start-llamacpp-rerank.sh` for on-demand relaunch if TEI ever fails.
 
 **Stopped 2026-08-15:**
-- `bench-eval` on `:8009` (Gemma 4 E2B warm-standby on card 1) — its role moved to `llamacpp-categorise` on card 2 :8010 with physical GPU isolation. Launcher preserved on disk.
-- `llamacpp-sycl-qwen38` on `:8010` (Qwen 3.8-27B on card 2) — benched then parked; decode 23 tps was ~½ Gemma 4 26B-A4B at same VRAM class, and Muse Glimmer already covers the vision niche. See [`models/tested/qwen-3.8-27b.md`](models/tested/qwen-3.8-27b.md).
+- `bench-eval` (Gemma 4 E2B warm-standby on card 1, formerly `:8009`) — its role moved to `llamacpp-categorise` on card 2 `:8009` (same port, card 2 now, physical GPU isolation). Old launcher preserved on disk.
+- `llamacpp-sycl-qwen38` (Qwen 3.8-27B on card 2, briefly used `:8010`) — benched then parked; decode 23 tps was ~½ Gemma 4 26B-A4B at same VRAM class, and Muse Glimmer already covers the vision niche. `:8010` now reserved for future card-2 Ornith replica. See [`models/tested/qwen-3.8-27b.md`](models/tested/qwen-3.8-27b.md).
 
 **Note on port :8003:** owned by `headroom-proxy` (Steve's external Anthropic upstream). Not our container. Card-2 services must not claim :8003.
 
@@ -57,7 +58,7 @@ Universal win across all four configs. Prefill 15-25% up on 3/4, ~parity on E2B 
 
 **Historical:** original `llamacpp-categorise` on `:8006` ran [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) until quality regressed (2026-07-19).
 
-**Categorise slot experiment 2026-07-22 — reverted, then vindicated 2026-08-15.** Stood up Gemma 4 E2B QAT on :8006 as a dedicated categorise slot to relieve Ornith `:8002`. Diagnostic proved severe cross-process SYCL contention on the single B60 (Ornith 52 → 16 tps and Gemma 88 → 12 tps when both active — 3× throughput loss both sides). Reverted same day to Ornith-served categorise. **Resolved 2026-08-15 with 2nd B60**: E2B moved to card 2 :8010 (`level_zero:1`) as `llamacpp-categorise` — different physical GPU = different SYCL context = zero contention. See [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md) for cutover benches (4.7× wall-clock win) and [candidate hunt](models/tested/categorise-candidates.md) for original bench data.
+**Categorise slot experiment 2026-07-22 — reverted, then vindicated 2026-08-15.** Stood up Gemma 4 E2B QAT on :8006 as a dedicated categorise slot to relieve Ornith `:8002`. Diagnostic proved severe cross-process SYCL contention on the single B60 (Ornith 52 → 16 tps and Gemma 88 → 12 tps when both active — 3× throughput loss both sides). Reverted same day to Ornith-served categorise. **Resolved 2026-08-15 with 2nd B60**: E2B moved to card 2 `:8009` (`level_zero:1`) as `llamacpp-categorise` — different physical GPU = different SYCL context = zero contention. See [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md) for cutover benches (4.7× wall-clock win) and [candidate hunt](models/tested/categorise-candidates.md) for original bench data.
 
 ## Chat / instruct benchmarks
 
@@ -65,7 +66,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
 |---|---|---|---|---|---|---|
-| [**Gemma 4 E2B + Google MTP**](models/production/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) isolated / 71.5 (25% MTP) card-2 prod | **3,681 @ 2K** isolated / 3,040 @ 1.5K prod | 4.5 GiB | **production categorise slot on card 2 :8010 as of 2026-08-15** — 4.7× wall-clock speedup vs Ornith on categorise workload; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF)) |
+| [**Gemma 4 E2B + Google MTP**](models/production/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) isolated / 71.5 (25% MTP) card-2 prod | **3,681 @ 2K** isolated / 3,040 @ 1.5K prod | 4.5 GiB | **production categorise slot on card 2 `:8009` as of 2026-08-15** — 4.7× wall-clock speedup vs Ornith on categorise workload; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF)) |
 | [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 (66.7% MTP acc) | 2,319 @ 2K | 7 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E4B-it-assistant-GGUF)) |
 | [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 (69.7% MTP acc) | 1,053 @ 2K | 8.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-12B-it-assistant-GGUF)); 12B QAT beats 12B dense despite finding #2 (drafter shifts balance) |
 | [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |

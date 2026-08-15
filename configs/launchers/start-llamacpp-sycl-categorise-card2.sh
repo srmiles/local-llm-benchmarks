@@ -3,11 +3,11 @@
 # Serves the 99% of workload that's brain categorisation.
 #
 # Cutover 2026-08-15: moved from bench-eval :8009 (card 1, shared with Ornith)
-# to llamacpp-categorise :8010 (card 2, physically isolated).
+# to llamacpp-categorise :8009 (card 2, physically isolated).
 # 4.7x wall-clock speedup on 1.5K token categorise prompt; near-100% card 2 util under load.
 #
 # Card 2 pin: ONEAPI_DEVICE_SELECTOR=level_zero:1
-# Port :8010 (was Qwen 3.8 slot briefly; freed when Qwen deprioritised for slow decode)
+# Port :8009 (card 2 categorise); :8010 reserved for future card-2 Ornith replica when RAM upgrade lands
 set -euo pipefail
 
 NAME=llamacpp-categorise

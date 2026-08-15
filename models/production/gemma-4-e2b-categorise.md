@@ -1,6 +1,6 @@
 # Gemma 4 E2B QAT Q4_0 + MTP — Production categorise slot, card 2
 
-**Status:** **PRODUCTION on card 2 (`level_zero:1`) port `:8010` as of 2026-08-15.** Serves the 99% of workload that is brain categorisation. Physically isolated from Ornith on card 1 — zero SYCL context contention. Container name `llamacpp-categorise` (reuses the retired `:8006` slot name; no port conflict).
+**Status:** **PRODUCTION on card 2 (`level_zero:1`) port `:8009` as of 2026-08-15.** Serves the 99% of workload that is brain categorisation. Physically isolated from Ornith on card 1 — zero SYCL context contention. Container name `llamacpp-categorise` (reuses the retired `:8006` slot name; no port conflict).
 
 **HF:** [`google/gemma-4-E2B-it-qat-q4_0-gguf`](https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf) · **MTP drafter:** [`srmiles/gemma-4-E2B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF) (BF16, converted from Google's official assistant HF)
 **Base:** Gemma 4 E2B (2B effective, ~5B total), Google-official QAT (Quantization-Aware Training) Q4_0
@@ -10,7 +10,7 @@
 
 Both endpoints uncontended at bench time; delta grows once chat/pi.dev load hits Ornith.
 
-| Metric | E2B card 2 :8010 (new) | Ornith card 1 :8002 (previous) | Δ |
+| Metric | E2B card 2 :8009 (new) | Ornith card 1 :8002 (previous) | Δ |
 |---|---|---|---|
 | **Wall clock** | **1.00 s** | 4.69 s | **4.7× faster** |
 | Prefill | **3,040 tps** | 427 tps | **7.1×** |
@@ -33,7 +33,7 @@ NAME=llamacpp-categorise
 IMAGE=llama.cpp:sycl-f16   # b10433
 MODEL_DIR=/data/llm/gemma-4-E2B-it-GGUF
 DRAFT_DIR=/data/llm/gemma-4-E2B-it-assistant-GGUF
-PORT=8010
+PORT=8009   # card 2 categorise; :8010 reserved for future card-2 Ornith replica
 
 docker run -d --name "$NAME" \
   --restart unless-stopped \
@@ -64,12 +64,12 @@ docker run -d --name "$NAME" \
 
 Update brain env:
 ```bash
-CATEGORISE_URL=http://192.168.1.253:8010/v1/chat/completions
+CATEGORISE_URL=http://192.168.1.253:8009/v1/chat/completions
 # or Tailscale:
-CATEGORISE_URL=http://100.70.193.48:8010/v1/chat/completions
+CATEGORISE_URL=http://100.70.193.48:8009/v1/chat/completions
 ```
 
-Fallback: :8002 (Ornith) remains healthy and can serve categorise if :8010 goes down.
+Fallback: :8002 (Ornith) remains healthy and can serve categorise if :8009 goes down.
 
 ## Next: dual-load post-RAM-upgrade (Sat 2026-08-22)
 
