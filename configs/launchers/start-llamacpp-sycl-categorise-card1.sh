@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
-# Gemma 4 E2B QAT Q4_0 + Google MTP drafter — production categorise slot on card 2
-# Serves the 99% of workload that's brain categorisation.
+# Gemma 4 E2B QAT Q4_0 + Google MTP drafter — second categorise instance on card 1
+# Paired with primary E2B on card 2 :8009 for dual-load throughput.
+# Container name llamacpp-categorise-c1 to avoid collision with the card-2 instance.
 #
-# Cutover 2026-08-15: moved from bench-eval :8009 (card 1, shared with Ornith)
-# to llamacpp-categorise :8009 (card 2, physically isolated).
-# 4.7x wall-clock speedup on 1.5K token categorise prompt; near-100% card 2 util under load.
+# Port :8006 (adjacent to card-1 range; originally the categorise slot from
+# the 2026-07-22 same-card experiment).
 #
-# Card 2 pin: ONEAPI_DEVICE_SELECTOR=level_zero:1
-# Port :8009 (card 2 categorise); :8010 reserved for future card-2 Ornith replica when RAM upgrade lands
+# NOTE: co-loads with Ornith on the SAME physical card (level_zero:0).
+# Prior split-slot finding (2026-07-22) showed severe cross-process SYCL
+# contention when two llama-server processes share a B60. If Ornith decode
+# drops meaningfully under real workload, we have to revert or defer this
+# instance to post-RAM-upgrade dual-load.
 set -euo pipefail
 
-NAME=llamacpp-categorise
+NAME=llamacpp-categorise-c1
 IMAGE=llama.cpp:sycl-f16
 MODEL_DIR=/data/llm/gemma-4-E2B-it-GGUF
 DRAFT_DIR=/data/llm/gemma-4-E2B-it-assistant-GGUF
-PORT=8009   # card 2 categorise; :8010 reserved for future card-2 Ornith replica
+PORT=8006
 
 docker rm -f "$NAME" 2>/dev/null || true
 
@@ -29,13 +32,13 @@ docker run -d --name "$NAME" \
   -v "$MODEL_DIR":/models:ro \
   -v "$DRAFT_DIR":/drafter:ro \
   -p "0.0.0.0:${PORT}:8000" \
-  -e ONEAPI_DEVICE_SELECTOR=level_zero:1 \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   -e LLAMA_ARG_HOST=0.0.0.0 \
   "$IMAGE" \
   -m /models/gemma-4-E2B_q4_0-it.gguf \
-  --alias gemma-4-E2B-it \
   --model-draft /drafter/gemma-4-E2B-it-assistant-official.bf16.gguf \
   --spec-type draft-mtp --spec-draft-n-max 3 \
+  --alias gemma-4-E2B-it \
   -ngl 99 -ngld 99 \
   -c 131072 --parallel 2 \
   --host 0.0.0.0 --port 8000 \
@@ -45,5 +48,4 @@ docker run -d --name "$NAME" \
   --jinja --reasoning off \
   --top-p 0.95 --top-k 20 --min-p 0.0
 
-echo "llamacpp-categorise E2B+MTP on :${PORT} card 2 (level_zero:1) starting"
-echo "Model load ~30-90s; check: docker logs -f llamacpp-categorise"
+echo "llamacpp-categorise-c1 E2B+MTP on :${PORT} card 1 (level_zero:0) starting"
