@@ -1,133 +1,132 @@
 # Local LLM Benchmarks (B60 Pro)
 
-Local LLM benchmarks & configs for **Intel Arc Pro B60 (24 GB, Battlemage / Xe2)** on bare-metal Ubuntu 26.04.
+Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlemage / Xe2)** on bare-metal Ubuntu 26.04, 64 GiB RAM.
 
-All numbers below are measured on the same physical card. The stack has shifted over time — vLLM-XPU → LM Studio Vulkan → llama.cpp Vulkan → llama.cpp SYCL (current) — but the hardware is constant. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) — **all llama.cpp services now on b10433 (commit `9b05354ec`, cutover completed 2026-08-14)**. Rollback tags `llama.cpp:sycl-f16-b10256-safe` and `-b10215-safe` preserved on disk.
+All numbers below are measured on the same physical hardware. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) at the current build tag.
 
-**b10433 impact (measured 2026-08-14, isolated `/completion` probes on 5K real-workload prompts, warmup preflight):**
+**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14). Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk.
 
-| Model | b10256 → b10433 | Notes |
-|---|---|---|
-| Ornith 9B + MTP (K-quant) | prefill **+7%** (1,789 → 1,911), decode **+6%** (64.0 → 67.9), MTP 100% held | Biggest winner; SYCL Mamba/gated-delta-net optimizations (PRs #26612, #26643) benefit adjacent standard-attention kernels too |
-| Gemma 4 E2B + Google MTP | prefill **+8%** (3,169 → 3,425), decode parity | Small consistent win |
-| Gemma 4 26B QAT Q4_0 + MTP | prefill +3%, **decode -6%** (53.5 → 50.5), MTP acc -5pp | Q4_0-specific regression — see below |
-| Gemma 4 26B **Q4_K_M** + MTP | **parity across all axes** (1,473 tps prefill / 47.7 tps decode / 96.1% MTP acc) | K-quant path unaffected |
-
-The Q4_0 regression is confined to Gemma 4 26B's QAT variant; Q4_K_M is untouched. Nothing in current prod uses Q4_0. If Q4_0 becomes a needed path later (e.g. reasoning-fallback swap-in), consider staying on b10256 for that specific model.
-
-**b10256 impact (measured 2026-08-04, isolated `/completion` probes on 5K real-workload prompts, `cache_prompt: false`, warmup preflight):**
-
-| Model | b10215 prefill | b10256 prefill | Δ | Decode Δ | MTP acc Δ |
-|---|---|---|---|---|---|
-| Ornith 9B + MTP | 1,442 tps | **1,789 tps** | **+24%** | parity (66→64) | maxed (100%) |
-| Gemma 4 E2B + Google MTP | 3,681 tps | 3,169 tps | ~parity | **+18%** (138→164) | **+25pp** (67→92%) |
-| Gemma 4 26B QAT + MTP | 1,164 tps | **1,335 tps** | **+15%** | parity | maxed |
-| Gemma 4 26B Q4_K_M + MTP | 1,180 tps | **1,475 tps** | **+25%** | parity | ~same |
-
-Universal win across all four configs. Prefill 15-25% up on 3/4, ~parity on E2B (which was already near XMX GEMM ceiling). MTP acceptance either maxed at 100% or gained +25pp. Likely from commit series between b10215 and b10256 including PR#25852 (SYCL concat kernel parallelization) plus multiple MTP-verification path improvements.
-
-**b10215 impact (retained for historical context):** decode + MTP acceptance unchanged from b10068 within noise (verified on decode-only synthetic bench pre-cutover), but ~2× prefill uplift discovered 2026-08-01 during brain-eval Track 2 ingest bake-off — real workload prompts hit ~3,000 tps prefill on Ornith 9B via prefix-cache reuse. Root cause: SYCL oneMKL GEMM flash attention for XMX (#25025) merged post-b10068. See [`charts/b10215_prefill_uplift.png`](charts/b10215_prefill_uplift.png).
-
-**Methodology note (added 2026-08-04):** The b10215 "~3,000 tps prefill" figure above was measured via **real-workload wall-clock during brain-ingest** (multiple sequential prompts benefiting from prefix cache reuse across the pipeline). The b10256 comparison table uses **isolated `/completion` probes with `cache_prompt: false` + warmup preflight**, which measures single-request cold prefill only. Both numbers are legitimate but they measure different things — never mix them in a delta. Rule for future comparisons: pick one methodology and hold it constant across A/B. See finding #21 below.
-
-> **Investigation resolved 2026-07-20:** brain-eval flagged an Ornith 9B MTP acceptance drop on b10068 (46% vs 64% baseline, small-N greedy bench). Methodology-matched A/B disproved it: (a) both b9948 and b10068 produce different hashes across repeated identical greedy runs — SYCL FP non-determinism is pre-existing, not b10068-introduced; (b) isolated prefill probe shows b10068 delivers a real but modest **~3% uplift at long context, flat at short** (not the "+42%" originally claimed). Prod acceptance range under real workload (68-76%) is the ground truth. **b10068 stays live.** See [ornith notes](models/production/ornith-1.0-9b.md#notes) for full detail.
-
-> **📖 2nd B60 arriving week of 2026-08-11.** Playbook for the dual-card cutover — including Sergio Barrientos's vLLM XPU + MTP finding (5.2× prefill / 1.8× decode over llama.cpp on same-card MoE), deferred candidates now unblocked, day-1 through day-7 test sequence, and card 1 / card 2 split recommendation — lives at [`docs/2nd-b60-arrival-playbook.md`](docs/2nd-b60-arrival-playbook.md).
+**Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
+**Key findings (numbered #1-#24) →** [`docs/findings.md`](docs/findings.md)
 
 ## Current production stack
 
-| Port | Container | Model | Purpose |
-|---|---|---|---|
-| 8002 | `llamacpp-sycl` | [Ornith 1.0 9B Q4_K_M + MTP drafter](models/production/ornith-1.0-9b.md) | chat + pi.dev agent (categorise moved to card 2 :8009 on 2026-08-15); fallback for categorise if :8009 down |
-| 8004 | `llamacpp-embed` | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
-| 8008 | `tei-rerank` | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank prod (TEI XPU-IPEX patched, no leak) |
-| 8009 | `llamacpp-categorise` | [Gemma 4 E2B QAT Q4_0 + Google MTP](models/production/gemma-4-e2b-categorise.md) ⭐ | **card 2 (`level_zero:1`)** — dedicated categorise slot for 99% of workload; cutover 2026-08-15 delivered **4.7× wall-clock** vs Ornith on 1.5K prompt (7.1× prefill, 1.56× decode); 3.4 GiB VRAM leaves ~20 GiB free on card 2 for future dual-load |
-| 8010 | *reserved* | — | Reserved for future card-2 Ornith replica once RAM upgrade lands (Sat 2026-08-22, 64 GiB). Empty today. |
+Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-based routing, internal LAN only, split-DNS to manager.local Traefik). LB round-robins between paired card-1 / card-2 backends for each service. Both cards mirror the full 4-service stack (Ornith chat + embed + rerank + E2B categorise).
 
-**Retired 2026-07-19:** `llamacpp-rerank` on `:8007` (llama.cpp SYCL bge-reranker path). Kept as fallback for the first day after TEI's empty_cache patch shipped; retired after TEI proved stable at 1.4 GiB flat over 10+ hours. Launcher preserved at `/data/llm/launch/start-llamacpp-rerank.sh` for on-demand relaunch if TEI ever fails.
+| Port | Container | Card | Model | Purpose |
+|---|---|---|---|---|
+| 8002 | `llamacpp-sycl` | 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent (mirror pair) |
+| 8010 | `llamacpp-sycl-c2` | 2 | Ornith 1.5 9B + MTP (mirror) | chat + pi.dev agent |
+| 8004 | `llamacpp-embed` | 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
+| 8012 | `llamacpp-embed-c2` | 2 | EmbeddingGemma-300M (mirror) | embeddings |
+| 8008 | `tei-rerank` | 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
+| 8013 | `tei-rerank-c2` | 2 | bge-reranker-v2-m3 (mirror) | rerank |
+| 8006 | `llamacpp-categorise-c1` | 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise (mirror) |
+| 8009 | `llamacpp-categorise` | 2 | Gemma 4 E2B QAT + Google MTP ⭐ | categorise (primary, watchdog-monitored) |
 
-**Stopped 2026-08-15:**
-- `bench-eval` (Gemma 4 E2B warm-standby on card 1, formerly `:8009`) — its role moved to `llamacpp-categorise` on card 2 `:8009` (same port, card 2 now, physical GPU isolation). Old launcher preserved on disk.
-- `llamacpp-sycl-qwen38` (Qwen 3.8-27B on card 2, briefly used `:8010`) — benched then parked; decode 23 tps was ~½ Gemma 4 26B-A4B at same VRAM class, and Muse Glimmer already covers the vision niche. `:8010` now reserved for future card-2 Ornith replica. See [`models/tested/qwen-3.8-27b.md`](models/tested/qwen-3.8-27b.md).
+**Reasoning fallback (not running by default):** [Gemma 4 26B-A4B QAT + Google MTP](models/production/gemma-4-26b-a4b.md) — 62.8 tok/s decode, 97.2% MTP acceptance on b10433.
 
-**Note on port :8003:** owned by `headroom-proxy` (Steve's external Anthropic upstream). Not our container. Card-2 services must not claim :8003.
+**Traefik routes:**
+- `/v1/completions` and `/v1/chat/completions` → Ornith pair (:8002 + :8010)
+- `/v1/embeddings` → embed pair (:8004 + :8012)
+- `/v1/rerank` → TEI pair (:8008 + :8013), path rewritten to `/rerank`
+- `/v1/categorise` → E2B pair (:8006 + :8009), path rewritten to `/v1/chat/completions`, inFlightReq=2
+- `/` → monitor dashboard :8005 (HTTPS only)
 
-**Post-RAM-upgrade plan (Sat 2026-08-22, 30 → 64 GiB):** co-load Ornith + E2B on both cards, add nginx/haproxy in front for round-robin. Doubles ceiling on both chat and categorise workloads. Design decision same-model-per-card vs cross-model deferred to that day.
+## Recent stack changes
 
-**Reasoning fallback:** [Gemma 4 26B-A4B Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) — launcher on disk, not running by default.
+- **2026-08-21** — Ornith 1.0-9B → **1.5-9B cutover on both cards** (+23% decode, MTP acc 76% → 82.7%). Sampling aligned to Ornith 1.5 coding recipe. [Bench and rationale.](models/production/ornith-1.5-9b.md)
+- **2026-08-21** — Gemma 4 26B-A4B QAT re-bench: **QAT decode regression from 2026-08-14 is gone.** 62.8 tps + 97.2% MTP acceptance on b10433 — QAT now leads Q4_K_M by a wide margin, reverses finding #2 for this build. [Details in gemma-4-26b-a4b.md.](models/production/gemma-4-26b-a4b.md)
+- **2026-08-21** — Ornith 1.5-35B-A3B benched on both bartowski IQ4_XS and mudler APEX-MTP-Compact. Both fail on MTP acceptance under compression (32.5% and 26.2% respectively vs 82.7% for 1.5-9B). See finding #24. Single-card 35B not viable on this stack. [Bench 1](models/tested/ornith-1.5-35b-a3b-single-card.md) · [Bench 2](models/tested/ornith-1.5-35b-a3b-apex-mtp.md).
+- **2026-08-22** — RAM upgrade 30 → 64 GiB; **dual-load mirror pattern live** on both cards (Ornith + embed + rerank + E2B all mirrored). Traefik LB round-robin.
+- **2026-08-15** — 2nd B60 install; Gemma 4 E2B moved to card 2 `:8009` (dedicated categorise slot, physical GPU isolation). Delivered 4.7× wall-clock vs Ornith on categorise workload. See [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md).
+- **2026-08-14** — llama.cpp `b10256` → **`b10433`** cutover (all services). See [`docs/build-history.md`](docs/build-history.md) for per-model deltas.
 
-**Historical:** original `llamacpp-categorise` on `:8006` ran [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) until quality regressed (2026-07-19).
-
-**Categorise slot experiment 2026-07-22 — reverted, then vindicated 2026-08-15.** Stood up Gemma 4 E2B QAT on :8006 as a dedicated categorise slot to relieve Ornith `:8002`. Diagnostic proved severe cross-process SYCL contention on the single B60 (Ornith 52 → 16 tps and Gemma 88 → 12 tps when both active — 3× throughput loss both sides). Reverted same day to Ornith-served categorise. **Resolved 2026-08-15 with 2nd B60**: E2B moved to card 2 `:8009` (`level_zero:1`) as `llamacpp-categorise` — different physical GPU = different SYCL context = zero contention. See [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md) for cutover benches (4.7× wall-clock win) and [candidate hunt](models/tested/categorise-candidates.md) for original bench data.
+**Next architectural step (task #144):** B580 12GB new-host migration — offload embed + rerank + E2B to a fresh B580-based node, freeing both B60s for **Ornith 1.5-35B-A3B tensor-split** (task #142) or vLLM XPU migration.
 
 ## Chat / instruct benchmarks
 
-Decode = steady-state single-stream tok/s. Prefill measured at the context noted. VRAM is peak observed with the config running.
+Decode = steady-state single-stream tok/s. Prefill measured at the context noted. VRAM is peak observed with the config running. Same-build rows are directly comparable; historical rows kept for reference.
 
-| Model | Quant | Total / active params | Decode tok/s | Prefill tok/s | VRAM | Status |
+### Ornith family (Qwen 3.5 fine-tunes)
+
+| Model | Quant | Params | Decode | Prefill | VRAM | MTP acc | Status |
+|---|---|---|---|---|---|---|---|
+| [**Ornith 1.5-9B + MTP**](models/production/ornith-1.5-9b.md) ⭐ (b10433) | Q4_K_M + protoLabsAI Q8_0 head | 9B dense | **65.44** | **2,040 @ 4K** | 20.7 GiB | **82.7%** | **production chat (both cards)** — cutover 2026-08-21 |
+| [Ornith 1.0-9B + MTP](models/tested/ornith-1.0-9b.md) (b10433) | Q4_K_M + Q8_0 head | 9B dense | 67.9 (100% acc reported) | 1,911 @ 5K (isolated) / ~3,000 real | 10.9 GiB | 68-76% real workload | superseded 2026-08-21 |
+| [Ornith 1.5-35B-A3B (bartowski)](models/tested/ornith-1.5-35b-a3b-single-card.md) (b10433) | IQ4_XS + embedded MTP Q4_0 | 35B / 3B | 32.6 | 1,360 @ 4K | 22.5 GiB | 32.5% | **not viable single-card** — MTP head at Q4_0 crushes acceptance |
+| [Ornith 1.5-35B-A3B (mudler APEX)](models/tested/ornith-1.5-35b-a3b-apex-mtp.md) (b10433) | APEX-MTP-Compact 17.4 GB + embedded MTP Q8_0 | 35B / 3B | 25.6 | 1,211 @ 4K | 21.0 GiB | 26.2% | **worse than bartowski** — APEX compression breaks target/drafter alignment (finding #24) |
+| [Ornith 1.0-35B MTP APEX](models/tested/ornith-1.0-35b-mtp-apex.md) | APEX I-Compact (IQ) | 35B / 3B | 35.4 | 816 @ 5K / 802 @ 12K | ~19 GB | — | tested 2026-07-22; VLM-capable |
+
+### Gemma 4 family (Google, all with Google's official MTP drafters)
+
+| Model | Quant | Params | Decode | Prefill | VRAM | MTP acc | Status |
+|---|---|---|---|---|---|---|---|
+| [**Gemma 4 26B-A4B QAT + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ (b10433 re-bench 2026-08-21) | QAT Q4_0 + Google MTP Q8_0 | 26B / 4B | **62.84** | **1,592 @ 4K** | 19.9 GiB @ 131K | **97.2%** | **reasoning fallback** — QAT regression cleared; 2.90 accepted/draft (highest ever) |
+| [Gemma 4 26B-A4B Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) (b10433) | Q4_K_M + Google MTP Q8_0 | 26B / 4B | 47.7 | 1,473 @ 5K | 19.7 GiB | 96.1% | prior bench; QAT now preferred after 2026-08-21 |
+| [**Gemma 4 E2B + Google MTP**](models/production/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | 138.8 isolated / 71.5 prod | 3,681 @ 2K isolated / 3,040 prod | 4.5 GiB | 67.8% isolated / 25% prod | **production categorise slot** on card 2 `:8009`; 4.7× wall-clock vs Ornith on categorise |
+| [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) (b10215) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 | 2,319 @ 2K | 7 GiB | 66.7% | benched 2026-07-31 |
+| [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) (b10215) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 | 1,053 @ 2K | 8.5 GiB | 69.7% | benched 2026-07-31; QAT beats dense despite finding #2 |
+| Gemma 4 E4B (no MTP baseline) | Q4_K_M | ~4B | 68.3 (b10068) | 466 | ~3 GB | — | K-quant vs QAT reversal @ 4B (finding #2) |
+| Gemma 4 26B-A4B (it) baseline | Q4_K_M | 26B / 4B | 44.1 (b10068) | 632 @ 12K | 20.9 GB | — | original locked prod (pre-MTP) |
+| [Gemma 3 4B](models/tested/gemma-3-4b.md) | Q4_K_M | 4B | ~78 | — | ~3 GB | — | system-role template issue |
+
+### Qwen 3.x family
+
+| Model | Quant | Params | Decode | Prefill | VRAM | MTP acc | Status |
+|---|---|---|---|---|---|---|---|
+| [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K / 974 @ 5K | **24.4 GB (won't fit prod)** | 77.8% | Ornith-parity speed at 4× params; needs smaller quant for co-res |
+| Qwen 3.6-35B-A3B-MTP | UD-Q4_K_S | 35.5B / 3B | 37.7 | 820 @ 12K / 985 @ 5K | 24.1 GB (fails co-res) | 71% | -23% decode from MTP acceptance drop (finding #13) |
+| Qwen 3.6-35B-A3B-MTP | UD-IQ4_XS | 35.5B / 3B | 31.6 | 776 @ 12K / 918 @ 5K | 21.1 GB (fits, 0.5 GB) | 60.8% | -36% decode; IQ quants underperform K quants on B60 |
+| [Qwen 3.6-35B-A3B Claude distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | — | tight-reasoning distillation; only 35B-A3B that co-res cleanly |
+| [Qwen 3.6-35B-A3B Kimi distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB | — | fastest cold prefill benched; verbose reasoning; no MTP |
+| [Qwen 3.6-35B-A3B base](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | — | superseded by MTP variant |
+| [Qwen 3.8-27B + native MTP + vision](models/tested/qwen-3.8-27b.md) (tested, b10433) | Q4_K_M + Q4_0 MTP + Q8_0 mmproj | 27B dense hybrid (48 SSM + 16 attn) | 23.0 | 333.5 | 22.3 GiB | 57.9% | **parked** 2026-08-15; ~½ Gemma 4 26B-A4B; revisit when SYCL SSM gets XMX GEMM |
+| [Qwen 3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | — | tested; bartowski build |
+| [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | — | tested; capability too poor for pi.dev |
+| [Qwen2.5-Coder-14B AWQ](models/tested/qwen2.5-coder-14b-awq.md) | AWQ int4 (vLLM-XPU) | 14B | 22.9 peak / 13-15 typical | **1,891 peak** | ~11 GB | — | retired; cross-stack reference |
+| Qwen 3.6-27B (LM Studio Vulkan) | Q4_K | 27B | 33.6 | 97 @ 12K cold | 17.6 GB | — | historical Vulkan baseline |
+| [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) | Q4_K_M | 4B | ~94 (60s under 4-way) | 766 aggregate | ~1 GB | — | **retired** (was categorise prod) |
+
+### Others (Meta, Poolside, OpenAI, Mistral, MiniCPM, LFM)
+
+| Model | Quant | Params | Decode | Prefill | VRAM | Notes |
 |---|---|---|---|---|---|---|
-| [**Gemma 4 E2B + Google MTP**](models/production/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | **138.8** (67.8% MTP acc) isolated / 71.5 (25% MTP) card-2 prod | **3,681 @ 2K** isolated / 3,040 @ 1.5K prod | 4.5 GiB | **production categorise slot on card 2 `:8009` as of 2026-08-15** — 4.7× wall-clock speedup vs Ornith on categorise workload; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E2B-it-assistant-GGUF)) |
-| [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 (66.7% MTP acc) | 2,319 @ 2K | 7 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-E4B-it-assistant-GGUF)) |
-| [Gemma 4 12B + Google MTP](models/tested/gemma-4-12b-qat.md) | QAT Q4_0 + BF16 drafter | 12B dense + drafter | 70.4 (69.7% MTP acc) | 1,053 @ 2K | 8.5 GiB | benched 2026-07-31 on b10215; Google official MTP drafter ([HF](https://huggingface.co/srmiles/gemma-4-12B-it-assistant-GGUF)); 12B QAT beats 12B dense despite finding #2 (drafter shifts balance) |
-| [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | tested 2026-07-19; fastest tested; JSON fence issue on categorise |
-| [Ornith 1.0-35B MTP APEX](models/tested/ornith-1.0-35b-mtp-apex.md) | APEX I-Compact (IQ) | 35B / 3B | 35.4 | 816 @ 5K / 802 @ 12K | ~19 GB (fits co-res, 3 GiB headroom) | tested 2026-07-22; scale-up of prod Ornith 9B; **-32% decode** vs 9B; IQ-quant penalty; VLM-capable; waiting on K-quant MTP variant |
-| [**Qwen 3.6-35B-A3B-MTP**](models/tested/qwen3.6-35b-a3b-mtp.md) ⭐ | UD-Q4_K_XL | 35.5B / 3B | **49.0** | 798 @ 12K cold / 974 @ 5K | **24.4 GB (won't fit prod)** | Ornith-parity speed at 4× params; need smaller quant for co-residence |
-| [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-Q4_K_S | 35.5B / 3B | 37.7 | 820 @ 12K cold / 985 @ 5K | 24.1 GB (still fails co-res) | tested 2026-07-19; only saves 0.3 GB vs Q4_K_XL; prefill wins but decode -23% due to MTP acceptance drop |
-| [Qwen 3.6-35B-A3B-MTP](models/tested/qwen3.6-35b-a3b-mtp.md) | UD-IQ4_XS | 35.5B / 3B | 31.6 | 776 @ 12K / 918 @ 5K | 21.1 GB (fits prod with 0.5 GB headroom) | tested 2026-07-19; -36% decode + -22pp MTP acceptance vs Q4_K_XL; IQ quants underperform K quants on B60 |
-| [Qwen 3.6-35B-A3B Claude 4.7 Opus Distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | tight-reasoning distillation; only 35B-A3B that co-resides cleanly |
-| [Qwen 3.6-35B-A3B Kimi K2.6 Distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB (0.2 GB co-res headroom) | fastest cold prefill benched; verbose reasoning; no MTP |
-| [Qwen 3.6-35B-A3B (base)](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | superseded by MTP variant above |
-| [Qwen 3.8-27B Q4_K_M + native MTP + vision](models/tested/qwen-3.8-27b.md) (tested only, b10433) | Q4_K_M + Q4_0 MTP + Q8_0 mmproj | 27B dense hybrid (48 SSM + 16 attn) | 23.0 (57.9% MTP acc, smoke test) | 333.5 @ 489 real tok | 22.3 GiB | **benched then parked 2026-08-15**: decode ~½ Gemma 4 26B-A4B, vision niche covered by Muse Glimmer at similar speed. Revisit when SYCL SSM kernels get XMX GEMM path |
-| [**Gemma 4 26B-A4B Q4_K_M + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ (b10433) | Q4_K_M + community MTP Q8_0 | 26B / 4B | **47.7** (96.1% MTP acc) | **1,473 @ 5K** (b10433, parity w/ b10256) | 19.7 GiB | reasoning fallback — K-quant confirmed as preferred on b10433 (finding #2 restored) |
-| [Gemma 4 26B-A4B QAT + MTP](models/production/gemma-4-26b-a4b.md) | QAT Q4_0 + community MTP Q8_0 | 26B / 4B | 50.5 (94.8% MTP acc, b10433) / 54.2 (b10256) | 1,377 @ 5K (b10433) / 1,164 (b10215) | 17.5 GiB | **Q4_0-specific decode regression on b10433** (-6% vs b10256); stay on b10256 if using this variant |
-| Gemma 4 26B-A4B (it) Q4_K_M (base) | Q4_K_M | 26B / 4B | 44.1 (b10068) | 632 @ 12K | 20.9 GB | original locked prod (pre-MTP) |
-| Gemma 4 26B-A4B QAT (no MTP baseline) | Q4_0 | 26B / 4B | 40.1 (b10068) | 602 @ 12K | 18.2 GB | superseded by **+MTP + b10215** row above: +35% decode, +93% prefill |
-| **[Ornith 1.0 9B + MTP](models/production/ornith-1.0-9b.md)** ⭐ (b10433) | Q4_K_M | 9B dense | **67.9** (100% MTP acc) | **1,911 @ 5K** (isolated `/completion`) / ~3,000 tps under real-workload prefix-cached ingest | 10.9 GiB (w/ MTP head) | **production chat** — b10433 delivers +7% prefill / +6% decode over b10256 (SYCL Mamba adjacency wins) |
-| [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | tested; capability too poor for pi.dev |
-| [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | tested; dense penalty visible |
-| [Qwen3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | tested; bartowski build |
-| [Laguna XS-2.1 (no drafter, upstream)](models/tested/2026-08-06-new-candidates-sweep.md#laguna-xs2-poolside-33b-a3b-moe) | Q4_K_M | 33B / 3B | 29.5 | 1,213 @ 5K | 22.1 GiB | tested 2026-08-06 on b10256; MoE + SWA; **DFlash drafter needs Poolside fork** (upstream framework only, no Laguna decoder contract); deferred to 2nd B60 for coding-slot bake-off |
-| [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | tested 2026-08-10; Meta's first drop for 24 GB local hardware; multimodal (text+image); DFlash drafter shipped by Meta; **bandwidth-bound at ~24 tps ceiling on B60** (RTX 5090 gets 233 tps at 4× BW); SYCL arch merged today, kernel path not yet XMX-optimized; **only vision-capable option in the tested lineup**; retain on disk, revisit in ~1 month for kernel improvements |
-| [gpt-oss-20b (no drafter)](models/tested/2026-08-06-new-candidates-sweep.md#gpt-oss-20b-openai) | Q4_K_M (MXFP4 native) | 20.9B / ~2.6B active (4-of-32) | 25.1 | 1,265 @ 5K | 13.4 GiB | tested 2026-08-06 on b10256; no MTP drafter released by OpenAI; potential agentic-quality upgrade — needs qualitative bake-off vs Ornith on pi.dev |
-| [Mistral-Small-3.1-24B](models/tested/mistral-small-3.1-24b.md) | Q4_K_M | 24B dense | ~19 | ~350 | ~15 GB | tested (Vulkan era) |
-| [Gemma 4 12B (QAT) — no MTP baseline](models/tested/gemma-4-12b-qat.md) | Q4_0 | 12B dense | 19.7 (b10068) | 167 @ 1K | ~9 GB | superseded by **+ Google MTP** row above: **+257% decode / +530% prefill** on b10215 |
-| [Gemma 4 E4B (QAT) — no MTP baseline](models/tested/gemma-4-e4b.md) | Q4_0 | ~4B | 73.9 (b10068) | 376 | ~3 GB | superseded by **+ Google MTP** row above: **+54% decode / +517% prefill** on b10215 |
-| [Gemma 4 E4B — no MTP baseline](models/tested/gemma-4-e4b.md) | Q4_K_M | ~4B | 68.3 (b10068) | 466 | ~3 GB | retained; K-quant vs QAT reversal @ 4B (see finding #2); superseded on speed by Google MTP variant |
-| [Gemma 3 4B](models/tested/gemma-3-4b.md) | Q4_K_M | 4B | ~78 | — | ~3 GB | tested; system-role template issue |
-| [Qwen3-4B-Instruct-2507](models/retired/qwen3-4b-instruct-2507.md) | Q4_K_M | 4B | ~94 (60s under 4-way) | 766 aggregate | ~1 GB | **retired** (was categorise prod) |
-| [Qwen2.5-Coder-14B AWQ (vLLM-XPU)](models/tested/qwen2.5-coder-14b-awq.md) | AWQ int4 | 14B | 22.9 peak / 13–15 typical | **1,891** peak | ~11 GB | retired; cross-stack reference |
-| Qwen 3.6-27B (LM Studio Vulkan) | Q4_K | 27B | 33.6 | 97 @ 12K cold | 17.6 GB | historical Vulkan baseline |
+| [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | Meta 2026-08 drop; multimodal; DFlash drafter; **bandwidth-bound at ~24 tps ceiling on B60**; only vision-capable option in tested lineup |
+| [Laguna XS-2.1](models/tested/2026-08-06-new-candidates-sweep.md#laguna-xs2-poolside-33b-a3b-moe) | Q4_K_M | 33B / 3B | 29.5 | 1,213 @ 5K | 22.1 GiB | MoE + SWA; DFlash drafter needs Poolside fork; deferred |
+| [gpt-oss-20b](models/tested/2026-08-06-new-candidates-sweep.md#gpt-oss-20b-openai) | Q4_K_M (MXFP4 native) | 20.9B / ~2.6B active | 25.1 | 1,265 @ 5K | 13.4 GiB | no MTP; potential Ornith alternative pending qualitative bake-off |
+| [Devstral Small 2 24B](models/tested/devstral-small-2-24b.md) | UD-Q4_K_XL | 24B dense | ~18 | ~340 | ~15 GB | dense penalty visible |
+| [Mistral-Small-3.1-24B](models/tested/mistral-small-3.1-24b.md) | Q4_K_M | 24B dense | ~19 | ~350 | ~15 GB | tested Vulkan era |
+| [MiniCPM5-1B](models/tested/minicpm5-1b.md) | Q4_K_M | 1.08B dense | **~187** | **4,642 @ 2K** | ~3 GB | fastest tested; JSON fence issue on categorise |
 
 ## Embed / rerank benchmarks
 
 | Model | Server | Throughput / latency | VRAM | Notes |
 |---|---|---|---|---|
-| [EmbeddingGemma-300M](models/production/embeddinggemma-300m.md) | llama.cpp SYCL :8004 | **23,208 tok/s** @ 1800 tok, 253 emb/s batch 64 short | 0.5 GB | **prod embed** (dim 768, ~57 RTEB); wins single-embed by 1.85× vs TEI |
-| EmbeddingGemma-300M (same-model A/B) | TEI XPU-IPEX (bench 2026-08-06) | 12,500 tok/s @ 1800 tok (-46%), **313.7 emb/s** batch 64 (+24%) | ~1 GB | TEI wins batch throughput but loses single-embed — Gemma3-encoder isn't TEI's best-tuned architecture |
-| [Qwen3-Embedding-0.6B](models/tested/2026-08-06-new-candidates-sweep.md#qwen3-embedding-06b-on-both-runtimes) | TEI XPU-IPEX (bench 2026-08-06) | 12,081 tok/s @ 1800 tok, 192.8 emb/s batch 64 | ~1.2 GB | tested 2026-08-06; MTEB 64.3 (+13% quality) but 40-70% slower than EG in both regimes; 19× faster on TEI than llama.cpp (native runtime unlocked) |
-| Qwen3-Embedding-0.6B (wrong-runtime) | llama.cpp SYCL (bench 2026-08-06) | 634 tok/s @ 1800 tok, 89.8 emb/s batch 64 | ~1.2 GB | wrong-runtime penalty — model is TEI-native |
-| [Nemotron-3-Embed-1B (Q4_K_M)](models/tested/nemotron-3-embed-1b.md) | llama.cpp SYCL (isolated bench) | 3,361 tok/s @ 1800 tok, 29 emb/s batch 64 short | 1.0 GB | tested 2026-07-22; dim 2048, multilingual, RTEB 72.4; **6–9× slower** than EG on B60 (FA broken on ministral3 arch) |
-| [LFM2.5-Embedding-350M (Q8_0)](models/tested/lfm2.5-embedding-350m.md) | llama.cpp SYCL (isolated bench) | 21,717 tok/s @ 1800 tok, 80 emb/s batch 64 short | 0.6 GB | tested 2026-07-22; dim 1024, 11 languages; parity single, EG wins batched 3.2× |
-| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | **TEI XPU-IPEX :8008** | **109 ms / 25 pairs** | 1.4 GB | prod (7–9× faster than llama.cpp) |
-| [LFM2.5-ColBERT-350M (Q8_0)](models/tested/lfm2.5-colbert-350m.md) | llama.cpp SYCL (isolated bench) | 293.6 ms / 25 pairs (MaxSim, `-fa off`) | 0.6 GB | tested 2026-07-22; 11 languages; **2.7× slower than bge**; per-token vector storage 21× if used as retriever |
-| [bge-reranker-v2-m3](models/production/bge-reranker-v2-m3.md) | llama.cpp SYCL :8007 | 800–1,000 ms / 25 pairs | ~4 GB | retired fallback (2026-07-19) |
+| [**EmbeddingGemma-300M**](models/production/embeddinggemma-300m.md) ⭐ | llama.cpp SYCL :8004 + :8012 | **23,208 tok/s** @ 1800 tok, 253 emb/s batch 64 | 0.5 GB | **prod embed** (dim 768, ~57 RTEB); wins single-embed by 1.85× vs TEI |
+| EmbeddingGemma-300M (A/B) | TEI XPU-IPEX | 12,500 tok/s @ 1800 tok, **313.7 emb/s** batch 64 | ~1 GB | TEI wins batch throughput but loses single-embed (finding #22) |
+| [Qwen3-Embedding-0.6B](models/tested/2026-08-06-new-candidates-sweep.md#qwen3-embedding-06b-on-both-runtimes) | TEI XPU-IPEX | 12,081 tok/s @ 1800 tok, 192.8 emb/s batch 64 | ~1.2 GB | MTEB 64.3 (+13% quality) but 40-70% slower than EG |
+| [Nemotron-3-Embed-1B](models/tested/nemotron-3-embed-1b.md) | llama.cpp SYCL | 3,361 tok/s @ 1800 tok, 29 emb/s batch 64 | 1.0 GB | dim 2048, multilingual, RTEB 72.4; **6-9× slower** than EG (FA broken on ministral3 arch) |
+| [LFM2.5-Embedding-350M](models/tested/lfm2.5-embedding-350m.md) | llama.cpp SYCL | 21,717 tok/s @ 1800 tok, 80 emb/s batch 64 | 0.6 GB | dim 1024, 11 languages; parity single, EG wins batched 3.2× |
+| [**bge-reranker-v2-m3**](models/production/bge-reranker-v2-m3.md) ⭐ | **TEI XPU-IPEX :8008 + :8013** | **109 ms / 25 pairs** | 1.4 GB | prod (7-9× faster than llama.cpp) |
+| [LFM2.5-ColBERT-350M](models/tested/lfm2.5-colbert-350m.md) | llama.cpp SYCL | 293.6 ms / 25 pairs (MaxSim) | 0.6 GB | 2.7× slower than bge; per-token vector storage 21× if used as retriever |
+| bge-reranker-v2-m3 (fallback) | llama.cpp SYCL :8007 | 800-1,000 ms / 25 pairs | ~4 GB | retired 2026-07-19 |
 
 ## VRAM co-residence budget
 
-Isolated bench numbers are misleading — production has to fit all services simultaneously. **Non-chat steady-state stack** (as of 2026-07-19, after llama.cpp rerank retirement):
+Isolated bench numbers are misleading — production has to fit all services simultaneously. With the dual-card mirror pattern (2026-08-22), each card carries:
 
-| Container | VRAM steady |
+| Container per card | VRAM steady |
 |---|---|
+| Ornith 1.5-9B + MTP | ~20.7 GiB |
 | llamacpp-embed (EmbeddingGemma-300M) | 0.5 GiB |
-| tei-rerank (patched image, no leak) | 1.4 GiB |
-| **Non-chat total** | **~1.9 GiB** |
-| **Available for chat model** | **~22.1 GiB / 24 GiB** |
+| tei-rerank (patched image) | 1.4 GiB |
+| llamacpp-categorise (E2B QAT + MTP) | 3.4 GiB |
+| **Total per card** | **~26 GiB** — over the 24 GiB limit if all four co-loaded on ONE card |
 
-Note: reverted to the pre-2026-07-22 budget after the categorise split experiment showed cross-process SYCL contention on single B60. When a second B60 is added, the dedicated categorise slot (~2 GiB, Gemma 4 E2B QAT) will move to that card, keeping the primary B60 chat-model budget at 22.1 GiB.
+**How this actually fits:** each service loads its VRAM only for the card it's assigned to via `ONEAPI_DEVICE_SELECTOR=level_zero:{0|1}`. So card 1 gets `llamacpp-sycl` + `llamacpp-embed` + `tei-rerank` + `llamacpp-categorise-c1`, and card 2 gets the `-c2` variants. Each card lands at ~20-22 GiB — within budget with ~2 GiB headroom.
 
-Any candidate that reports isolated VRAM > 22.1 GiB either won't fit alongside prod, or needs a smaller quant / context / eviction trade-off. See individual model pages for per-candidate co-residence analysis.
-
-**Historical (pre-2026-07-19)**: budget was 21.6 GiB while `llamacpp-rerank` fallback ran on `:8007`. Freed 0.5 GiB steady when retired; nothing above the ceiling suddenly fits, but 35B-A3B candidates have marginally more room, and Qwen 3.6-35B-A3B Claude APEX-MTP Compact now co-resides with **2.7 GiB headroom** instead of 2.2.
+**Historical:** pre-2026-08-15 the stack ran on a single B60, so co-residence math was hard-capped. Ornith 22.1 GiB budget, forcing every candidate below that. See finding #12.
 
 ## Working Gemma 4 MTP drafter GGUFs on HF
 
@@ -137,143 +136,60 @@ The community GGUFs of Google's Gemma 4 MTP assistants use a broken architecture
 - [`srmiles/gemma-4-E4B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-E4B-it-assistant-GGUF) — 172 MB, pairs with `google/gemma-4-E4B-it`
 - [`srmiles/gemma-4-12B-it-assistant-GGUF`](https://huggingface.co/srmiles/gemma-4-12B-it-assistant-GGUF) — 862 MB, pairs with `google/gemma-4-12B-it`
 
-All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/hf-uploads/gemma-4-assistant-drafters.md) for full detail (conversion recipe, bench numbers, usage).
+All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/hf-uploads/gemma-4-assistant-drafters.md) for full detail.
 
-## Track 2 quality bake-off: Ornith 9B vs Gemma 4 E2B (2026-08-01)
+## Deep-dive docs
 
-Head-to-head brain-eval on real Tier A corpus, grammar-constrained (JSON schema server-side), sampler pinned, 131K context matched across arms, 3-repeat ingests to control variance. Judge: DeepSeek-V3.2 with retry-with-backoff.
-
-| Metric | Ornith 9B + MTP | Gemma 4 E2B + Google MTP | Delta |
-|---|---|---|---|
-| Pass rate (3-repeat mean) | 0.556 | 0.422 | quality noise-band overlap |
-| Mean score (LLM-judge) | 0.784 | 0.787 | ~tie |
-| Classify median latency | 19,403 ms | 6,286 ms | **3.1× faster** |
-| VRAM steady | 10.9 GiB | 5.8 GiB | **1.9× smaller** |
-| Full-ingest wall-clock | 2,370s | 1,145s | **2.1× faster** |
-
-**Interpretation: quality is indistinguishable inside ingest-run variance** (individual ingests swung 0.400–0.600 across all four runs regardless of model — ingest variance dominates model gap). E2B wins latency, VRAM, and wall-clock. **Decision: E2B is approved to move into the categorise slot when a 2nd B60 arrives** — cross-process SYCL contention on a single card (finding #15) still forbids concurrent dispatch today, so E2B stays warm-standby on `:8009`. See [`charts/track2_quality_vs_speed.png`](charts/track2_quality_vs_speed.png), [`charts/gemma_google_mtp.png`](charts/gemma_google_mtp.png), and [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md) for full methodology and caveats (Tier A only; Tier C confirmation pending; Track 1 chat/agent eval not run).
-
-## Key findings
-
-1. **MoE beats dense on Battlemage.** 26B-4B-active decodes ~2× faster than 12B dense at similar quality.
-2. **Post-training K-quant beats QAT Q4_0 at ≥26B — with build-specific caveat that has since reversed.** Reverses at 4B (finding was model-size-dependent). Also briefly reversed at 26B-A4B on b10215+MTP where QAT edged out Q4_K_M by ~10% decode. **On b10256 (2026-08-04) the ordering restored to K-quant winning:** Q4_K_M + MTP prefill 1,475 tps vs QAT + MTP 1,335 tps (+10% for K-quant), decode ~parity. QAT still saves 2.3 GiB VRAM at 26B-A4B, so it's the right pick when VRAM headroom matters more than absolute speed. **Bottom line by build:** on b10068 K-quant wins (original finding); on b10215+MTP QAT briefly won; on b10256+MTP K-quant wins again but by a smaller margin. On any recent build: K-quant at ≥26B, QAT at ≤4B — the exception window was one build.
-3. **MTP drafters are worth +5–15%** when a purpose-built head exists (Gemma 4 official, Ornith community).
-4. **`-ub 2048` is the SYCL sweet spot.** 4096 regresses on this card; monotonic climb from 16 → 2048 then plateau.
-5. **`-fa on` is mandatory** — turns 36s "warm" re-prefills into 0.55s cache hits.
-6. **TEI XPU-IPEX crushes llama.cpp for rerank** — 7–9× on 25-pair batches. Requires periodic restart (weekly) to reclaim VRAM growth.
-7. **`--jinja` is mandatory for tool-calling reliability** — the built-in template handler doesn't emit Gemma 4's tool delimiters.
-8. **XMX+oneDNN FA (llama.cpp b10068) is a modest win on dense-GQA models.** Initial cold-vs-warm comparison overstated it as "+42% throughput / -47% wall time" — methodology-matched isolated probe on Ornith 9B shows the real uplift is **~3% at 8K/12K, flat at short context**. Effect on Gemma 4 MoE is similar magnitude — the FA vec kernel path helps but not dramatically. **Lesson: never trust a first-look uplift claim that pairs a cold-start baseline against a warmed candidate.** Always re-probe under identical conditions.
-9. **b10068 also carries a silent Q4_K get_rows correctness fix** — the older build had a subtle bug in Q4_K row gather that affected Ornith and MiniCPM5 decodes. No perceptible quality change post-swap, but it's closed regardless.
-10. **MTP variants matter more than base model choice for A3B MoEs.** Qwen 3.6-35B-A3B base was 31 tok/s decode; same architecture with MTP head enabled (via the `-MTP-GGUF` sibling repo) jumps to 49 tok/s — **+58% purely from picking the right repo.** Always check for `-MTP-GGUF` variants of MoE candidates.
-11. **b10068's XMX FA win doesn't scale to dense-27B.** Ornith dense-9B GQA got +42% cold prefill from b10068. Qwen 3.6-27B dense-27B got flat-to-slightly-negative. b10068's XMX FA optimises FA vec kernels — small models can afford the launch overhead, larger dense models are still bandwidth-bound.
-12. **Co-residence budget dominates viability.** A 24 GiB isolated bench that beats Ornith is meaningless if it leaves 0 GiB for embed + rerank + TEI. Always subtract ~2.4 GiB of non-chat services before deciding if a candidate can actually ship. See the [VRAM co-residence budget](#vram-co-residence-budget) section.
-13. **MTP acceptance is quant-sensitive** — same architecture, same base weights, same MTP head, but changing from Q4_K_XL → Q4_K_S drops MTP acceptance from 77.8% → 71%, and IQ4_XS drops it further to 60.8%. The drafter head's calibration against the target degrades faster than raw quant math would suggest. Meaningful lesson for anyone hoping "just quantise smaller" is a free move on MTP models.
-14. **Smaller K-quant can be FASTER on prefill.** Counter-intuitive but measured: Q4_K_S beats Q4_K_XL on cold 12K prefill (820 vs 798 tok/s) and 5K prefill (985 vs 974). The smaller weights let more of the model stay in cache during prefill's memory-bound phase. Decode reverses this — larger K-quant wins because MTP acceptance recovers.
-15. **Two SYCL processes on a single B60 contend severely.** Split-slot experiment 2026-07-22: running `llamacpp-sycl` (Ornith) and `llamacpp-categorise` (Gemma 4 E2B) concurrently on the same B60 drops both from isolated speed to ~30% (Ornith 52 → 16 tps, Gemma 88 → 12 tps). Verified by stopping the second container mid-session — the first immediately recovered from 17 to 55 tps decode. Combined throughput of the split (28 tps) is *worse* than a single process alternating (52 tps FIFO). Root cause is Level Zero context-switch overhead + shared kernel dispatch queue; not a llama.cpp-fixable issue. **Split-slot architecture on B60 requires a dedicated GPU per SYCL process** — future direction: add a second B60 and pin the categorise slot to `level_zero:1`.
-16. **Google QAT Q4_0 beats post-hoc K-quants at 2-4B on B60.** Gemma 4 E2B QAT hit 88 tps decode vs Qwen3-4B and Agents-A1-4B post-training K-quants at 79 tps. QAT preserves output distribution better than post-training quants at small sizes, AND Q4_0 layout dispatches faster than Q4_K_M on Battlemage. Reverses at ≥26B where K-quants pull ahead again (already documented in finding #2).
-17. **Reasoning-tuned models (Gemma 4, Agents-A1) route output to `reasoning_content` by default** — `content` is empty, breaking any structured-JSON workflow. Fix: pass `--reasoning off` to `llama-server`. Without it, 0/10 JSON parseability. With it, 10/10. Small (~5%) decode-speed cost.
-18. **Prefill/decode asymmetry matters more than raw decode tps for model choice.** Same B60 (456 GB/s bandwidth), same workload shape (5K prompt + 200 gen), measured under real skill_server load:
-
-    | Model | Prefill tps | Decode tps | Decode % of BW ceiling | Notes |
-    |---|---|---|---|---|
-    | Gemma 4 E2B QAT Q4_0 (3.35 GB) | **1,600** | 30 | 22% | fast prefill, no MTP |
-    | Ornith 9B + MTP Q4_K_M (5.0 GB) | 1,000 | **50** | 55% | slower prefill, +2× MTP boost |
-
-    The disparity comes from two things Ornith has and Gemma doesn't: (a) protoLabsAI's MTP drafter accelerates decode ~2× via speculative decoding at 68-80% acceptance; (b) K-quant super-blocks amortize dequantization better than Q4_0's simpler layout for the single-token latency of decode. Q4_0 wins prefill (large batched matmul), Q4_K_M wins decode.
-
-    **Workload-shape total-time math** — the categorise/summarise/chat winner flips depending on output length:
-
-    | Workload | Prompt | Gen | Gemma total | Ornith total | Winner |
-    |---|---|---|---|---|---|
-    | Categorise (short JSON) | 5K | 200 | 3.1 + 6.7 = 9.8s | 5.0 + 4.0 = 9.0s | ~tie |
-    | Summarise | 5K | 500 | 3.1 + 16.7 = 19.8s | 5.0 + 10 = 15.0s | Ornith |
-    | Chat/agent | 3K | 800 | 1.9 + 26.7 = 28.6s | 3.0 + 16 = 19.0s | Ornith |
-
-    **Lesson: never pick a small model purely on prefill/isolated-decode headline numbers.** Compute total-time for the actual workload shape. For anything with >200 output tokens on this stack, a 9B + MTP beats a 2B without MTP even when the 2B is "faster" on both isolated axes. This is also why the split-slot experiment for categorise didn't help much — brain routes both categorise (Gemma-favorable shape) AND summarise (Ornith-favorable shape) to the same categorise endpoint. Model choice should follow workload shape, not the "small model for cheap tasks" instinct.
-
-    **Track prefill/decode ratio in future benches**, not just headline decode tps. Add a column to the model comparison table with the workload-time calculation.
-
-19. **b10215 delivers ~2× prefill via SYCL oneMKL GEMM XMX FA (#25025), invisible to short-prompt/decode-only benches.** Discovered 2026-08-01 during brain-eval Track 2 ingest arm — both Ornith 9B and Gemma 4 E2B independently hit ~3,000 tps prefill on real 2-5K token brain-ingest prompts vs historical ~1,600 tps on b10068. The pre-cutover synthetic decode bench (300-token `ignore_eos` generation, 60-token prompts) showed "no meaningful change" and would have missed this entirely — real workload is what surfaced the win. Not Gemma-specific; benefits every arch that uses standard attention, only above ~1K prompt tokens (below that, launch overhead dominates and the XMX GEMM path isn't reached). **Meta-lesson: post-upgrade validation needs to include production-shape prompts, not just decode microbenches.** Ties into #8 — the b10068 "+42% prefill" claim we retracted was cold-vs-warm methodology; the b10215 "+2× prefill" claim IS the real methodology-matched result under real workload.
-
-20. **Isolated `/completion` probe vs real-workload prefix-cached wall-clock measures different things. Never mix them in a delta.** 2026-08-04 lesson: comparing Ornith 9B on b10215 vs b10256 initially showed a -40% "regression" on b10256 that was pure methodology artifact. The b10215 "baseline" number (3,000 tps) came from Track 2 brain-ingest wall-clock, where sequential prompts share prefix cache and effective prefill is amortized. The b10256 "regression" number (1,789 tps) came from a fresh `/completion` probe with `cache_prompt: false` and warmup — pure cold prefill on a single request. When re-run with matched methodology (both isolated `/completion` cold probes on the same 5K prompt), b10215 delivered 1,442 tps and b10256 delivered 1,789 tps — a **+24% real improvement**, not a regression. **Rule:** pick one methodology (isolated cold, warm-cached, real-workload aggregate, etc.) and hold it constant across every arm of an A/B; document which one you used inline with the number so future comparisons don't get confused. This applies retroactively to finding #19 — the "~2× prefill" claim there is real-workload-with-cache; the isolated-probe delta for b10068→b10215 hasn't been re-measured cleanly.
-
-22. **TEI's advantage over llama.cpp SYCL is architecture-specific, not universal for encoder-only models.** Discovered 2026-08-06 during embed-runtime A/B benches (finding-in-response-to finding #6 which called out TEI's 7-9× rerank win). **BERT-family cross-encoders** (bge-reranker-v2-m3, older embed models): TEI wins big (7-9× rerank, 19× on Qwen3-Embedding-0.6B). **Gemma3-encoder** (EmbeddingGemma-300M): llama.cpp SYCL wins single-embed by 1.85× (23,208 vs 12,500 tps), TEI wins batch throughput by 24% (313.7 vs 253 emb/s). Reason: TEI's fused encoder-attention kernel is very well tuned for BERT-family architectures; llama.cpp SYCL happens to have excellent Gemma-family kernels (the same code path that gives you all your Gemma 4 chat wins). **Rule:** always A/B the same model on both runtimes before assuming an "encoder = TEI" advantage generalizes. Also TEI's win regime is batch throughput; llama.cpp SYCL's win regime is single-request latency. **See [`models/tested/2026-08-06-new-candidates-sweep.md`](models/tested/2026-08-06-new-candidates-sweep.md) for the full A/B matrix.**
-
-23. **B60 draws ~100W actual vs 220W TDP under sustained LLM load — compute engines pinned but half the die is idle.** Measured 2026-08-01 during brain-eval Track 2 arm 3 (Gemma 4 E4B + Google MTP, 2-5K token prompts, structured JSON output) via `xpu-smi stats`:
-
-    | Metric | Value | Interpretation |
-    |---|---|---|
-    | Power | **97-98W** of 220W cap | 44% of design TDP |
-    | GPU frequency | **2,400 MHz** (RP0 boost, max) | Card is at max clock, not throttled |
-    | Core temp | 53°C | Cold — no thermal headroom concern |
-    | Memory temp | 54°C | Cold |
-    | Compute engine util | **99.99%** | Pinned — every XMX + Xe-core doing math |
-    | Copy engine util | 90% | Active |
-    | Media engine util | 0% | Idle (no video work) |
-    | 3D render util | 0% | Idle (no graphics) |
-    | Memory BW util | 20% | 91 of 456 GB/s |
-
-    The 55% TDP headroom is unused because the die area for **media encoders, 3D pipeline, ray tracing units, and display controllers** sits idle under LLM inference — those transistors aren't LLM-relevant. What matters (XMX + Xe-cores) is already pinned at 99.99%.
-
-    **The interesting number is 20% memory BW + 100% compute** — the current SYCL kernels are compute-limited, not memory-limited. That means future llama.cpp kernel improvements (like the #25025 oneMKL win for prefill) can still lift decode without any hardware change. Theoretical decode ceiling for Ornith 9B Q4_K_M on 456 GB/s: 91 tps; we're at 56 tps (61% of memory ceiling), which means the kernel path has ~50% headroom to grow into.
-
-    **Practical implication for other B60 users:** B60 runs cool and quiet under LLM load (thermal and acoustic headroom is not the constraint) and cards can be packed tighter than TDP suggests for multi-card setups. Don't undersize your PSU based on TDP × N; sizing based on measured LLM load × N + spike margin is the more accurate approach. Also don't confuse "GPU util 21%" reported by xpu-smi with under-utilization — that metric averages the 100%-pinned compute engine with the 0%-idle media/3D/display engines, which is misleading for LLM workloads. Look at `ENGINE_GROUP_COMPUTE_ALL_UTILIZATION` (99.99%) instead.
-
-## Journey summary
-
-| Stage | Decode | Cold 12K prefill | Warm follow-up |
-|---|---|---|---|
-| LM Studio Vulkan (start) | 33.6 tok/s | 127s @ 97 tok/s | 36s (cache broken) |
-| SYCL out-of-box | 38.4 tok/s | 37s @ 388 tok/s | 36s |
-| + FA on, `-ub 2048` (Config D) | 38.6 tok/s | 30s @ 477 tok/s | 0.66s |
-| + `GGML_SYCL_F16=ON` rebuild | 40.1 tok/s | 24s @ 602 tok/s | 0.61s |
-| + Q4_K_M post-training | 44.1 tok/s | 22.8s @ 632 tok/s | 0.55s |
-| + Config C + MTP (bare-metal, b9948) | 50.0 tok/s | ~13.7s @ ~938 tok/s | ~0.55s |
-| + b10068 rebuild (XMX+oneDNN FA, Ornith prod) | 51.8 tok/s | ~13.3s @ 969 tok/s (+3%) | ~0.55s |
-| + b10215 rebuild (oneMKL GEMM XMX FA #25025, Ornith prod, real workload) | 56 tok/s | ~4.3s @ ~3,000 tok/s (real workload w/ prefix cache) — or ~8.3s @ 1,442 tok/s isolated `/completion` | ~0.55s |
-| + **b10256 rebuild** (SYCL concat parallelization #25852 + MTP verification improvements, cutover 2026-08-04) | **64 tok/s** (+15%) | **~6.7s @ 1,789 tok/s isolated `/completion` (+24% vs b10215 same methodology)** | ~0.55s |
-
-**Overall vs LM Studio start (isolated `/completion` methodology, 5K prompt cold):** LM Studio Vulkan 97 tps prefill → b10256 SYCL 1,789 tps prefill = **~18× cold prefill**. Warm-path cache hits: 36s → 0.55s = **~65×**. Decode: 33.6 → 64 tok/s = **+90%**. If measured under real-workload with prefix cache reuse (Track 2 style), b10215 hit ~3,000 tps — b10256 hasn't been re-measured under that methodology yet, expect similar or better. See finding #20 for the methodology-vs-methodology explanation and finding #19 for the b10215 workload-level jump.
-
-(b9948 12K prefill row revised 2026-07-20 from isolated probe — earlier "22.8s @ 632" figure was cold-start against a bandwidth-contended stack; methodology-matched probe gives 14.2s @ 938 tok/s. This means most of the prefill journey landed with SYCL + FA + `-ub 2048` + F16 rebuild + Q4_K, then b10215's XMX GEMM FA more than doubled it again under real load.)
+- **[`docs/findings.md`](docs/findings.md)** — 24 numbered findings from the build-out (quantization, MTP, SYCL kernels, workload-shape math, power draw, etc.)
+- **[`docs/build-history.md`](docs/build-history.md)** — llama.cpp SYCL build history + per-release impact tables (b10068 → b10433) + journey summary
+- **[`docs/track2-quality-bakeoff.md`](docs/track2-quality-bakeoff.md)** — Ornith 9B vs Gemma 4 E2B quality bake-off (2026-08-01)
+- **[`docs/2nd-b60-arrival-playbook.md`](docs/2nd-b60-arrival-playbook.md)** — 2nd B60 day-1 to day-7 test sequence (includes Sergio Barrientos' vLLM XPU + MTP finding)
+- **[`docs/research/ornith-1.5-upgrade.md`](docs/research/ornith-1.5-upgrade.md)** — Ornith 1.5 family research + upgrade plan
+- **[`docs/research/lmcache-evaluation.md`](docs/research/lmcache-evaluation.md)** — LMCache evaluation for categorise workload
+- **[`docs/handoff-2026-08-15-e2b-wedge.md`](docs/handoff-2026-08-15-e2b-wedge.md)** — E2B wedge investigation handoff
+- **[`docs/monitoring-dashboard-scope.md`](docs/monitoring-dashboard-scope.md)** — Monitoring dashboard scope
 
 ## Repo layout
 
 ```
 ├── README.md                       ← this file
+├── docs/                            ← deep-dive documents (see above)
 ├── models/
 │   ├── production/                 ← currently running
-│   │   ├── ornith-1.0-9b.md
+│   │   ├── ornith-1.5-9b.md        (chat + pi.dev, both cards)
+│   │   ├── gemma-4-e2b-categorise.md (categorise, both cards)
 │   │   ├── gemma-4-26b-a4b.md      (reasoning fallback)
-│   │   ├── embeddinggemma-300m.md
-│   │   └── bge-reranker-v2-m3.md
+│   │   ├── embeddinggemma-300m.md  (embed)
+│   │   └── bge-reranker-v2-m3.md   (rerank)
+│   ├── tested/                     ← benched, not in prod
+│   │   ├── ornith-1.0-9b.md        (prior prod, superseded 2026-08-21)
+│   │   ├── ornith-1.5-35b-a3b-*.md (single-card MoE benches)
+│   │   ├── ornith-1.5-9b-first-bench.md
+│   │   ├── ornith-1.0-35b-mtp-apex.md
+│   │   ├── qwen3.6-35b-a3b*.md, qwen-3.8-27b.md, qwen3-coder-30b-a3b.md
+│   │   ├── gemma-4-12b-qat.md, gemma-4-e4b.md, gemma-3-4b.md
+│   │   ├── muse-glimmer-30b.md
+│   │   ├── minicpm5-1b.md, mistral-small-3.1-24b.md, devstral-small-2-24b.md
+│   │   ├── lfm2.5-*.md, nemotron-3-embed-1b.md
+│   │   ├── qwen3.6-27b.md, qwen2.5-coder-14b-awq.md
+│   │   ├── categorise-candidates.md, 2026-08-06-new-candidates-sweep.md
 │   ├── retired/                    ← no longer receiving traffic
 │   │   └── qwen3-4b-instruct-2507.md
-│   └── tested/                     ← benched, not adopted
-│       ├── qwen3.6-35b-a3b.md
-│       ├── qwen3.6-35b-a3b-mtp.md         (2026-07-19 retest with MTP)
-│       ├── qwen3.6-35b-a3b-claude-distilled.md
-│       ├── qwen3.6-35b-a3b-kimi-distilled.md
-│       ├── minicpm5-1b.md
-│       ├── qwen3-coder-30b-a3b.md
-│       ├── devstral-small-2-24b.md
-│       ├── qwen3.6-27b.md
-│       ├── mistral-small-3.1-24b.md
-│       ├── gemma-4-12b-qat.md
-│       ├── gemma-4-e4b.md
-│       ├── gemma-3-4b.md
-│       └── qwen2.5-coder-14b-awq.md
-├── configs/images/                ← Docker image build docs + patches
-│   ├── llama.cpp-sycl-f16/         (build.sh, README.md, flags used)
+│   └── hf-uploads/                 ← GGUFs I've uploaded to HF
+│       └── gemma-4-assistant-drafters.md
+├── configs/images/                 ← Docker image build docs + patches
+│   ├── llama.cpp-sycl-f16/         (build.sh, README.md)
 │   └── tei-xpu-ipex-nomemleak/     (VRAM leak patch)
-└── configs/launchers/              ← docker run scripts (mirror of /data/llm/launch/ on llm.local)
-    ├── start-llamacpp-sycl-ornith.sh
-    ├── start-llamacpp-sycl-gemma4-mtp.sh
-    ├── start-llamacpp-embed.sh
-    ├── start-llamacpp-rerank.sh
-    ├── start-tei-rerank.sh
-    ├── start-llamacpp-minicpm5.sh          (candidate on :8009)
-    └── start-llamacpp-sycl-categorise.sh   (retired)
+├── configs/launchers/              ← docker run scripts (mirror of /data/llm/launch/ on llm.local)
+│   ├── start-llamacpp-sycl-ornith.sh                  (card 1 Ornith 1.5)
+│   ├── start-llamacpp-sycl-ornith-1.5-c2.sh           (card 2 Ornith 1.5)
+│   ├── start-llamacpp-sycl-gemma4-mtp.sh              (reasoning fallback)
+│   ├── start-llamacpp-sycl-categorise-card1.sh        (E2B card 1)
+│   ├── start-llamacpp-sycl-categorise-card2.sh        (E2B card 2)
+│   ├── start-llamacpp-embed.sh                        (card 1)
+│   ├── start-tei-rerank.sh                            (card 1)
+│   └── start-llamacpp-rerank.sh                       (retired fallback)
+└── charts/                         ← generated benchmark charts
 ```
 
 Each per-model file includes: HF link, specs, benchmark numbers, launcher link (where applicable), and verdict.

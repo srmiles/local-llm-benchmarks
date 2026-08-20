@@ -19,6 +19,40 @@
 
 ## Benchmarks
 
+### On b10433 build (2026-08-21, isolated `/completion`, cold card, warm NEO cache, `cache_prompt=false`, greedy)
+
+Re-bench after ~1 week to check whether the QAT decode "regression" flagged 2026-08-14 was persistent. Same b10433 build, same launcher, this time on card 2 (level_zero:1) with all card-2 services evacuated. **Regression appears fixed — QAT decode 62.8 tps vs 50.5 the prior week.**
+
+| Metric | This bench | Prior b10433 (2026-08-14) | Δ |
+|---|---|---|---|
+| Prefill @ ~500 tok | 651 tok/s | — | — |
+| Prefill @ ~2K tok | 1,264 tok/s | — | — |
+| Prefill @ ~4K tok | **1,592 tok/s** | 1,377 (@ 5K) | +16% |
+| Decode + MTP (512 tok, greedy) | **62.84 tok/s** | 50.5 ⚠ | **+24%** |
+| MTP acceptance rate | **97.2%** (380/391) | 94.8% | +2.4pp |
+| Mean accepted per draft | 2.90 (of 4 max) | — | — |
+| VRAM (loaded, 131K KV Q8) | 19.9 GiB | 17.5 (@ 8K ctx) | not like-for-like |
+| Load time cold | 23 s | — | — |
+| Engine resets during bench | 0 | 0 | ✅ |
+
+Comparison to same-build (b10433) benches for other models this session:
+
+| Metric | Gemma 4 26B-A4B QAT | Ornith 1.5-9B | Ornith 1.5-35B-A3B (best variant) |
+|---|---|---|---|
+| Prefill @ 4K | 1,592 tok/s | 2,040 | 1,360 |
+| Decode + MTP | **62.84 tok/s** | 65.44 | 32.6 |
+| MTP acceptance | **97.2%** | 82.7% | 32.5% |
+| VRAM | 19.9 GiB | 20.7 | 22.5 |
+
+Gemma 4 26B-A4B basically matches Ornith 1.5-9B decode while carrying 3× the parameters (26B vs 9B, both with similar activation footprint — Gemma's ~4B active, Ornith is 9B dense). MTP acceptance of 97.2% is the highest we've measured on the stack — because Google publishes a purpose-trained MTP drafter matched to the QAT-quantized base, so target/drafter distribution alignment is perfect. This is the deployment pattern that Ornith 35B-A3B lacks and hurt in our #145/#146 benches.
+
+**Why the "regression" appears fixed:**
+- Possibility 1: b10433 image was rebuilt or upstream landed a fix under the same tag between 2026-08-14 and 2026-08-21
+- Possibility 2: NEO compiler cache was cold on 2026-08-14 test, warm now (this session has been JIT-compiling SYCL kernels via other benches, so the cache directory is warmer)
+- Possibility 3: 128K context allocation (vs 8K on prior bench) uses a different FA code path that happens to be faster on the same-length prompts
+
+Any of these is plausible; hasn't been root-caused. **Practical takeaway: QAT Q4_0 + MTP is again the recommended config, matching the b10256 finding.** No "K-quant only" workaround needed on b10433 as of 2026-08-21.
+
 ### On b10433 build (2026-08-14, isolated `/completion`, warmup preflight, `cache_prompt: false`, real-workload prompts)
 
 | Metric | **QAT Q4_0 + MTP** | **Q4_K_M + MTP** ⭐ (recommended) |
