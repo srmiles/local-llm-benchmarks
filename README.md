@@ -4,10 +4,10 @@ Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlema
 
 All numbers below are measured on the same physical hardware. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) at the current build tag.
 
-**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14). Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk.
+**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`; not cut over to production.
 
 **Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
-**Key findings (numbered #1-#24) →** [`docs/findings.md`](docs/findings.md)
+**Key findings (numbered #1-#32) →** [`docs/findings.md`](docs/findings.md)
 
 ## Current production stack
 
@@ -35,6 +35,9 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 
 ## Recent stack changes
 
+- **2026-08-21** — **n-max cliff replicated on Gemma 4 26B-A4B — and the optimum is model-specific.** Same +71% step-cost discontinuity crossing verify batch 9 on a completely different architecture (+71.3% vs Nemotron's +70.6%, same VRAM signature), so **`n_max ≤ 7` is a hard rule for this card**. But Gemma peaks at **n-max 5** (+9.9%), not 7, because its acceptance *decays* along the chain (88.7% → 81.6% → 75.7%) where Nemotron's holds flat. [Findings #30 and #32.](docs/findings.md)
+- **2026-08-21** — **`--spec-draft-n-max` swept on Nemotron: 7 is the setting, and 8 is a cliff.** 79.05 → 91.91 tok/s from 3 → 7 (**+16.3%, free**), then a 34% collapse at 8 before partially recovering at 9-10. Acceptance is 99.5-100% at *every* setting, so this is verification-batch cost, not drafter quality — every batch of `n_max+1` ≤ 8 is fast, every batch ≥ 9 is penalised. Also measured the empero 9B unassisted baseline: the MTP head is worth +30.5% decode for −14.6% prefill and +3.85 GiB. [Findings #30 and #31.](docs/findings.md)
+- **2026-08-21** — **HF candidate bench (Tier 1 + 2) on a fresh b10566 build.** Nemotron 3.5 Lightning 30B-A3B lands at **78.95 tps / 99.8% MTP acceptance** — beating Gemma 4 26B-A4B on every axis — and **disproves the "SYCL SSM penalty"**: Qwen 3.8-27B's 23 tps was dense-bandwidth cost, not the Mamba2 layers (finding #25). Qwen3.8-9B-Distill beats Ornith 1.5-9B by 13.5% decode at equal VRAM. Both Nemotron (21.99 GiB) and LFM2.5-8B-A1B (8.63 GiB) are blocked on co-residence, not merit. [Full results, findings #25-#29.](models/tested/2026-08-21-tier1-tier2-bench.md) · [Sweep that shortlisted them.](models/tested/2026-08-21-new-candidates-sweep.md)
 - **2026-08-21** — Ornith 1.0-9B → **1.5-9B cutover on both cards** (+23% decode, MTP acc 76% → 82.7%). Sampling aligned to Ornith 1.5 coding recipe. [Bench and rationale.](models/production/ornith-1.5-9b.md)
 - **2026-08-21** — Gemma 4 26B-A4B QAT re-bench: **QAT decode regression from 2026-08-14 is gone.** 62.8 tps + 97.2% MTP acceptance on b10433 — QAT now leads Q4_K_M by a wide margin, reverses finding #2 for this build. [Details in gemma-4-26b-a4b.md.](models/production/gemma-4-26b-a4b.md)
 - **2026-08-21** — Ornith 1.5-35B-A3B benched on both bartowski IQ4_XS and mudler APEX-MTP-Compact. Both fail on MTP acceptance under compression (32.5% and 26.2% respectively vs 82.7% for 1.5-9B). See finding #24. Single-card 35B not viable on this stack. [Bench 1](models/tested/ornith-1.5-35b-a3b-single-card.md) · [Bench 2](models/tested/ornith-1.5-35b-a3b-apex-mtp.md).
@@ -43,6 +46,8 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 - **2026-08-14** — llama.cpp `b10256` → **`b10433`** cutover (all services). See [`docs/build-history.md`](docs/build-history.md) for per-model deltas.
 
 **Next architectural step (task #144):** B580 12GB new-host migration — offload embed + rerank + E2B to a fresh B580-based node, freeing both B60s for **Ornith 1.5-35B-A3B tensor-split** (task #142) or vLLM XPU migration.
+
+> **2026-08-21 update to that plan:** the bench gives task #144 a better payoff than task #142. A freed B60 running **Nemotron 3.5 Lightning 30B-A3B** (**91.91 tps** at `--spec-draft-n-max 7`, 99.5-100% acceptance, 22.18 GiB — needs the whole card) beats a tensor-split Ornith 1.5-35B-A3B, which has now failed twice on MTP acceptance under compression (finding #24). LFM2.5-8B-A1B + DSpark (168 tps, 8.63 GiB) is the categorise-slot payoff from the same migration.
 
 ## Chat / instruct benchmarks
 
@@ -62,7 +67,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Params | Decode | Prefill | VRAM | MTP acc | Status |
 |---|---|---|---|---|---|---|---|
-| [**Gemma 4 26B-A4B QAT + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ (b10433 re-bench 2026-08-21) | QAT Q4_0 + Google MTP Q8_0 | 26B / 4B | **62.84** | **1,592 @ 4K** | 19.9 GiB @ 131K | **97.2%** | **reasoning fallback** — QAT regression cleared; 2.90 accepted/draft (highest ever) |
+| [**Gemma 4 26B-A4B QAT + MTP**](models/production/gemma-4-26b-a4b.md) ⭐ (b10433 re-bench 2026-08-21) | QAT Q4_0 + Google MTP Q8_0 | 26B / 4B | **62.84** | **1,592 @ 4K** | 19.9 GiB @ 131K | **97.2%** | **reasoning fallback** — QAT regression cleared; 2.90 accepted/draft. **n-max swept 2026-08-21: peak is `--spec-draft-n-max 5`, +9.9%** (finding #30); 8 falls off the same cliff Nemotron does |
 | [Gemma 4 26B-A4B Q4_K_M + MTP](models/production/gemma-4-26b-a4b.md) (b10433) | Q4_K_M + Google MTP Q8_0 | 26B / 4B | 47.7 | 1,473 @ 5K | 19.7 GiB | 96.1% | prior bench; QAT now preferred after 2026-08-21 |
 | [**Gemma 4 E2B + Google MTP**](models/production/gemma-4-e2b-categorise.md) ⭐ | QAT Q4_0 + BF16 drafter | 2B + drafter | 138.8 isolated / 71.5 prod | 3,681 @ 2K isolated / 3,040 prod | 4.5 GiB | 67.8% isolated / 25% prod | **production categorise slot** on card 2 `:8009`; 4.7× wall-clock vs Ornith on categorise |
 | [Gemma 4 E4B + Google MTP](models/tested/gemma-4-e4b.md) (b10215) | QAT Q4_0 + BF16 drafter | 4B + drafter | 114.1 | 2,319 @ 2K | 7 GiB | 66.7% | benched 2026-07-31 |
@@ -81,7 +86,8 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Qwen 3.6-35B-A3B Claude distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | — | tight-reasoning distillation; only 35B-A3B that co-res cleanly |
 | [Qwen 3.6-35B-A3B Kimi distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB | — | fastest cold prefill benched; verbose reasoning; no MTP |
 | [Qwen 3.6-35B-A3B base](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | — | superseded by MTP variant |
-| [Qwen 3.8-27B + native MTP + vision](models/tested/qwen-3.8-27b.md) (tested, b10433) | Q4_K_M + Q4_0 MTP + Q8_0 mmproj | 27B dense hybrid (48 SSM + 16 attn) | 23.0 | 333.5 | 22.3 GiB | 57.9% | **parked** 2026-08-15; ~½ Gemma 4 26B-A4B; revisit when SYCL SSM gets XMX GEMM |
+| [**Qwen3.8-9B-Distill + MTP**](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M + self-converted Q8_0 head | 9.65B dense hybrid | **73.97** (56.69 unassisted) | 1,957 @ 5K / 2,020 @ 12K | 14.76 GiB | 81.4% | **+13.5% decode over Ornith 1.5-9B** at equal VRAM/prefill; arch-identical so the prod launcher works unchanged. Head is worth **+30.5% decode for −14.6% prefill and +3.85 GiB** (finding #31). Needs a qualitative bake-off before any cutover |
+| [Qwen 3.8-27B + native MTP + vision](models/tested/qwen-3.8-27b.md) (tested, b10433) | Q4_K_M + Q4_0 MTP + Q8_0 mmproj | 27B dense hybrid (48 SSM + 16 attn) | 23.0 | 333.5 | 22.3 GiB | 57.9% | **parked** 2026-08-15. ~~revisit when SYCL SSM gets XMX GEMM~~ — **that diagnosis was wrong** (finding #25): this is the dense-27B bandwidth wall, not the SSM layers. Nothing upstream will fix it |
 | [Qwen 3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | — | tested; bartowski build |
 | [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | — | tested; capability too poor for pi.dev |
 | [Qwen2.5-Coder-14B AWQ](models/tested/qwen2.5-coder-14b-awq.md) | AWQ int4 (vLLM-XPU) | 14B | 22.9 peak / 13-15 typical | **1,891 peak** | ~11 GB | — | retired; cross-stack reference |
@@ -92,6 +98,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Params | Decode | Prefill | VRAM | Notes |
 |---|---|---|---|---|---|---|
+| [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/2026-08-21-tier1-tier2-bench.md) ⭐ (b10566) | Q4_0 + MTP Q8_0 | 31.6B / 3B (`nemotron_h` Mamba2 hybrid) | **91.91** @ n-max 7 · 79.05 @ n-max 3 | 1,760 @ 12K | 22.18 GiB | **99.5-100% acceptance at every n-max — best on this stack.** Beats Gemma 4 26B-A4B on every axis. **Run it at `--spec-draft-n-max 7`** (+16.3% free; 8 falls off a 34% cliff — finding #30). Needs the whole card (no co-residence). `nemotron_h` barely quantises: ladder floors at 17.5 GiB, Q4_K_M is 23.73 GiB and **cannot fit** — Q4_0 is the only sensible pick (finding #26) |
+| [**LFM2.5-8B-A1B + DSpark**](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M + DSpark Q8_0 | 8B / 1B | **168.25** | 3,156 @ 5K / **3,665 @ 12K** | 8.63 GiB | Fastest categorise candidate — vs Gemma 4 E2B's 138.8 and 3,681 @ *2K*. DSpark drafts **wide**: 5.51 accepted/draft at n-max 7 vs MTP's ~3 (finding #29). Blocked on the 3.4 GiB categorise budget, not on merit |
+| [Ling-3.0-tiny](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M | 7.9B / 0.8B (`bailingmoe3`) | 91.86 | 1,811 @ 5K / **1,218 @ 12K** | 5.72 GiB | **Rejected** — prefill *decreases* with context (2,293 @ 2K → 1,218 @ 12K), backwards vs every other model, and categorise is prefill-heavy. No drafter available. Needed the b10566 build to load at all |
 | [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | Meta 2026-08 drop; multimodal; DFlash drafter; **bandwidth-bound at ~24 tps ceiling on B60**; only vision-capable option in tested lineup |
 | [Laguna XS-2.1](models/tested/2026-08-06-new-candidates-sweep.md#laguna-xs2-poolside-33b-a3b-moe) | Q4_K_M | 33B / 3B | 29.5 | 1,213 @ 5K | 22.1 GiB | MoE + SWA; DFlash drafter needs Poolside fork; deferred |
 | [gpt-oss-20b](models/tested/2026-08-06-new-candidates-sweep.md#gpt-oss-20b-openai) | Q4_K_M (MXFP4 native) | 20.9B / ~2.6B active | 25.1 | 1,265 @ 5K | 13.4 GiB | no MTP; potential Ornith alternative pending qualitative bake-off |
@@ -128,7 +137,17 @@ Isolated bench numbers are misleading — production has to fit all services sim
 
 **Historical:** pre-2026-08-15 the stack ran on a single B60, so co-residence math was hard-capped. Ornith 22.1 GiB budget, forcing every candidate below that. See finding #12.
 
-## Working Gemma 4 MTP drafter GGUFs on HF
+## MTP drafter GGUFs published to HF
+
+### Qwen3.8-9B-Distill MTP head (2026-08-21)
+
+[`empero-ai/Qwen3.8-9B-Distill`](https://huggingface.co/empero-ai/Qwen3.8-9B-Distill) ships an MTP head in its weights (`mtp_num_hidden_layers: 1`) but publishes main-model quants only — no head file, so the model runs unassisted. Converted both precisions from the official BF16 safetensors on b10566 and uploaded:
+
+- [`srmiles/Qwen3.8-9B-Distill-MTP-GGUF`](https://huggingface.co/srmiles/Qwen3.8-9B-Distill-MTP-GGUF) — **BF16 4.56 GB** + **Q8_0 2.43 GB**, pairs with `empero-ai/Qwen3.8-9B-Distill`
+
+**Deviates from the BF16-only convention below, deliberately.** ~2.03B of the head's 2.28B parameters is the vocab embedding and output matrices (248,320 × 4,096, twice), not the MTP block — at BF16 that is 4.56 GB against a 5.38 GB target, nearly doubling resident size. Q8_0 halves it, quantizes exactly the tensors that tolerate it, and benched **81.4% acceptance** (vs 84.7% for Ornith 1.5-9B's third-party head on the same build). BF16 is published alongside as the canonical source. See [`models/hf-uploads/qwen3.8-9b-distill-mtp.md`](models/hf-uploads/qwen3.8-9b-distill-mtp.md).
+
+### Working Gemma 4 MTP drafter GGUFs on HF
 
 The community GGUFs of Google's Gemma 4 MTP assistants use a broken architecture string (`gemma4_assistant` underscore vs upstream `gemma4-assistant` hyphen) and fail to load on any modern `llama.cpp` build. During this benching effort I converted Google's official BF16 safetensors from scratch with `llama.cpp`'s own `convert_hf_to_gguf.py` (b10215) and uploaded the working GGUFs:
 
@@ -140,7 +159,7 @@ All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/h
 
 ## Deep-dive docs
 
-- **[`docs/findings.md`](docs/findings.md)** — 24 numbered findings from the build-out (quantization, MTP, SYCL kernels, workload-shape math, power draw, etc.)
+- **[`docs/findings.md`](docs/findings.md)** — 32 numbered findings from the build-out (quantization, MTP, SYCL kernels, workload-shape math, power draw, etc.)
 - **[`docs/build-history.md`](docs/build-history.md)** — llama.cpp SYCL build history + per-release impact tables (b10068 → b10433) + journey summary
 - **[`docs/track2-quality-bakeoff.md`](docs/track2-quality-bakeoff.md)** — Ornith 9B vs Gemma 4 E2B quality bake-off (2026-08-01)
 - **[`docs/2nd-b60-arrival-playbook.md`](docs/2nd-b60-arrival-playbook.md)** — 2nd B60 day-1 to day-7 test sequence (includes Sergio Barrientos' vLLM XPU + MTP finding)
