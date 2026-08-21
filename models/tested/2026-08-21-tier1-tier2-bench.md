@@ -130,7 +130,19 @@ Third window, 21:21–21:34 UTC. Gemma 4 26B-A4B (QAT Q4_0 + Google's official M
 
 **Prediction vs outcome, honestly.** The framework predicted best-n = 7 at +14% for this model. Direction and rough magnitude were right; the optimum was off by one step. The error traces to the input: the predicted `p` came from the repo's recorded 97.2% acceptance, measured at Gemma's *production* sampling (`temp 1.0`, `top-k 64`), while the bench harness holds sampling at `temp 0.6 / top-p 0.95 / top-k 20` for cross-model comparability. Same model, same drafter, same build — 97.2% vs 88.7%, purely from sampling. See finding #32.
 
-**So the operational recommendation carries a caveat:** n-max 5 is what was measured, at harness sampling. At the higher acceptance Gemma shows under its own production sampling, the optimum plausibly moves back toward 7. Confirm with a two-point run at `temp 1.0 / top-k 64` before locking the launcher flag.
+**That caveat was tested and did not hold.** Re-swept at Gemma's own production sampling (`temp 1.0 / top-k 64`), fourth window 21:44–21:53 UTC:
+
+| n-max | harness decode | harness acc | prod decode | prod acc |
+|---|---|---|---|---|
+| 3 | 59.46 | 88.7% | 58.77 | 77.8% |
+| **5** | **65.34 (+9.9%)** | 81.6% | **64.75 (+10.2%)** | 83.7% |
+| 7 | 61.88 (+4.1%) | 75.7% | 60.88 (+3.6%) | 65.0% |
+
+Acceptance moves up to 10.9 points between the two configs; decode moves less than 1% at every setting, and **the optimum is n-max 5 under both**. The worry that a flag tuned at harness sampling would mislead a slot serving different sampling was real in principle and absent in practice.
+
+**Recommendation, unqualified: run the Gemma 4 26B-A4B reasoning fallback at `--spec-draft-n-max 5`.** Worth ~+10%.
+
+The wider lesson is in finding #32: sweep on decode throughput, and read acceptance only to understand the shape — flat acceptance means push to 7, decaying acceptance means stop at 5. Never carry an acceptance number from one bench into another as a model input, which is exactly the error that produced the wrong +14%-at-7 prediction.
 
 ## Finding #31 — what the drafter actually costs
 

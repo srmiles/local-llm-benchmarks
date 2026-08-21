@@ -134,8 +134,19 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     The +30.5% decode is the headline, but the drafter also costs **14.6% of prefill** and **3.85 GiB** of VRAM. On a decode-bound chat workload that trade is obviously right. On the categorise workload it is not obvious at all — that workload is prefill-heavy with short outputs (see the workload-shape finding), so a drafter can be a net loss there even while the decode number improves. **Decide per workload shape, not per model.** And note the σ collapse from 10.57 to 0.05 without the drafter: unassisted decode on this hardware is extremely stable, so any bimodality in a drafted row is the drafter, not the card.
 
 
-32. **Acceptance is sampling-dependent, so n-max must be tuned at the sampling config you actually serve.** Gemma 4 26B-A4B's recorded acceptance is 97.2% at its production sampling (`temp 1.0`, `top-k 64`). Measured on the standard bench harness (`temp 0.6`, `top-p 0.95`, `top-k 20`) the same model, drafter and build gave **88.7%** at n-max 3 — an 8.5-point gap from sampling alone.
+32. **Acceptance is sampling-dependent; the n-max optimum turned out not to be. Tune on throughput, not on acceptance.** Gemma 4 26B-A4B (QAT Q4_0 + Google MTP Q8_0) swept twice on the same build, same card, same prompt corpus — once at the cross-model harness sampling (`temp 0.6 / top-p 0.95 / top-k 20`) and once at its own production sampling (`temp 1.0 / top-k 64`):
 
-    That gap matters because it moves the n-max optimum. Predicting from the 97.2% figure put the optimum at n-max 7 for a +14% gain; measured at harness sampling the optimum is n-max 5 for +9.9%. Higher acceptance pushes the optimum toward the batch-8 ceiling, lower acceptance pulls it back.
+    | n-max | harness decode | harness acc | prod decode | prod acc |
+    |---|---|---|---|---|
+    | 3 | 59.46 | 88.7% | 58.77 | 77.8% |
+    | **5** | **65.34 (+9.9%)** | 81.6% | **64.75 (+10.2%)** | 83.7% |
+    | 7 | 61.88 (+4.1%) | 75.7% | 60.88 (+3.6%) | 65.0% |
 
-    **Consequence:** the cross-model bench harness deliberately holds sampling constant so rows compare, which makes it the wrong instrument for tuning a production flag on a slot that serves different sampling. Tune n-max in a run that mirrors the serving config, or accept that the answer may be off by one step. This applies to any acceptance-derived number, not just n-max.
+    **Acceptance moves a lot with sampling — up to 10.9 points at the same n-max — while decode barely moves at all** (within ~1% at every setting). And the optimum is n-max 5 under both, at essentially the same gain. A third figure exists for the same pairing: the repo's recorded **97.2%**, which reproduces under neither sampling here, so corpus matters too.
+
+    Two consequences, and the second one corrected an earlier prediction:
+
+    - **Acceptance percentages are only comparable within one harness, one corpus and one sampling config.** Quoting them across benches — as was done to predict this model's optimum from its recorded 97.2% — produces a wrong answer. That prediction said n-max 7 at +14%; the truth is 5 at +10%.
+    - **But the tuning decision was robust to all of it.** The concern that a flag tuned at harness sampling would be wrong for a slot serving different sampling was tested directly and did not materialise. Decode throughput is the stable signal; acceptance is a diagnostic for *why* a setting wins, not the thing to optimise.
+
+    **Practical:** sweep n-max on decode tok/s. Read acceptance only to understand the shape — flat acceptance means push to 7, decaying acceptance means stop at 5. Do not carry an acceptance number from one bench into another as an input.
