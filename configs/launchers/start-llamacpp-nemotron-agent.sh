@@ -10,6 +10,15 @@
 #
 # Bench basis: models/tested/nemotron-3.5-lightning-30b-a3b.md
 #   91.91 tok/s decode @ n-max 7, 99.5% MTP acceptance, 1,760 prefill @ 12K.
+#
+# REASONING: off by default, switchable per request. The server runs
+# --reasoning auto with a server-wide default of enable_thinking=false, so a
+# plain request behaves like the old --reasoning off. A client turns thinking
+# ON for one request with:
+#     "chat_template_kwargs": {"enable_thinking": true}
+# --reasoning-format deepseek puts the thought trace in
+# message.reasoning_content, NOT in content, so agents that ignore that field
+# are unaffected either way. Client configs: configs/AGENT-CLIENTS.md
 set -euo pipefail
 
 NAME=llamacpp-nemotron
@@ -47,7 +56,9 @@ docker run -d --name "$NAME" \
   -c "$CTX" --parallel 1 \
   --cache-type-k q8_0 --cache-type-v q8_0 \
   -fa on -ub 2048 -b 2048 \
-  --jinja --reasoning off \
+  --jinja \
+  --reasoning auto --reasoning-format deepseek \
+  --chat-template-kwargs '{"enable_thinking":false}' \
   --predict 2048 \
   --top-k 20 --min-p 0.0 \
   --host 0.0.0.0 --port 8000 --metrics

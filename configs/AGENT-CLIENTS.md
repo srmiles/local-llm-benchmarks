@@ -1,0 +1,145 @@
+# Agent clients on Nemotron `:8011`
+
+Config for **pi.dev** and **opencode** against the Nemotron 3.5 Lightning 30B-A3B agent-testing slot.
+
+| | |
+|---|---|
+| Endpoint | `http://192.168.1.253:8011/v1` (LAN) · `http://100.70.193.48:8011/v1` (Tailscale) |
+| Model id | `nemotron-3.5-lightning-30b-a3b` — exactly as `GET /v1/models` reports it |
+| Auth | none. Any non-empty `apiKey` string satisfies clients that insist on one. |
+| Context | 131,072 |
+| Max output | uncapped server-side (`n_predict = -1`) |
+| Traefik | **none** — this port is deliberately outside every LB pool |
+| Throughput | 72–90 tok/s decode, 1,300–1,750 prefill, measured 2K→70K of context |
+
+Deployed by [`configs/launchers/start-llamacpp-nemotron-agent.sh`](launchers/start-llamacpp-nemotron-agent.sh). Model detail: [`models/tested/nemotron-3.5-lightning-30b-a3b.md`](../models/tested/nemotron-3.5-lightning-30b-a3b.md).
+
+## Reasoning: off by default, on per request
+
+The server runs `--reasoning auto --reasoning-format deepseek` with a server-wide default of `--chat-template-kwargs '{"enable_thinking":false}'`. So:
+
+- A **plain request** behaves exactly like the old `--reasoning off` — no thought trace, clean `content`.
+- A request carrying **`"chat_template_kwargs": {"enable_thinking": true}`** turns thinking on for that call alone.
+- The trace comes back in **`message.reasoning_content`**, never in `content`. A client that ignores that field sees no difference beyond latency.
+
+Verified end to end: same prompt, same client, **19 output tokens** with thinking off versus **1,796** with it on.
+
+Two things that do *not* work, both tested:
+
+- **`reasoning_effort` is inert.** `low` and `high` both produced zero reasoning. Tell clients the model has no effort levels — it is a boolean.
+- **`reasoning_budget` is not honoured per request.** It is server-side only. With thinking on and a 700-token output cap the entire budget went to the trace and `content` came back **empty**. Budget generously — 8K+ output when thinking is on.
+
+## pi.dev
+
+Merge [`nemotron-models.json`](pi.dev/nemotron-models.json) into **`~/.pi/agent/models.json`** under the top-level `providers` key. Not `mcp.json` — that file is for stdio tool servers and its parser rejects provider blocks with `command is required for stdio transport`. pi.dev reloads `models.json` every time you open `/model`; no restart.
+
+```json
+{
+  "providers": {
+    "nemotron-local": {
+      "baseUrl": "http://192.168.1.253:8011/v1",
+      "api": "openai-completions",
+      "apiKey": "dummy-key",
+      "models": [
+        {
+          "id": "nemotron-3.5-lightning-30b-a3b",
+          "name": "Nemotron 3.5 Lightning 30B-A3B (local B60)",
+          "reasoning": true,
+          "input": ["text"],
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "contextWindow": 131072,
+          "maxTokens": 32768,
+          "thinkingLevelMap": {
+            "minimal": null, "low": null, "medium": null,
+            "high": "on", "xhigh": null, "max": null
+          },
+          "compat": {
+            "supportsDeveloperRole": true,
+            "supportsReasoningEffort": false,
+            "maxTokensField": "max_tokens",
+            "thinkingFormat": "chat-template",
+            "chatTemplateKwargs": {
+              "enable_thinking": { "$var": "thinking.enabled" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+- **`thinkingFormat: "chat-template"` + `chatTemplateKwargs`** is the piece that makes the toggle work — it maps pi's thinking state onto `chat_template_kwargs.enable_thinking`, which is what this server reads. Toggle it in the TUI the normal way; pi sends `true` or `false` accordingly.
+- Deliberately **not** `thinkingFormat: "qwen-chat-template"`. That variant also sends `preserve_thinking`, which this template does not define — it uses `truncate_history_thinking`. The explicit `chat-template` form sends only the key that exists.
+- **`thinkingLevelMap`** collapses pi's effort ladder to a single on/off, because the model has no effort levels. Only `high` is mapped; everything else is `null` so it does not appear as a choice.
+- **`supportsDeveloperRole: true`** — verified, the template accepts the `developer` role. (Gemma 4 needed `false`.)
+- **`supportsReasoningEffort: false`** — verified inert, see above.
+
+> Untested here — pi.dev is not installed on `llm.local`, so this config is built from the documented schema plus the endpoint behaviour probed directly. The opencode config below *was* run end to end.
+
+## opencode
+
+Merge [`nemotron-opencode.json`](opencode/nemotron-opencode.json) into `~/.config/opencode/opencode.json` under `provider`. It defines **two providers against the same endpoint** — that is the toggle, because opencode model options are static per entry and the map key must be the served model id.
+
+```json
+{
+  "provider": {
+    "nemotron": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nemotron 30B-A3B (local B60)",
+      "options": { "baseURL": "http://192.168.1.253:8011/v1", "apiKey": "local" },
+      "models": {
+        "nemotron-3.5-lightning-30b-a3b": {
+          "name": "Nemotron 3.5 Lightning 30B-A3B",
+          "limit": { "context": 131072, "output": 32768 }
+        }
+      }
+    },
+    "nemotron-think": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nemotron 30B-A3B — thinking (local B60)",
+      "options": { "baseURL": "http://192.168.1.253:8011/v1", "apiKey": "local" },
+      "models": {
+        "nemotron-3.5-lightning-30b-a3b": {
+          "name": "Nemotron 3.5 Lightning 30B-A3B (thinking)",
+          "limit": { "context": 131072, "output": 32768 },
+          "reasoning": true,
+          "interleaved": { "field": "reasoning_content" },
+          "options": { "chat_template_kwargs": { "enable_thinking": true } }
+        }
+      }
+    }
+  }
+}
+```
+
+Pick between them in `/models`, or on the CLI:
+
+```bash
+opencode run --model nemotron/nemotron-3.5-lightning-30b-a3b       "..."   # fast
+opencode run --model nemotron-think/nemotron-3.5-lightning-30b-a3b "..."   # thinking
+```
+
+- Model-level **`options`** are merged into the request body — that is what carries `chat_template_kwargs`. Confirmed against the server: 19 output tokens on `nemotron`, 1,796 on `nemotron-think` for the same prompt.
+- **`interleaved: {"field": "reasoning_content"}`** tells opencode where the trace lives so it renders as thinking rather than being dropped.
+- `limit.context` / `limit.output` are what opencode uses to show remaining context; they are not sent to the server.
+
+This merges alongside the existing `omniroute` provider — it does not replace it. `"model": "omniroute/auto/best-coding"` stays the default unless you change it.
+
+> Note: the `opencode.service` unit on `llm.local` is currently **inactive**. Start it with `sudo systemctl start opencode` if you want the headless server on `:4096` to pick this up.
+
+## Sampling
+
+Server defaults come from the model's own `generation_config.json`: `temp 1.0`, `top_p 0.95`, `top_k 20`, `min_p 0.0`. NVIDIA ships `temperature: 1.0` deliberately for this model. Neither client overrides it unless you ask them to — lower it per request if agent output is too loose for edit-diff work.
+
+## Verified against this endpoint
+
+| Behaviour | Result |
+|---|---|
+| `GET /v1/models` id | `nemotron-3.5-lightning-30b-a3b` |
+| `developer` role | accepted |
+| Tool calling | clean OpenAI-format `tool_calls` with structured JSON arguments |
+| Tool calling **with thinking on** | works — `tool_calls` and `reasoning_content` together |
+| `reasoning_effort` | no effect at any level |
+| Per-request `reasoning_budget` | not honoured |
+| Per-request `reasoning_format` | not honoured; server-side flag only |
