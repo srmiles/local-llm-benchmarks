@@ -5,31 +5,41 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Nemotron 30B-A3B (local B60)",
       "options": {
-        "baseURL": "http://192.168.1.253:8011/v1",
+        "baseURL": "http://100.70.193.48:8011/v1",
         "apiKey": "local"
       },
       "models": {
         "nemotron-3.5-lightning-30b-a3b": {
           "name": "Nemotron 3.5 Lightning 30B-A3B",
-          "limit": { "context": 131072, "output": 32768 }
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         }
       }
     },
     "nemotron-think": {
       "npm": "@ai-sdk/openai-compatible",
-      "name": "Nemotron 30B-A3B — thinking (local B60)",
+      "name": "Nemotron 30B-A3B \u2014 thinking (local B60)",
       "options": {
-        "baseURL": "http://192.168.1.253:8011/v1",
+        "baseURL": "http://100.70.193.48:8011/v1",
         "apiKey": "local"
       },
       "models": {
         "nemotron-3.5-lightning-30b-a3b": {
           "name": "Nemotron 3.5 Lightning 30B-A3B (thinking)",
-          "limit": { "context": 131072, "output": 32768 },
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          },
           "reasoning": true,
-          "interleaved": { "field": "reasoning_content" },
+          "interleaved": {
+            "field": "reasoning_content"
+          },
           "options": {
-            "chat_template_kwargs": { "enable_thinking": true }
+            "chat_template_kwargs": {
+              "enable_thinking": true
+            }
           }
         }
       }

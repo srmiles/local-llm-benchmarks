@@ -4,7 +4,7 @@ Config for **pi.dev** and **opencode** against the Nemotron 3.5 Lightning 30B-A3
 
 | | |
 |---|---|
-| Endpoint | `http://192.168.1.253:8011/v1` (LAN) · `http://100.70.193.48:8011/v1` (Tailscale) |
+| Endpoint | **`http://100.70.193.48:8011/v1`** (Tailscale — use this from any client not on the box) · `http://192.168.1.253:8011/v1` (LAN) |
 | Model id | `nemotron-3.5-lightning-30b-a3b` — exactly as `GET /v1/models` reports it |
 | Auth | none. Any non-empty `apiKey` string satisfies clients that insist on one. |
 | Context | 131,072 |
@@ -13,6 +13,28 @@ Config for **pi.dev** and **opencode** against the Nemotron 3.5 Lightning 30B-A3
 | Throughput | 72–90 tok/s decode, 1,300–1,750 prefill, measured 2K→70K of context |
 
 Deployed by [`configs/launchers/start-llamacpp-nemotron-agent.sh`](launchers/start-llamacpp-nemotron-agent.sh). Model detail: [`models/tested/nemotron-3.5-lightning-30b-a3b.md`](../models/tested/nemotron-3.5-lightning-30b-a3b.md).
+
+## Which address to use
+
+**Use the Tailscale address `100.70.193.48:8011` from anything that isn't on `llm.local` itself.** The LAN address works, but only from a host actually sitting on `192.168.1.0/24` with a working route to `.253`.
+
+A macOS client hitting the LAN IP produced:
+
+```
+Cannot connect to API: connect EHOSTUNREACH 192.168.1.253:8011 - Local (192.168....
+```
+
+`EHOSTUNREACH` is a routing-layer failure — no route to host. The packet never left for the server, so it is not a firewall rule, not a refused connection, and nothing to fix on `llm.local`. Verified at the time: `:8011` binds `0.0.0.0`, `ufw` is inactive, and another LAN host (`manager.local`) got `200` from `http://192.168.1.253:8011/v1/models`. The Mac had *a* route for `192.168.1.x` — the error shows it bound a `192.168.…` local source — but not one that reached `.253`, which is what happens with multiple active interfaces, a second `192.168.x` network, or a Wi-Fi/VLAN split.
+
+Tailscale sidesteps all of it: same endpoint, stable path, works from any network. Confirmed `200` over the tailnet.
+
+```bash
+# triage from the client machine, in this order
+curl -sS http://100.70.193.48:8011/v1/models   # tailnet — should be 200
+curl -sS http://192.168.1.253:8011/v1/models   # LAN — EHOSTUNREACH means routing, not the server
+```
+
+MagicDNS name `llm.tail67d0e5.ts.net` also resolves if you prefer a name to an IP.
 
 ## Reasoning: off by default, on per request
 
@@ -37,7 +59,7 @@ Merge [`nemotron-models.json`](pi.dev/nemotron-models.json) into **`~/.pi/agent/
 {
   "providers": {
     "nemotron-local": {
-      "baseUrl": "http://192.168.1.253:8011/v1",
+      "baseUrl": "http://100.70.193.48:8011/v1",
       "api": "openai-completions",
       "apiKey": "dummy-key",
       "models": [
@@ -87,7 +109,7 @@ Merge [`nemotron-opencode.json`](opencode/nemotron-opencode.json) into `~/.confi
     "nemotron": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Nemotron 30B-A3B (local B60)",
-      "options": { "baseURL": "http://192.168.1.253:8011/v1", "apiKey": "local" },
+      "options": { "baseURL": "http://100.70.193.48:8011/v1", "apiKey": "local" },
       "models": {
         "nemotron-3.5-lightning-30b-a3b": {
           "name": "Nemotron 3.5 Lightning 30B-A3B",
@@ -98,7 +120,7 @@ Merge [`nemotron-opencode.json`](opencode/nemotron-opencode.json) into `~/.confi
     "nemotron-think": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "Nemotron 30B-A3B — thinking (local B60)",
-      "options": { "baseURL": "http://192.168.1.253:8011/v1", "apiKey": "local" },
+      "options": { "baseURL": "http://100.70.193.48:8011/v1", "apiKey": "local" },
       "models": {
         "nemotron-3.5-lightning-30b-a3b": {
           "name": "Nemotron 3.5 Lightning 30B-A3B (thinking)",

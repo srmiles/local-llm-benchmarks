@@ -1,7 +1,7 @@
 {
   "providers": {
     "nemotron-local": {
-      "baseUrl": "http://192.168.1.253:8011/v1",
+      "baseUrl": "http://100.70.193.48:8011/v1",
       "api": "openai-completions",
       "apiKey": "dummy-key",
       "models": [
@@ -9,8 +9,15 @@
           "id": "nemotron-3.5-lightning-30b-a3b",
           "name": "Nemotron 3.5 Lightning 30B-A3B (local B60)",
           "reasoning": true,
-          "input": ["text"],
-          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
           "contextWindow": 131072,
           "maxTokens": 32768,
           "thinkingLevelMap": {
@@ -27,7 +34,9 @@
             "maxTokensField": "max_tokens",
             "thinkingFormat": "chat-template",
             "chatTemplateKwargs": {
-              "enable_thinking": { "$var": "thinking.enabled" }
+              "enable_thinking": {
+                "$var": "thinking.enabled"
+              }
             }
           }
         }
