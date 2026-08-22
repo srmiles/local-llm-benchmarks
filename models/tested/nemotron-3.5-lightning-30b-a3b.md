@@ -1,6 +1,6 @@
 # NVIDIA Nemotron 3.5 Lightning 30B-A3B — Tested 2026-08-21
 
-**Status: DEPLOYED 2026-08-22** on `llm.local:8011`, B60 card 2, dedicated whole card, for agent testing. 91.91 tok/s decode at `--spec-draft-n-max 7` with 99.5–100% MTP acceptance — beats the reasoning fallback (Gemma 4 26B-A4B, 62.84) on every axis. Deliberately **not** in any Traefik pool. Deployment detail and the rejected 262K config are at the bottom of this page.
+**Status: DEPLOYED 2026-08-22** on `llm.local:8011`, B60 card 2, dedicated whole card, for agent testing. **Retuned for the agent workload the same day** — `--spec-draft-p-min 0.6` and `temp 0.2` lifted real code-generation decode from 35.02 to 50.71 tok/s (+44.8%); see [finding #34](../../docs/findings.md) and the retuning section below. Synthetic bench: 91.91 tok/s decode at `--spec-draft-n-max 7` with 99.5–100% MTP acceptance — beats the reasoning fallback (Gemma 4 26B-A4B, 62.84) on every axis. Deliberately **not** in any Traefik pool. Deployment detail and the rejected 262K config are at the bottom of this page.
 
 **HF:** [`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) · [bartowski GGUF](https://huggingface.co/bartowski/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) (used here) · [ggml-org GGUF](https://huggingface.co/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [unsloth](https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4)
 **License:** nvidia-open-model-license (`license:other`)
@@ -169,6 +169,47 @@ At 262K the card reached **24,450 of 24,576 MiB — 126 MiB free** — and decod
 | 70K | 1,321 | 72.19 | 22.26 GiB |
 
 Decode holds 72–90 tok/s from 2K to 70K of context. The 12K figures reproduce the bench rows above, which is the check that the deployed config matches what was measured.
+
+### Retuned for the agent workload (2026-08-22) — finding #34
+
+The deployed config above came straight from the bench: 91.91 tok/s at 99.5% MTP acceptance. **Real agent traffic did not reproduce it.** Forty minutes of live opencode/pi.dev use at 82K context gave **46.2% acceptance (8,066 accepted / 17,469 drafted), mean accepted chain 4.23, decode 23.6–58.3 tok/s** — and the split by turn type was stark:
+
+| turn shape | acceptance | mean chain |
+|---|---|---|
+| short replies / tool calls (40–220 tok) | 0.60 – **0.87** | 5.2 – 7.1 |
+| long code generations (700–6,300 tok) | **0.25** – 0.46 | 2.8 – 4.2 |
+
+The cause was `--spec-draft-p-min`, which defaults to **0.00** and was never set: the MTP head ran the full 7 forward passes on every step regardless of its own confidence. Swept on a 20K-token code-generation probe at `temp 0.2`, `n-max 7` fixed:
+
+| `--spec-draft-p-min` | decode tok/s | acceptance | mean chain | drafted |
+|---|---|---|---|---|
+| 0.00 (was deployed) | 41.16 | 43.5% | 4.04 | 1,381 |
+| 0.30 | 41.71 | 46.1% | 3.86 | 1,280 |
+| 0.50 | 46.88 | 58.7% | 3.93 | 988 |
+| **0.60** ⭐ | **52.04** | 70.9% | 4.19 | 833 |
+| 0.75 | 49.73 | 77.8% | 3.55 | 702 |
+| 0.90 | 44.35 | 85.3% | 3.21 | 551 |
+
+**+26.4% for one flag**, with accepted tokens essentially flat (601 → 591) while drafted tokens fall 40%. Acceptance climbs monotonically across the whole sweep while decode peaks at 0.60 — tuning on acceptance would have picked 0.90 and cost 15%, which is finding #32's rule stated as plainly as it gets.
+
+Sampling was the smaller half. The slot had been serving NVIDIA's **chat** default of `temp 1.0` because the launcher never set `--temp`; `temp 0.2 / top-p 0.9` is worth +7–9%. A 2×2 probe, 800 output tokens per cell:
+
+| workload | sampling | p-min 0.00 | p-min 0.60 |
+|---|---|---|---|
+| code | temp 1.0 | 35.02 | 46.36 |
+| **code** | **temp 0.2** | 37.64 | **50.71** |
+| prose | temp 1.0 | 23.74 | 36.62 |
+| prose | temp 0.2 | 25.37 | 38.24 |
+
+**Combined: 35.02 → 50.71 tok/s on the code workload, +44.8%.** Note also that this drafter handles **code better than prose** (50.71 vs 38.24) — the workload was never the problem, the drafting policy was.
+
+`n-max` stays at **7**. With p-min at 0.60 the mean chain settles at 4.19, so p-min truncates long before n-max binds; finding #27's ceiling (never 8+ on this card) is unchanged. `NMAX` and `PMIN` are now env-overridable in the launcher for future sweeps.
+
+Raw results: `/data/llm/benchmarks/20260822-codetune/`. Probe: `/data/llm/benchmarks/probe-codetune.py`, sweep driver `/data/llm/benchmarks/sweep-pmin.sh`.
+
+### Context growth is a client-side cost, not a server one
+
+Prefix reuse works: LCP similarity is 0.99+ on most turns, and `--cache-ram` (8 GiB default) and `-ctxcp` (32 checkpoints × 8,192 spacing = 262K of coverage) are both adequate untouched. What hurts is the size of the conversation itself. At 82,763 tokens prefill has decayed to **1,031 tok/s** from 1,772 at 12K, so each time the client rewrites history — two events in the observed window, `f_sim_best` dropping to 0.16 and 0.14, i.e. opencode compaction — the server re-prefills **70,500 tokens in 68 seconds**. Halving the agent's compaction threshold roughly halves both that stall and the decode penalty. No server flag fixes it.
 
 ### Gotcha found during deployment
 

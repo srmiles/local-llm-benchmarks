@@ -152,3 +152,41 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     **Practical:** sweep n-max on decode tok/s. Read acceptance only to understand the shape — flat acceptance means push to 7, decaying acceptance means stop at 5. Do not carry an acceptance number from one bench into another as an input.
 
 33. **A/B benching hardware behind a live Traefik LB pool measures LB load-share, not silicon.** Discovered 2026-08-22 during the B580-vs-B60 head-to-head. First run — both backends live in the `llm-categorise` pool, Gemma 4 E2B + Google MTP: B580 128.19 tps decode / B60 92.54 tps → apparent **+40% B580 advantage**. Pulled both `:8009` backends from the Traefik LB and re-ran identical script identical corpus identical build: B580 128.19 tps / **B60 159.55 tps** → real result is **B580 20% *slower*** on decode. The +40% "advantage" was pure LB contention on B60 (other traffic hitting `https://llm.levirge.com/v1/categorise` was queuing behind the bench request). Prefill was unaffected — it saturates faster than the LB queue depth changes. **Rule:** for any hardware A/B, both ends must be out of the LB pool for the duration. Same class of error as finding #20 (mixing methodologies produces artifacts) — here the mixing is "bench request + LB traffic" instead of "isolated probe + prefix-cached wall-clock." See [`models/tested/2026-08-22-b580-vs-b60-e2b.md`](../models/tested/2026-08-22-b580-vs-b60-e2b.md).
+
+34. **`--spec-draft-p-min` is the speculative-decoding knob that matters for an agent workload, and it dominates `--spec-draft-n-max`.** Found 2026-08-22 chasing "nemo is very slow, as context grows" on the deployed Nemotron agent slot. The deployment was tuned on the synthetic bench — 91.91 tok/s at 99.5% MTP acceptance. Forty minutes of real opencode/pi.dev traffic at 82K context told a different story: **46.2% acceptance (8,066 accepted / 17,469 drafted), mean accepted chain 4.23 against the bench's ~8, and decode of 23.6–58.3 tok/s.**
+
+    The cause was a flag nobody had set. `--spec-draft-p-min` defaults to **0.00**, which means the MTP head runs the full `n-max` forward passes on *every* step regardless of its own confidence. The worst observed turn drafted 259 tokens to keep 66.
+
+    Swept on a 20K-token code-generation probe at `temp 0.2`, `n-max 7` fixed:
+
+    | `--spec-draft-p-min` | decode tok/s | acceptance | mean chain | drafted |
+    |---|---|---|---|---|
+    | 0.00 (default) | 41.16 | 43.5% | 4.04 | 1,381 |
+    | 0.30 | 41.71 | 46.1% | 3.86 | 1,280 |
+    | 0.50 | 46.88 | 58.7% | 3.93 | 988 |
+    | **0.60** ⭐ | **52.04** | 70.9% | 4.19 | 833 |
+    | 0.75 | 49.73 | 77.8% | 3.55 | 702 |
+    | 0.90 | 44.35 | 85.3% | 3.21 | 551 |
+
+    **+26.4% decode for one flag**, and the accepted-token count barely moves across the whole sweep (601 → 591 → 470) while drafted tokens fall 60%. The head was doing 60% of its work for nothing.
+
+    **This is the cleanest confirmation yet of finding #32's rule.** Acceptance rises *monotonically* across the entire sweep, 43.5% → 85.3%, while decode peaks at 0.60 and falls away on both sides. Tuning on acceptance picks 0.90 and costs 15%. Tune on decode throughput; read acceptance only for shape.
+
+    **p-min subsumes the n-max question for bimodal workloads.** Finding #27 framed depth as a single number per model, chosen by whether chain acceptance decays. That is the right frame for a bench, where every prompt looks like every other prompt. An agent's turns are not alike — in the same session, short tool-call replies accepted at 0.60–0.87 while long code generations accepted at 0.25–0.46 — so no fixed depth is right for both. p-min makes depth *per-step* adaptive: deep on boilerplate, shallow on novel code. With p-min at 0.60 the mean chain settles at 4.19, so n-max 7 never binds and costs nothing; finding #27's hard rule (never 8+ on this card) still stands as the ceiling.
+
+    **Sampling was the smaller half of the story, and the premise was wrong.** The slot had been serving NVIDIA's chat default of `temp 1.0` because the launcher never set `--temp`. Correcting it to `temp 0.2 / top-p 0.9` is worth **+7–9%** — real, but a third of what p-min gives. A 2×2 probe (code vs prose × chat vs code sampling), 800 output tokens each:
+
+    | workload | sampling | p-min 0.00 | p-min 0.60 |
+    |---|---|---|---|
+    | code | temp 1.0 | 35.02 | 46.36 |
+    | **code** | **temp 0.2** | 37.64 | **50.71** |
+    | prose | temp 1.0 | 23.74 | 36.62 |
+    | prose | temp 0.2 | 25.37 | 38.24 |
+
+    Combined effect on the code workload: **35.02 → 50.71 tok/s, +44.8%.**
+
+    And note the row order: **the model drafts code substantially better than prose** — 50.71 vs 38.24 at the same settings — because code is the more predictable continuation (boilerplate, indentation, repeated identifiers). The question that started this investigation assumed a chat-tuned server was being asked to do code; the measurement says code is the workload this drafter is *best* at. What was actually mis-tuned was the drafting policy, not the workload fit.
+
+    **Context growth is a separate and mostly client-side effect.** Prefix reuse was working — LCP similarity 0.99+ on most turns, `--cache-ram` (8 GiB default) and `-ctxcp` (32 checkpoints × 8,192 spacing = 262K coverage) both adequate and untouched. But at 82,763 tokens prefill has decayed to 1,031 tok/s from 1,772 at 12K, so the two client-side history rewrites in that window (`f_sim_best` dropping to 0.16 and 0.14 — opencode compaction, not a server fault) each cost a **70,500-token, 68-second** re-prefill. The lever there is the agent's compaction threshold, not a server flag.
+
+    **Recipe for any drafted model serving an agent:** set `--spec-draft-p-min` before touching `--spec-draft-n-max`, sweep it on decode tok/s over a realistic long-generation probe, and expect the optimum near 0.6. Then leave n-max at the finding-#27 ceiling of 7 and let p-min do the cutting.

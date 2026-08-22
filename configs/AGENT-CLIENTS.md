@@ -7,10 +7,10 @@ Config for **pi.dev** and **opencode** against the Nemotron 3.5 Lightning 30B-A3
 | Endpoint | **`http://100.70.193.48:8011/v1`** (Tailscale — use this from any client not on the box) · `http://192.168.1.253:8011/v1` (LAN) |
 | Model id | `nemotron-3.5-lightning-30b-a3b` — exactly as `GET /v1/models` reports it |
 | Auth | none. Any non-empty `apiKey` string satisfies clients that insist on one. |
-| Context | 131,072 |
+| Context | 131,072 — but keep working conversations under ~40K, see below |
 | Max output | uncapped server-side (`n_predict = -1`) |
 | Traefik | **none** — this port is deliberately outside every LB pool |
-| Throughput | 72–90 tok/s decode, 1,300–1,750 prefill, measured 2K→70K of context |
+| Throughput | 72–90 tok/s decode / 1,300–1,750 prefill on the synthetic curve (2K→70K). **On real code generation at 20K context: 50.7 tok/s** after the 2026-08-22 retune (was 35.0). |
 
 Deployed by [`configs/launchers/start-llamacpp-nemotron-agent.sh`](launchers/start-llamacpp-nemotron-agent.sh). Model detail: [`models/tested/nemotron-3.5-lightning-30b-a3b.md`](../models/tested/nemotron-3.5-lightning-30b-a3b.md).
 
@@ -165,9 +165,17 @@ This merges alongside the existing `omniroute` provider — it does not replace 
 
 > Note: the `opencode.service` unit on `llm.local` is currently **inactive**. Start it with `sudo systemctl start opencode` if you want the headless server on `:4096` to pick this up.
 
-## Sampling
+## Sampling — retuned for code 2026-08-22
 
-Server defaults come from the model's own `generation_config.json`: `temp 1.0`, `top_p 0.95`, `top_k 20`, `min_p 0.0`. NVIDIA ships `temperature: 1.0` deliberately for this model. Neither client overrides it unless you ask them to — lower it per request if agent output is too loose for edit-diff work.
+**Server defaults are now `temp 0.2`, `top_p 0.9`, `top_k 20`, `min_p 0.0`.** They were the model's own chat defaults (`temp 1.0 / top_p 0.95`) until the slot was measured under real agent traffic; NVIDIA ships `temperature: 1.0` deliberately, but that is a chat figure and this port serves coding agents. Worth **+7–9% decode** on top of the correctness argument, because higher temperature also pushes the target off the MTP head's path and costs acceptance.
+
+Both clients can still override per request — send `temperature` in the body if you want the old behaviour for a one-off.
+
+The much larger change on the same day was `--spec-draft-p-min 0.6` (was the `0.00` default, i.e. the drafter always ran its full 7 passes even with no confidence): **+26% decode on its own.** Combined, real code-generation throughput went **35.02 → 50.71 tok/s, +44.8%**. Full sweep in [finding #34](../docs/findings.md) and on the [model page](../models/tested/nemotron-3.5-lightning-30b-a3b.md).
+
+### If it still feels slow, it is the conversation length
+
+Prefix reuse works and needs no tuning. But prefill decays with context — 1,772 tok/s at 12K, **1,031 tok/s at 82K** — so every time the client rewrites its history (compaction, a new session, a changed system prompt or tool list) the server re-prefills from the divergence point. Measured on a real session: two compaction events, each a **70,500-token, 68-second** stall. Decode at 82K also runs roughly a third of its 2K figure. **Lower the agent's compaction threshold to ~40K** and both halve. No server flag helps here.
 
 ## Verified against this endpoint
 

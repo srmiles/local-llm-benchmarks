@@ -18,7 +18,33 @@
 #     "chat_template_kwargs": {"enable_thinking": true}
 # --reasoning-format deepseek puts the thought trace in
 # message.reasoning_content, NOT in content, so agents that ignore that field
-# are unaffected either way. Client configs: configs/AGENT-CLIENTS.md
+# are unaffected either way.
+# CODE TUNING (2026-08-22) — MEASURED, see finding #34 and the model page.
+# This slot serves coding agents. The original config came from a synthetic
+# bench (91.91 tok/s @ 99.5% acceptance); under 40 min of real opencode/pi.dev
+# traffic at 82K context it delivered 46.2% acceptance (8,066/17,469) and
+# 23-58 tok/s. Two changes, both A/B'd on a 20K-token code-generation probe:
+#
+#   --spec-draft-p-min 0.6   THE big one, +26% decode. Was 0.00, meaning the
+#       MTP head always ran the full n-max forward passes even with no
+#       confidence. Swept 0.0/0.3/0.5/0.6/0.75/0.9 -> 41.2/41.7/46.9/52.0/
+#       49.7/44.4 tok/s. Clean peak at 0.6. Acceptance rises monotonically
+#       across the whole sweep (43.5% -> 85.3%) while decode peaks and falls,
+#       so tuning on acceptance would have picked 0.9 and cost 15%. Finding
+#       #32's rule holds again: tune on decode, read acceptance for shape.
+#
+#   --temp 0.2 --top-p 0.9   +7-9% decode. NVIDIA ships temp 1.0 as the CHAT
+#       default and this launcher never overrode it. Smaller effect than
+#       expected; the p-min miss was the real cost.
+#
+# Combined: 35.0 -> 50.7 tok/s on the code probe (+45%).
+#
+# n-max stays at 7. With p-min 0.6 the mean accepted chain is 4.19, so p-min
+# truncates long before n-max binds; 7 costs nothing and finding #27's hard
+# rule (never 8+ on this card) still applies.
+#
+# NMAX / PMIN are env-overridable for sweeps: sudo env PMIN=0.75 ./this.sh
+# Rollback: start-llamacpp-nemotron-agent.sh.bak-*
 set -euo pipefail
 
 NAME=llamacpp-nemotron
@@ -27,6 +53,8 @@ MODEL_DIR=/data/llm/nemotron-3.5-lightning-30b-a3b-GGUF
 MODEL=NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf
 DRAFT=mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf
 PORT=${PORT:-8011}
+NMAX=${NMAX:-7}      # spec draft depth cap
+PMIN=${PMIN:-0.6}    # adaptive early-stop; 0.0 = always draft the full NMAX
 CTX=${CTX:-131072}   # 262144 was measured and REJECTED: idle 23.38 GiB, and a
                      # 105K-token request took the card to 24,450 of 24,576 MiB
                      # (126 MiB free) with decode collapsing to 20 tok/s.
@@ -50,7 +78,7 @@ docker run -d --name "$NAME" \
   "$IMAGE" \
   -m "/models/${MODEL}" \
   --model-draft "/models/${DRAFT}" \
-  --spec-type draft-mtp --spec-draft-n-max 7 \
+  --spec-type draft-mtp --spec-draft-n-max "$NMAX" --spec-draft-p-min "$PMIN" \
   --alias nemotron-3.5-lightning-30b-a3b \
   -ngl 99 -ngld 99 \
   -c "$CTX" --parallel 1 \
@@ -60,7 +88,7 @@ docker run -d --name "$NAME" \
   --reasoning auto --reasoning-format deepseek \
   --chat-template-kwargs '{"enable_thinking":false}' \
   --predict 2048 \
-  --top-k 20 --min-p 0.0 \
+  --temp 0.2 --top-p 0.9 --top-k 20 --min-p 0.0 \
   --host 0.0.0.0 --port 8000 --metrics
 
-echo "$NAME starting on :${PORT} (card 2, ctx ${CTX}, --spec-draft-n-max 7, image ${IMAGE})"
+echo "$NAME starting on :${PORT} (card 2, ctx ${CTX}, n-max ${NMAX}, p-min ${PMIN}, image ${IMAGE})"
