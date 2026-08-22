@@ -24,7 +24,22 @@ A macOS client hitting the LAN IP produced:
 Cannot connect to API: connect EHOSTUNREACH 192.168.1.253:8011 - Local (192.168....
 ```
 
-`EHOSTUNREACH` is a routing-layer failure — no route to host. The packet never left for the server, so it is not a firewall rule, not a refused connection, and nothing to fix on `llm.local`. Verified at the time: `:8011` binds `0.0.0.0`, `ufw` is inactive, and another LAN host (`manager.local`) got `200` from `http://192.168.1.253:8011/v1/models`. The Mac had *a* route for `192.168.1.x` — the error shows it bound a `192.168.…` local source — but not one that reached `.253`, which is what happens with multiple active interfaces, a second `192.168.x` network, or a Wi-Fi/VLAN split.
+`EHOSTUNREACH` is a routing-layer failure — no route to host. The packet never left for the server, so it is not a firewall rule, not a refused connection, and nothing to fix on `llm.local`. Verified at the time: `:8011` binds `0.0.0.0`, `ufw` is inactive, and another LAN host (`manager.local`) got `200` from `http://192.168.1.253:8011/v1/models`.
+
+**The Mac is on `192.168.1.x` and reaches `.253` fine over SSH**, so this is not a subnet mismatch — it is one *process* on that machine being unable to use a path the machine itself has. In rough order of likelihood:
+
+1. **macOS Local Network permission.** macOS 15+ gates LAN access per-application, and a denied app gets exactly `EHOSTUNREACH` on a `192.168.x` target while everything else on the box works normally. The grant follows the *binary that opens the socket* — the terminal app, or Node — so SSH from one app and opencode from another can differ. Check System Settings → Privacy & Security → Local Network.
+2. **opencode running inside a container or VM** (OrbStack, Docker Desktop). A bridged container has no route to the host's LAN unless explicitly given one, and LAN targets fail this way while tailnet and public addresses still work.
+3. **A Tailscale subnet route for `192.168.1.0/24`.** If a tailnet node advertises it and this client has `--accept-routes` on, traffic to `.253` is pulled into the tunnel; a stale or unreachable subnet router then yields `EHOSTUNREACH` even though the LAN is physically right there.
+
+Triage on the Mac, from the same shell opencode runs in:
+
+```bash
+curl -sS -m 5 http://192.168.1.253:8011/v1/models   # curl OK but opencode fails -> per-app permission (cause 1)
+route -n get 192.168.1.253 | grep -E 'interface|gateway'   # interface not your Wi-Fi/Ethernet -> cause 3
+ifconfig | grep 'inet '                              # a second 192.168.x address -> interface selection
+tailscale debug prefs | grep -i routeall             # true -> accept-routes is on, cause 3
+```
 
 Tailscale sidesteps all of it: same endpoint, stable path, works from any network. Confirmed `200` over the tailnet.
 
