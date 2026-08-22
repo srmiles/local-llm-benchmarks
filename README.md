@@ -1,41 +1,50 @@
 # Local LLM Benchmarks (B60 Pro)
 
-Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlemage / Xe2)** on bare-metal Ubuntu 26.04, 64 GiB RAM.
+Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlemage / Xe2)** on bare-metal Ubuntu 26.04, 64 GiB RAM — plus **`llm2.local`, an Intel Arc B580 12 GB node** carrying the small services since 2026-08-22.
 
 All numbers below are measured on the same physical hardware. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) at the current build tag.
 
 **Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`; not cut over to production.
 
 **Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
-**Key findings (numbered #1-#33) →** [`docs/findings.md`](docs/findings.md)
+**Key findings (numbered #1-#32) →** [`docs/findings.md`](docs/findings.md)
 
 ## Current production stack
 
-Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-based routing, internal LAN only, split-DNS to manager.local Traefik). LB round-robins between paired card-1 / card-2 backends for each service. Both cards mirror the full 4-service stack (Ornith chat + embed + rerank + E2B categorise).
+Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-based routing, internal LAN only, split-DNS to manager.local Traefik), with per-service `*.srmiles.com` hostnames alongside.
 
-| Port | Container | Card | Model | Purpose |
-|---|---|---|---|---|
-| 8002 | `llamacpp-sycl` | 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent (mirror pair) |
-| 8010 | `llamacpp-sycl-c2` | 2 | Ornith 1.5 9B + MTP (mirror) | chat + pi.dev agent |
-| 8004 | `llamacpp-embed` | 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
-| 8012 | `llamacpp-embed-c2` | 2 | EmbeddingGemma-300M (mirror) | embeddings |
-| 8008 | `tei-rerank` | 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
-| 8013 | `tei-rerank-c2` | 2 | bge-reranker-v2-m3 (mirror) | rerank |
-| 8006 | `llamacpp-categorise-c1` | 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise (mirror) |
-| 8009 | `llamacpp-categorise` | 2 | Gemma 4 E2B QAT + Google MTP ⭐ | categorise (primary, watchdog-monitored) |
+**Topology changed 2026-08-22 (task #144 complete).** The dual-B60 mirror is gone. Embed, rerank and categorise moved to the B580 node; B60 card 2 was freed and now runs Nemotron 3.5 Lightning as a dedicated agent-testing slot. Each service pairs one llm.local backend with one llm2.local backend.
+
+| Host | Port | Container | GPU | Model | Purpose |
+|---|---|---|---|---|---|
+| llm.local | 8002 | `llamacpp-sycl` | B60 card 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent — **sole backend** |
+| llm.local | **8011** | `llamacpp-nemotron` | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
+| llm.local | 8004 | `llamacpp-embed` | B60 card 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
+| llm.local | 8008 | `tei-rerank` | B60 card 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
+| llm.local | 8006 | `llamacpp-categorise-c1` | B60 card 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise |
+| **llm2.local** | 8004 | `llamacpp-embed` | B580 | EmbeddingGemma-300M | embeddings (pair) |
+| **llm2.local** | 8008 | `tei-rerank` | B580 | bge-reranker-v2-m3 | rerank (pair) |
+| **llm2.local** | 8009 | `llamacpp-categorise` | B580 | Gemma 4 E2B QAT + Google MTP | categorise (pair) |
+
+Card 1 sits at ~20.5 GiB with four services co-resident; card 2 at ~22.8 GiB with Nemotron alone; the B580 at ~5.8 GiB of 12.
+
+**Retired 2026-08-22** — stopped, not removed, so rollback is `docker start`: `llamacpp-sycl-c2` (:8010), `llamacpp-categorise` (:8009), `llamacpp-embed-c2` (:8012), `tei-rerank-c2` (:8013). Their three watchdog units are `disabled`, not merely stopped, so a reboot will not resurrect them.
 
 **Reasoning fallback (not running by default):** [Gemma 4 26B-A4B QAT + Google MTP](models/production/gemma-4-26b-a4b.md) — 62.8 tok/s decode, 97.2% MTP acceptance on b10433. **⚠ Launcher is missing `--spec-draft-n-max 5`, worth ~+10%** (2026-08-21 sweep, confirmed at two sampling configs).
 
 **Traefik routes:**
-- `/v1/completions` and `/v1/chat/completions` → Ornith pair (:8002 + :8010)
-- `/v1/embeddings` → embed pair (:8004 + :8012)
-- `/v1/rerank` → TEI pair (:8008 + :8013), path rewritten to `/rerank`
-- `/v1/categorise` → E2B pair (:8006 + :8009), path rewritten to `/v1/chat/completions`, inFlightReq=2
+- `/v1/completions` and `/v1/chat/completions` → Ornith, `llm.local:8002` only
+- `/v1/embeddings` → `llm.local:8004` + `llm2.local:8004`
+- `/v1/rerank` → `llm.local:8008` + `llm2.local:8008`, path rewritten to `/rerank`
+- `/v1/categorise` → `llm.local:8006` + `llm2.local:8009`, path rewritten to `/v1/chat/completions`, inFlightReq=2
 - `/` → monitor dashboard :8005 (HTTPS only)
+
+The per-service hostnames (`embed`/`rerank`/`categorise`/`ornith.srmiles.com`) carry the same backend pairs. **Nemotron on :8011 has no Traefik route at all** — agent-test traffic cannot reach a production pool and vice versa.
 
 ## Recent stack changes
 
-- **2026-08-22** — **llm2.local (B580 12GB) built and joined Traefik LB.** Fresh Ubuntu 26.04 box, wiped 1TB SATA → /data, mirrored driver stack + Docker + xpu-smi 2.1 from llm.local. Images transferred via NAS `docker save`/`load` (IDs match llm.local exactly). Three services live at 192.168.1.252: embed :8004 + tei-rerank :8008 + E2B categorise :8009 (5.6 GiB / 12 GiB). All three added to their Traefik pools alongside llm.local backends. **Head-to-head bench vs B60 on Gemma 4 E2B:** prefill parity (within 6%), decode -20% (128.19 vs 159.55 tps isolated) — B580 is a modest downgrade per-service, but the migration win is on the B60 side (freeing them for Nemotron 30B-A3B). Note: first bench showed a fake +40% B580 advantage from Traefik LB contention on B60 :8009 while B580 was fresh — pulled both from LB and re-ran for the real numbers (finding #33). Full details: [B580 vs B60 bench](models/tested/2026-08-22-b580-vs-b60-e2b.md).
+- **2026-08-22** — **Task #144 done: B580 node live, B60 card 2 freed, Nemotron deployed for agent testing.** `llm2.local` (Arc B580 12 GB) now pairs with card 1 for embed/rerank/categorise; card 2's four mirror containers were stopped and their watchdogs *disabled*; **Nemotron 3.5 Lightning 30B-A3B + MTP runs alone on card 2 at `llm.local:8011`**, `--spec-draft-n-max 7`, no Traefik route. Chat is now single-backend on :8002. **`-c 262144` was tried and rejected** — see below. [Deployment detail.](models/tested/nemotron-3.5-lightning-30b-a3b.md)
+
 - **2026-08-21** — **n-max cliff replicated on Gemma 4 26B-A4B — and the optimum is model-specific.** Same +71% step-cost discontinuity crossing verify batch 9 on a completely different architecture (+71.3% vs Nemotron's +70.6%, same VRAM signature), so **`n_max ≤ 7` is a hard rule for this card**. But Gemma peaks at **n-max 5**, not 7, because its acceptance *decays* along the chain where Nemotron's holds flat. Confirmed at both harness sampling (+9.9%) and Gemma's own production sampling (+10.2%) — **the optimum is robust to sampling even though acceptance shifts up to 10.9 points**, so tune on decode throughput, not on acceptance. [Findings #30 and #32.](docs/findings.md)
 - **2026-08-21** — **`--spec-draft-n-max` swept on Nemotron: 7 is the setting, and 8 is a cliff.** 79.05 → 91.91 tok/s from 3 → 7 (**+16.3%, free**), then a 34% collapse at 8 before partially recovering at 9-10. Acceptance is 99.5-100% at *every* setting, so this is verification-batch cost, not drafter quality — every batch of `n_max+1` ≤ 8 is fast, every batch ≥ 9 is penalised. Also measured the empero 9B unassisted baseline: the MTP head is worth +30.5% decode for −14.6% prefill and +3.85 GiB. [Findings #30 and #31.](docs/findings.md)
 - **2026-08-21** — **HF candidate bench (Tier 1 + 2) on a fresh b10566 build.** Nemotron 3.5 Lightning 30B-A3B lands at **78.95 tps / 99.8% MTP acceptance** — beating Gemma 4 26B-A4B on every axis — and **disproves the "SYCL SSM penalty"**: Qwen 3.8-27B's 23 tps was dense-bandwidth cost, not the Mamba2 layers (finding #25). Qwen3.8-9B-Distill beats Ornith 1.5-9B by 13.5% decode at equal VRAM. Both Nemotron (21.99 GiB) and LFM2.5-8B-A1B (8.63 GiB) are blocked on co-residence, not merit. [Full results, findings #25-#29.](models/tested/2026-08-21-tier1-tier2-bench.md) · [Sweep that shortlisted them.](models/tested/2026-08-21-new-candidates-sweep.md)
@@ -46,7 +55,9 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 - **2026-08-15** — 2nd B60 install; Gemma 4 E2B moved to card 2 `:8009` (dedicated categorise slot, physical GPU isolation). Delivered 4.7× wall-clock vs Ornith on categorise workload. See [`models/production/gemma-4-e2b-categorise.md`](models/production/gemma-4-e2b-categorise.md).
 - **2026-08-14** — llama.cpp `b10256` → **`b10433`** cutover (all services). See [`docs/build-history.md`](docs/build-history.md) for per-model deltas.
 
-**Next architectural step (task #144):** B580 12GB new-host migration — offload embed + rerank + E2B to a fresh B580-based node, freeing both B60s for **Ornith 1.5-35B-A3B tensor-split** (task #142) or vLLM XPU migration.
+**Task #144 — complete 2026-08-22.** B580 node `llm2.local` took embed + rerank + E2B; B60 card 2 was freed and given to Nemotron 3.5 Lightning for agent testing, which the 2026-08-21 bench round argued for over the task #142 tensor-split.
+
+**Next architectural step:** decide what card 1 becomes. It still carries four co-resident services at ~20.5 GiB while card 2 runs one model at ~22.8. Moving card 1's embed/rerank/categorise to llm2 as well (the B580 has ~6 GiB spare) would free a second whole B60 — enough for a Nemotron pair, or for the **Ornith 1.5-35B-A3B tensor-split** (task #142) that a single card could never hold.
 
 > **2026-08-21 update to that plan:** the bench gives task #144 a better payoff than task #142. A freed B60 running **Nemotron 3.5 Lightning 30B-A3B** (**91.91 tps** at `--spec-draft-n-max 7`, 99.5-100% acceptance, 22.18 GiB — needs the whole card) beats a tensor-split Ornith 1.5-35B-A3B, which has now failed twice on MTP acceptance under compression (finding #24). LFM2.5-8B-A1B + DSpark (168 tps, 8.63 GiB) is the categorise-slot payoff from the same migration.
 
@@ -99,7 +110,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Params | Decode | Prefill | VRAM | Notes |
 |---|---|---|---|---|---|---|
-| [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ (b10566) | Q4_0 + MTP Q8_0 | 31.6B / 3B (`nemotron_h` Mamba2 hybrid) | **91.91** @ n-max 7 · 79.05 @ n-max 3 | 1,760 @ 12K | 22.18 GiB | **99.5-100% acceptance at every n-max — best on this stack.** Beats Gemma 4 26B-A4B on every axis. **Run it at `--spec-draft-n-max 7`** (+16.3% free; 8 falls off a 34% cliff — finding #30). Needs the whole card (no co-residence). `nemotron_h` barely quantises: ladder floors at 17.5 GiB, Q4_K_M is 23.73 GiB and **cannot fit** — Q4_0 is the only sensible pick (finding #26) |
+| [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ **DEPLOYED :8011** (b10566) | Q4_0 + MTP Q8_0 | 31.6B / 3B (`nemotron_h` Mamba2 hybrid) | **91.91** @ n-max 7 · 79.05 @ n-max 3 | 1,760 @ 12K | 22.18 GiB | **99.5-100% acceptance at every n-max — best on this stack.** Beats Gemma 4 26B-A4B on every axis. **Run it at `--spec-draft-n-max 7`** (+16.3% free; 8 falls off a 34% cliff — finding #30). Needs the whole card (no co-residence). `nemotron_h` barely quantises: ladder floors at 17.5 GiB, Q4_K_M is 23.73 GiB and **cannot fit** — Q4_0 is the only sensible pick (finding #26) |
 | [**LFM2.5-8B-A1B + DSpark**](models/tested/lfm2.5-8b-a1b-dspark.md) (b10566) | Q4_K_M + DSpark Q8_0 | 8B / 1B | **168.25** | 3,156 @ 5K / **3,665 @ 12K** | 8.63 GiB | Fastest categorise candidate — vs Gemma 4 E2B's 138.8 and 3,681 @ *2K*. DSpark drafts **wide**: 5.51 accepted/draft at n-max 7 vs MTP's ~3 (finding #29). Blocked on the 3.4 GiB categorise budget, not on merit |
 | [Ling-3.0-tiny](models/tested/ling-3.0-tiny.md) (b10566) | Q4_K_M | 7.9B / 0.8B (`bailingmoe3`) | 91.86 | 1,811 @ 5K / **1,218 @ 12K** | 5.72 GiB | **Rejected** — prefill *decreases* with context (2,293 @ 2K → 1,218 @ 12K), backwards vs every other model, and categorise is prefill-heavy. No drafter available. Needed the b10566 build to load at all |
 | [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | Meta 2026-08 drop; multimodal; DFlash drafter; **bandwidth-bound at ~24 tps ceiling on B60**; only vision-capable option in tested lineup |

@@ -1,6 +1,6 @@
 # NVIDIA Nemotron 3.5 Lightning 30B-A3B — Tested 2026-08-21
 
-**Status:** Benched. **Strongest result of the 2026-08-21 round** — 91.91 tok/s decode at `--spec-draft-n-max 7` with 99.5–100% MTP acceptance, beating the current reasoning fallback (Gemma 4 26B-A4B, 62.84) on every axis. **Not promoted: 22.18 GiB peak leaves ~2 GiB headroom, so it needs a whole card and cannot co-reside** with embed + rerank + categorise. Primary argument for task #144 (B580 migration) over task #142 (35B-A3B tensor-split).
+**Status: DEPLOYED 2026-08-22** on `llm.local:8011`, B60 card 2, dedicated whole card, for agent testing. 91.91 tok/s decode at `--spec-draft-n-max 7` with 99.5–100% MTP acceptance — beats the reasoning fallback (Gemma 4 26B-A4B, 62.84) on every axis. Deliberately **not** in any Traefik pool. Deployment detail and the rejected 262K config are at the bottom of this page.
 
 **HF:** [`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) · [bartowski GGUF](https://huggingface.co/bartowski/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) (used here) · [ggml-org GGUF](https://huggingface.co/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [unsloth](https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4)
 **License:** nvidia-open-model-license (`license:other`)
@@ -51,13 +51,15 @@ Q4_K_M  23.73   Q4_K_L  23.85   Q5_K_S  23.06   Q5_K_M  25.11   Q8_0    32.60
 
 ## Setup (llama.cpp SYCL on Intel Arc Pro B60)
 
+Production launcher: [`configs/launchers/start-llamacpp-nemotron-agent.sh`](../../configs/launchers/start-llamacpp-nemotron-agent.sh). Equivalent to:
+
 ```bash
 docker run -d --name llamacpp-nemotron \
   --memory=24g --memory-swap=24g --device /dev/dri \
   --group-add "$(getent group render|cut -d: -f3)" \
   --group-add "$(getent group video|cut -d: -f3)" \
   -v /data/llm/nemotron-3.5-lightning-30b-a3b-GGUF:/models:ro \
-  -p 0.0.0.0:8020:8000 \
+  -p 0.0.0.0:8011:8000 \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:1 \
   -e NEO_CACHE_PERSISTENT=1 \
   llama.cpp:sycl-f16-next-bb4caa754 \
@@ -77,6 +79,7 @@ docker run -d --name llamacpp-nemotron \
 - `--spec-draft-n-max 7` — **not the default 3.** Worth +16.3% here, and 8 falls off a 34% cliff (finding #30). Never exceed 7 on this card.
 - `-ngld 99` — offload the draft head too.
 - Use the **Q8_0** MTP head, not the Q4_0 one also published in that repo — finding #24.
+- `--host 0.0.0.0 --port 8000` is **mandatory**, not cosmetic: omit them and llama.cpp binds its default 8080 while the container publishes 8000, and health checks fail with a connection reset on a model that actually loaded fine.
 
 ## Benchmarks (b10566, isolated card 2, 20 runs × 300 tok @ temp 0.6 / top-p 0.95 / top-k 20)
 
@@ -121,7 +124,7 @@ Prefill is flat across the entire n-max sweep (~1,760 @ 12K), confirming the cli
 
 **2. It beats the reasoning fallback on every axis** — +46% decode over Gemma 4 26B-A4B, +11% prefill, at 99.5% vs 97.2% acceptance.
 
-**3. But it needs the whole card.** 22.18 GiB peak against a 24 GiB card leaves ~2 GiB. Card 1 currently carries chat + embed + rerank + categorise; Nemotron displaces all of it. This makes it the natural payload for **task #144** — once embed, rerank and E2B move to a B580 node, a freed B60 running Nemotron is a better use of the card than a tensor-split Ornith 1.5-35B-A3B (task #142), which has now failed twice on MTP acceptance under compression.
+**3. It needs the whole card — and got one.** 22.18 GiB peak against a 24 GiB card leaves ~2 GiB, so it displaces every co-resident service. That made it the natural payload for **task #144**, which completed 2026-08-22: embed/rerank/categorise moved to the B580 node `llm2.local`, card 2 was freed, and Nemotron took it. Better use of a freed B60 than the task #142 tensor-split of Ornith 1.5-35B-A3B, which has failed twice on MTP acceptance under compression.
 
 **4. Decode stability is exceptional.** σ = 0.33 tok/s at n-max 3 against 16.41 for Ornith and 35.26 for LFM2.5. Near-perfect acceptance removes the accept/reject variance that makes every other MTP row on this box bimodal — a tight σ is itself evidence of high acceptance.
 
@@ -131,6 +134,45 @@ Prefill is flat across the entire n-max sweep (~1,760 @ 12K), confirming the cli
 - **Re-check the n-max boundary after each llama.cpp bump** — it is a kernel-path property and an upstream change could move it.
 - **Q4_K_S at 21.61 GiB** is the only untested rung between Q4_0 and the unusable Q4_K_M. It would fit weights-only but leaves nothing for the head; probably not worth the download.
 - **NVFP4 variant** — irrelevant on Intel today, relevant if the stack ever gains Blackwell.
+
+## Deployment (2026-08-22)
+
+Live on `llm.local:8011`, B60 card 2 (`level_zero:1`), alone on the card. Launcher: `configs/launchers/start-llamacpp-nemotron-agent.sh`. **No Traefik route** — agent-test traffic cannot reach a production pool and vice versa. Reachable on the LAN at `http://192.168.1.253:8011` and over Tailscale.
+
+What the card carries now, versus before:
+
+| | before 2026-08-22 | after |
+|---|---|---|
+| B60 card 1 | Ornith + embed + rerank + categorise, ~20.7 GiB | unchanged, ~20.5 GiB |
+| B60 card 2 | mirror of all four, ~20.7 GiB | **Nemotron alone, ~22.8 GiB** |
+| B580 `llm2.local` | — | embed + rerank + categorise, ~5.8 GiB of 12 |
+
+### `-c 262144` was tried and rejected
+
+The model's native context is 262,144 and it *does* load there — but the margin is not real:
+
+| context setting | idle VRAM | peak under load | headroom |
+|---|---|---|---|
+| `-c 262144` | 23.38 GiB | **23.88 GiB at a 105K-token request** | **0.12 GiB** |
+| **`-c 131072`** ⭐ | 21.86 GiB | **22.26 GiB at a 70K-token request** | **1.74 GiB** |
+
+At 262K the card reached **24,450 of 24,576 MiB — 126 MiB free** — and decode collapsed to **19.96 tok/s** on that request, roughly a quarter of normal. Nothing crashed, but there is no margin for a transient and the throughput penalty makes the extra context worthless anyway. The launcher now defaults to `131072` with that reasoning inline; `CTX=262144 ./start-llamacpp-nemotron-agent.sh` still overrides it if someone wants to re-measure on a future build.
+
+### Measured on the deployed config (`-c 131072`, n-max 7)
+
+| Prompt | Prefill tok/s | Decode tok/s | Peak VRAM |
+|---|---|---|---|
+| 2K | 1,354 | 89.86 | 22.06 GiB |
+| 12K | 1,750 | 88.03 | 22.18 GiB |
+| 32K | 1,661 | 74.23 | 22.18 GiB |
+| 64K | 1,439 | 75.11 | 22.21 GiB |
+| 70K | 1,321 | 72.19 | 22.26 GiB |
+
+Decode holds 72–90 tok/s from 2K to 70K of context. The 12K figures reproduce the bench rows above, which is the check that the deployed config matches what was measured.
+
+### Gotcha found during deployment
+
+The first launcher revision omitted `--host`/`--port`, so llama.cpp bound its **default 8080** while the container published 8000 — health checks failed with `Recv failure: Connection reset by peer` even though the model had loaded fine. The repo's other launchers all pass `--host 0.0.0.0 --port 8000` explicitly; that is not optional.
 
 ## Files on disk
 
