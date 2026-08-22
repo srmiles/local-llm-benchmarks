@@ -26,7 +26,7 @@ Solution: convert Google's official BF16 safetensors from scratch with `llama.cp
 | E4B + drafter | 114.1 tps | 66.7% | 2,319 tps | 7 GiB | +54% decode, +517% prefill |
 | 12B + drafter | 70.4 tps | 69.7% | 1,053 tps | 8.5 GiB | +257% decode, +530% prefill |
 
-Full bench methodology and comparison against Ornith 9B production baseline: see main [README.md](../../README.md) and [gemma-4-e2b-categorise.md](../parked/gemma-4-e2b-categorise.md).
+Full bench methodology and comparison against Ornith 9B production baseline: see main [README.md](../../README.md) and [gemma-4-e2b-categorise.md](../production/gemma-4-e2b-categorise.md).
 
 ## Reproducing the conversion
 
