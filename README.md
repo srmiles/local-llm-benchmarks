@@ -24,7 +24,7 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 | 8006 | `llamacpp-categorise-c1` | 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise (mirror) |
 | 8009 | `llamacpp-categorise` | 2 | Gemma 4 E2B QAT + Google MTP ⭐ | categorise (primary, watchdog-monitored) |
 
-**Reasoning fallback (not running by default):** [Gemma 4 26B-A4B QAT + Google MTP](models/production/gemma-4-26b-a4b.md) — 62.8 tok/s decode, 97.2% MTP acceptance on b10433.
+**Reasoning fallback (not running by default):** [Gemma 4 26B-A4B QAT + Google MTP](models/production/gemma-4-26b-a4b.md) — 62.8 tok/s decode, 97.2% MTP acceptance on b10433. **⚠ Launcher is missing `--spec-draft-n-max 5`, worth ~+10%** (2026-08-21 sweep, confirmed at two sampling configs).
 
 **Traefik routes:**
 - `/v1/completions` and `/v1/chat/completions` → Ornith pair (:8002 + :8010)
@@ -86,7 +86,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [Qwen 3.6-35B-A3B Claude distilled](models/tested/qwen3.6-35b-a3b-claude-distilled.md) | APEX-MTP Compact | 35.5B / 3B | 36.9 | 763 @ 12K / 887 @ 5K | 19.4 GB (fits prod) | — | tight-reasoning distillation; only 35B-A3B that co-res cleanly |
 | [Qwen 3.6-35B-A3B Kimi distilled](models/tested/qwen3.6-35b-a3b-kimi-distilled.md) | IQ4_XS | 35.5B / 3B | 30.6 | **904 @ 12K cold** ⭐ | 21.4 GB | — | fastest cold prefill benched; verbose reasoning; no MTP |
 | [Qwen 3.6-35B-A3B base](models/tested/qwen3.6-35b-a3b.md) | UD-Q3_K_M | 34.7B / 3B | 31.1 | 823 @ 2K | 20.0 GB | — | superseded by MTP variant |
-| [**Qwen3.8-9B-Distill + MTP**](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M + self-converted Q8_0 head | 9.65B dense hybrid | **73.97** (56.69 unassisted) | 1,957 @ 5K / 2,020 @ 12K | 14.76 GiB | 81.4% | **+13.5% decode over Ornith 1.5-9B** at equal VRAM/prefill; arch-identical so the prod launcher works unchanged. Head is worth **+30.5% decode for −14.6% prefill and +3.85 GiB** (finding #31). Needs a qualitative bake-off before any cutover |
+| [**Qwen3.8-9B-Distill + MTP**](models/tested/qwen3.8-9b-distill.md) (b10566) | Q4_K_M + self-converted Q8_0 head | 9.65B dense hybrid | **73.97** (56.69 unassisted) | 1,957 @ 5K / 2,020 @ 12K | 14.76 GiB | 81.4% | **+13.5% decode over Ornith 1.5-9B** at equal VRAM/prefill; arch-identical so the prod launcher works unchanged. Head is worth **+30.5% decode for −14.6% prefill and +3.85 GiB** (finding #31). Needs a qualitative bake-off before any cutover |
 | [Qwen 3.8-27B + native MTP + vision](models/tested/qwen-3.8-27b.md) (tested, b10433) | Q4_K_M + Q4_0 MTP + Q8_0 mmproj | 27B dense hybrid (48 SSM + 16 attn) | 23.0 | 333.5 | 22.3 GiB | 57.9% | **parked** 2026-08-15. ~~revisit when SYCL SSM gets XMX GEMM~~ — **that diagnosis was wrong** (finding #25): this is the dense-27B bandwidth wall, not the SSM layers. Nothing upstream will fix it |
 | [Qwen 3.6-27B](models/tested/qwen3.6-27b.md) | Q4_K_XL | 27B dense | ~22 | ~380 | ~17 GB | — | tested; bartowski build |
 | [Qwen3-Coder-30B-A3B](models/tested/qwen3-coder-30b-a3b.md) | UD-Q4_K_XL | 30B / 3B | ~38 | ~700 | ~20 GB | — | tested; capability too poor for pi.dev |
@@ -98,9 +98,9 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 
 | Model | Quant | Params | Decode | Prefill | VRAM | Notes |
 |---|---|---|---|---|---|---|
-| [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/2026-08-21-tier1-tier2-bench.md) ⭐ (b10566) | Q4_0 + MTP Q8_0 | 31.6B / 3B (`nemotron_h` Mamba2 hybrid) | **91.91** @ n-max 7 · 79.05 @ n-max 3 | 1,760 @ 12K | 22.18 GiB | **99.5-100% acceptance at every n-max — best on this stack.** Beats Gemma 4 26B-A4B on every axis. **Run it at `--spec-draft-n-max 7`** (+16.3% free; 8 falls off a 34% cliff — finding #30). Needs the whole card (no co-residence). `nemotron_h` barely quantises: ladder floors at 17.5 GiB, Q4_K_M is 23.73 GiB and **cannot fit** — Q4_0 is the only sensible pick (finding #26) |
-| [**LFM2.5-8B-A1B + DSpark**](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M + DSpark Q8_0 | 8B / 1B | **168.25** | 3,156 @ 5K / **3,665 @ 12K** | 8.63 GiB | Fastest categorise candidate — vs Gemma 4 E2B's 138.8 and 3,681 @ *2K*. DSpark drafts **wide**: 5.51 accepted/draft at n-max 7 vs MTP's ~3 (finding #29). Blocked on the 3.4 GiB categorise budget, not on merit |
-| [Ling-3.0-tiny](models/tested/2026-08-21-tier1-tier2-bench.md) (b10566) | Q4_K_M | 7.9B / 0.8B (`bailingmoe3`) | 91.86 | 1,811 @ 5K / **1,218 @ 12K** | 5.72 GiB | **Rejected** — prefill *decreases* with context (2,293 @ 2K → 1,218 @ 12K), backwards vs every other model, and categorise is prefill-heavy. No drafter available. Needed the b10566 build to load at all |
+| [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ (b10566) | Q4_0 + MTP Q8_0 | 31.6B / 3B (`nemotron_h` Mamba2 hybrid) | **91.91** @ n-max 7 · 79.05 @ n-max 3 | 1,760 @ 12K | 22.18 GiB | **99.5-100% acceptance at every n-max — best on this stack.** Beats Gemma 4 26B-A4B on every axis. **Run it at `--spec-draft-n-max 7`** (+16.3% free; 8 falls off a 34% cliff — finding #30). Needs the whole card (no co-residence). `nemotron_h` barely quantises: ladder floors at 17.5 GiB, Q4_K_M is 23.73 GiB and **cannot fit** — Q4_0 is the only sensible pick (finding #26) |
+| [**LFM2.5-8B-A1B + DSpark**](models/tested/lfm2.5-8b-a1b-dspark.md) (b10566) | Q4_K_M + DSpark Q8_0 | 8B / 1B | **168.25** | 3,156 @ 5K / **3,665 @ 12K** | 8.63 GiB | Fastest categorise candidate — vs Gemma 4 E2B's 138.8 and 3,681 @ *2K*. DSpark drafts **wide**: 5.51 accepted/draft at n-max 7 vs MTP's ~3 (finding #29). Blocked on the 3.4 GiB categorise budget, not on merit |
+| [Ling-3.0-tiny](models/tested/ling-3.0-tiny.md) (b10566) | Q4_K_M | 7.9B / 0.8B (`bailingmoe3`) | 91.86 | 1,811 @ 5K / **1,218 @ 12K** | 5.72 GiB | **Rejected** — prefill *decreases* with context (2,293 @ 2K → 1,218 @ 12K), backwards vs every other model, and categorise is prefill-heavy. No drafter available. Needed the b10566 build to load at all |
 | [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | Meta 2026-08 drop; multimodal; DFlash drafter; **bandwidth-bound at ~24 tps ceiling on B60**; only vision-capable option in tested lineup |
 | [Laguna XS-2.1](models/tested/2026-08-06-new-candidates-sweep.md#laguna-xs2-poolside-33b-a3b-moe) | Q4_K_M | 33B / 3B | 29.5 | 1,213 @ 5K | 22.1 GiB | MoE + SWA; DFlash drafter needs Poolside fork; deferred |
 | [gpt-oss-20b](models/tested/2026-08-06-new-candidates-sweep.md#gpt-oss-20b-openai) | Q4_K_M (MXFP4 native) | 20.9B / ~2.6B active | 25.1 | 1,265 @ 5K | 13.4 GiB | no MTP; potential Ornith alternative pending qualitative bake-off |
@@ -181,6 +181,10 @@ All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/h
 │   │   ├── embeddinggemma-300m.md  (embed)
 │   │   └── bge-reranker-v2-m3.md   (rerank)
 │   ├── tested/                     ← benched, not in prod
+│   │   ├── nemotron-3.5-lightning-30b-a3b.md  (2026-08-21 ⭐ fastest large)
+│   │   ├── lfm2.5-8b-a1b-dspark.md            (2026-08-21, categorise cand.)
+│   │   ├── qwen3.8-9b-distill.md              (2026-08-21, chat challenger)
+│   │   ├── ling-3.0-tiny.md                   (2026-08-21, rejected)
 │   │   ├── ornith-1.0-9b.md        (prior prod, superseded 2026-08-21)
 │   │   ├── ornith-1.5-35b-a3b-*.md (single-card MoE benches)
 │   │   ├── ornith-1.5-9b-first-bench.md
@@ -191,11 +195,15 @@ All Apache 2.0. See [`models/hf-uploads/gemma-4-assistant-drafters.md`](models/h
 │   │   ├── minicpm5-1b.md, mistral-small-3.1-24b.md, devstral-small-2-24b.md
 │   │   ├── lfm2.5-*.md, nemotron-3-embed-1b.md
 │   │   ├── qwen3.6-27b.md, qwen2.5-coder-14b-awq.md
-│   │   ├── categorise-candidates.md, 2026-08-06-new-candidates-sweep.md
+│   │   ├── categorise-candidates.md
+│   │   ├── 2026-08-06-new-candidates-sweep.md
+│   │   ├── 2026-08-21-new-candidates-sweep.md (HF sweep → shortlist)
+│   │   └── 2026-08-21-tier1-tier2-bench.md    (the round + findings #25-#32)
 │   ├── retired/                    ← no longer receiving traffic
 │   │   └── qwen3-4b-instruct-2507.md
 │   └── hf-uploads/                 ← GGUFs I've uploaded to HF
-│       └── gemma-4-assistant-drafters.md
+│       ├── gemma-4-assistant-drafters.md
+│       └── qwen3.8-9b-distill-mtp.md          (first head built here)
 ├── configs/images/                 ← Docker image build docs + patches
 │   ├── llama.cpp-sycl-f16/         (build.sh, README.md)
 │   └── tei-xpu-ipex-nomemleak/     (VRAM leak patch)

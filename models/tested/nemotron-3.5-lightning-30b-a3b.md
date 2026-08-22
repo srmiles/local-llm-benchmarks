@@ -1,0 +1,150 @@
+# NVIDIA Nemotron 3.5 Lightning 30B-A3B — Tested 2026-08-21
+
+**Status:** Benched. **Strongest result of the 2026-08-21 round** — 91.91 tok/s decode at `--spec-draft-n-max 7` with 99.5–100% MTP acceptance, beating the current reasoning fallback (Gemma 4 26B-A4B, 62.84) on every axis. **Not promoted: 22.18 GiB peak leaves ~2 GiB headroom, so it needs a whole card and cannot co-reside** with embed + rerank + categorise. Primary argument for task #144 (B580 migration) over task #142 (35B-A3B tensor-split).
+
+**HF:** [`nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16`](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16) · [bartowski GGUF](https://huggingface.co/bartowski/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) (used here) · [ggml-org GGUF](https://huggingface.co/ggml-org/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [unsloth](https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-GGUF) · [NVFP4](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4)
+**License:** nvidia-open-model-license (`license:other`)
+**Publisher:** NVIDIA
+**Released:** 2026-08-01 (BF16), 2026-08-04 (NVFP4)
+**Arch:** `nemotron_h` / `nemotron_h_moe` — Mamba2 hybrid MoE. Present in **both** b10433 and b10566; this model was never gated on the rebuild.
+**Drafter:** `mtp-…-Q8_0.gguf`, first-party MTP head shipped in the same bartowski repo. Requires `--spec-type draft-mtp`.
+
+## Why this was interesting
+
+Two reasons, and the second one turned out to matter more than the first.
+
+**It is the 30B-A3B-class model that actually fits.** Ornith 1.5-35B-A3B failed twice on this stack — 32.5% and 26.2% MTP acceptance — but on *drafter alignment under compression* (finding #24), not on VRAM. Nemotron arrives at 31.6B/A3B with a first-party MTP head matched to the release, which is precisely the failure mode Ornith could not escape.
+
+**It isolates a variable that had been confounded for six days.** Qwen 3.8-27B was parked at 23.0 tok/s with the note *"revisit when SYCL SSM gets XMX GEMM"* — blaming the hybrid SSM layers. But that model is also **dense** 27B, so SSM cost and dense-bandwidth cost were tangled in a single data point and nobody had a *sparse* hybrid to separate them. Nemotron is exactly that: same architectural class, ~3B active instead of 27B.
+
+## Specs
+
+| | |
+|---|---|
+| Total parameters | 31.6B |
+| Active per token | ~3B (128 routed experts, **6 active**) |
+| Architecture | `nemotron_h` — Mamba2 SSM / attention hybrid MoE |
+| Layers | 52 |
+| Hidden dimension | 2,688 |
+| Attention heads | 32 Q / 2 KV (GQA 16:1) |
+| Mamba2 | 64 heads × 64 head dim, SSM state 128, 8 groups |
+| Expert FFN | intermediate 1,856 |
+| Vocabulary | 131,072 |
+| Context | 262,144 |
+| MTP | `num_nextn_predict_layers: 1` — one draft layer, shipped in-weights |
+| Modalities | text → text |
+
+## Quantizations (bartowski ladder, GiB) — the interesting part
+
+```
+IQ2_XXS 17.54   Q2_K    17.61   Q4_0    17.75   Q3_K_M  18.46   Q3_K_XL 19.02
+IQ4_XS  17.62   Q3_K_S  17.64   Q2_K_L  17.78   Q4_1    19.44   Q4_K_S  21.61
+Q4_K_M  23.73   Q4_K_L  23.85   Q5_K_S  23.06   Q5_K_M  25.11   Q8_0    32.60
+```
+
+**The whole ladder from IQ2_XXS to Q4_K_M spans 17.5 → 23.7 GiB.** Only the 128 routed experts compress; the dense trunk and Mamba2 SSM state tensors do not. Two consequences (finding #26):
+
+- **Q4_K_M cannot be served on a 24 GiB B60 at all** — 23.73 GiB of weights before a 2.03 GiB MTP head and any KV. Arithmetic, not tuning. A 23 GB download was abandoned at 99% on discovering this.
+- **Dropping below Q4 buys nothing.** Q2_K saves 0.14 GiB over Q4_0 for real quality loss. The reflexive "step down one quant to fit" move is dead for this architecture family.
+
+**Q4_0 @ 17.75 GiB is the only sensible choice** — largest non-IQ quant that fits (IQ excluded by finding #13), and SYCL's reordered Q4_0 path is already well-trodden via the Gemma 4 QAT models.
+
+## Setup (llama.cpp SYCL on Intel Arc Pro B60)
+
+```bash
+docker run -d --name llamacpp-nemotron \
+  --memory=24g --memory-swap=24g --device /dev/dri \
+  --group-add "$(getent group render|cut -d: -f3)" \
+  --group-add "$(getent group video|cut -d: -f3)" \
+  -v /data/llm/nemotron-3.5-lightning-30b-a3b-GGUF:/models:ro \
+  -p 0.0.0.0:8020:8000 \
+  -e ONEAPI_DEVICE_SELECTOR=level_zero:1 \
+  -e NEO_CACHE_PERSISTENT=1 \
+  llama.cpp:sycl-f16-next-bb4caa754 \
+  -m /models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf \
+  --model-draft /models/mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf \
+  --spec-type draft-mtp --spec-draft-n-max 7 \
+  -ngl 99 -ngld 99 \
+  -c 131072 --parallel 1 \
+  --cache-type-k q8_0 --cache-type-v q8_0 \
+  -fa on -ub 2048 -b 2048 \
+  --jinja --reasoning off \
+  --predict 2048 --top-k 20 --min-p 0.0 \
+  --host 0.0.0.0 --port 8000 --metrics
+```
+
+**Critical flags:**
+- `--spec-draft-n-max 7` — **not the default 3.** Worth +16.3% here, and 8 falls off a 34% cliff (finding #30). Never exceed 7 on this card.
+- `-ngld 99` — offload the draft head too.
+- Use the **Q8_0** MTP head, not the Q4_0 one also published in that repo — finding #24.
+
+## Benchmarks (b10566, isolated card 2, 20 runs × 300 tok @ temp 0.6 / top-p 0.95 / top-k 20)
+
+### `--spec-draft-n-max` sweep
+
+| n-max | Decode med | σ | Acceptance | Accepted/draft | VRAM | Prefill @ 12K | Verify batch |
+|---|---|---|---|---|---|---|---|
+| 3 | 79.05 | 1.06 | 99.9% | 2.98 / 3.00 | 21.99 | 1,766 | 4 |
+| 5 | 86.94 | 0.62 | 99.9% | 4.97 / 5.00 | 22.08 | 1,762 | 6 |
+| 6 | 90.10 | 4.41 | 99.8% | 5.94 / 6.00 | 22.13 | 1,762 | 7 |
+| **7** ⭐ | **91.91** | 1.05 | 99.5% | 6.85 / 7.00 | 22.18 | 1,760 | **8** |
+| 8 | 60.31 | 0.42 | 99.8% | 7.79 / 8.00 | 22.67 | 1,754 | 9 |
+| 9 | 63.93 | 0.07 | **100.0%** | 8.97 / 9.00 | 22.71 | 1,764 | 10 |
+| 10 | 67.24 | 0.19 | 99.9% | 9.68 / 10.00 | 22.76 | 1,752 | 11 |
+
+**Acceptance never degrades — 99.5–100% at every setting.** At n-max 9 the drafter returned 8.97 of a possible 9.00 tokens per draft while decode sat at 63.93. The drafter is not the constraint anywhere on this curve; the cap is the target's verification-batch cost, which is flat-ish to batch 8 and then jumps +71%.
+
+### Prefill (server-side `prompt_ms`, 3 samples/size, at n-max 7)
+
+| Prompt | 500 | 2K | 5K | 12K |
+|---|---|---|---|---|
+| tok/s | 760 | 1,518 | 1,629 | **1,760** |
+
+Prefill is flat across the entire n-max sweep (~1,760 @ 12K), confirming the cliff is specific to the decode/verify path.
+
+## Comparison to peers (same build, same card, same harness)
+
+| Model | Decode | Prefill @ 12K | Acceptance | VRAM |
+|---|---|---|---|---|
+| **Nemotron 30B-A3B + MTP @ n-max 7** | **91.91** | **1,760** | **99.5%** | 22.18 GiB |
+| Ling-3.0-tiny | 91.86 | 1,218 | — | 5.72 GiB |
+| Qwen3.8-9B-Distill + MTP | 73.97 | 2,020 | 81.4% | 14.76 GiB |
+| Ornith 1.5-9B + MTP (prod chat) | 65.15 | 1,987 | 84.7% | 14.62 GiB |
+| Gemma 4 26B-A4B QAT + MTP (reasoning fallback) | 62.84 | 1,592 @ 4K | 97.2% | 19.9 GiB |
+| **Qwen 3.8-27B + MTP (dense hybrid, parked)** | **23.0** | **333** | 57.9% | 22.3 GiB |
+
+## Verdict
+
+**Fastest large model this stack has run, and it corrected a wrong diagnosis.**
+
+**1. The "SYCL SSM penalty" does not exist (finding #25).** Nemotron is the same architectural class as Qwen 3.8-27B and decodes **4× faster** (91.91 vs 23.0) while prefilling **5.3× faster** (1,760 vs 333). The variable was never the Mamba2 layers — Qwen 3.8-27B activates all 27B of its parameters per token, Nemotron ~3B. The 23 tok/s is the dense bandwidth wall already recorded for Muse Glimmer-30B dense (25.3) and Laguna XS-2.1 (29.5). Sparse hybrid-linear-attention models are **not** blocked on upstream SYCL work and should be benched on arrival; only *dense* hybrids above ~12B are penalised, and no upstream kernel work will fix that.
+
+**2. It beats the reasoning fallback on every axis** — +46% decode over Gemma 4 26B-A4B, +11% prefill, at 99.5% vs 97.2% acceptance.
+
+**3. But it needs the whole card.** 22.18 GiB peak against a 24 GiB card leaves ~2 GiB. Card 1 currently carries chat + embed + rerank + categorise; Nemotron displaces all of it. This makes it the natural payload for **task #144** — once embed, rerank and E2B move to a B580 node, a freed B60 running Nemotron is a better use of the card than a tensor-split Ornith 1.5-35B-A3B (task #142), which has now failed twice on MTP acceptance under compression.
+
+**4. Decode stability is exceptional.** σ = 0.33 tok/s at n-max 3 against 16.41 for Ornith and 35.26 for LFM2.5. Near-perfect acceptance removes the accept/reject variance that makes every other MTP row on this box bimodal — a tight σ is itself evidence of high acceptance.
+
+## Watch items
+
+- **Confirm the batch-8 SYCL fast-path hypothesis in kernel source.** The +71% step-cost discontinuity crossing verify batch 9 is measured and replicated (see finding #30), but the explanation is inferred, not read.
+- **Re-check the n-max boundary after each llama.cpp bump** — it is a kernel-path property and an upstream change could move it.
+- **Q4_K_S at 21.61 GiB** is the only untested rung between Q4_0 and the unusable Q4_K_M. It would fit weights-only but leaves nothing for the head; probably not worth the download.
+- **NVFP4 variant** — irrelevant on Intel today, relevant if the stack ever gains Blackwell.
+
+## Files on disk
+
+```
+/data/llm/nemotron-3.5-lightning-30b-a3b-GGUF/
+├── NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q4_0.gguf         19.06 GB — main model
+└── mtp-NVIDIA-Nemotron-3.5-Lightning-30B-A3B-Q8_0.gguf      2.18 GB — MTP draft head
+```
+
+Raw bench results: `/data/llm/benchmarks/20260821/nemotron-3.5-lightning-30b-a3b.json` and `/data/llm/benchmarks/20260821-nmax/nemotron-nmax{3,5,6,7,8,9,10}.json`.
+
+## References
+
+- [Model card — NVIDIA-Nemotron-3.5-Lightning-30B-A3B](https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16)
+- [Full bench write-up + findings #25-#32](2026-08-21-tier1-tier2-bench.md)
+- [Candidate sweep that shortlisted it](2026-08-21-new-candidates-sweep.md)
+- [`docs/findings.md`](../../docs/findings.md) — #25 (SSM), #26 (quant ladder), #27 + #30 (n-max)

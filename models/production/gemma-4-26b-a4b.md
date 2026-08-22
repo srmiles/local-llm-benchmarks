@@ -1,6 +1,6 @@
 # Gemma 4 26B-A4B (it) — Reasoning fallback / historical prod
 
-**Status:** Reserved for reasoning-heavy queries; launcher `start-llamacpp-sycl-gemma4-mtp.sh` on disk. **QAT Q4_0 + MTP on b10215 is the new best config** (see 2026-08-01 bench below) — 54.2 tps decode / 1,164 tps prefill / **17.5 GiB VRAM** (2.2 GiB less than Q4_K_M). Launcher still points at Q4_K_M for historical continuity; swap to QAT for reasoning-fallback deployment if VRAM headroom matters.
+**Status:** Reserved for reasoning-heavy queries; launcher `start-llamacpp-sycl-gemma4-mtp.sh` on disk. **⚠ Pending config change: add `--spec-draft-n-max 5` to the launcher** — worth ~+10% decode, confirmed at two sampling configs 2026-08-21 (see n-max sweep below); it currently runs the default 3. **QAT Q4_0 + MTP on b10215 is the new best config** (see 2026-08-01 bench below) — 54.2 tps decode / 1,164 tps prefill / **17.5 GiB VRAM** (2.2 GiB less than Q4_K_M). Launcher still points at Q4_K_M for historical continuity; swap to QAT for reasoning-fallback deployment if VRAM headroom matters.
 **HF (base):** [`lmstudio-community/gemma-4-26B-A4B-it-GGUF`](https://huggingface.co/lmstudio-community/gemma-4-26B-A4B-it-GGUF) (Q4_K_M) · [`google/gemma-4-26B-A4B-it`](https://huggingface.co/google/gemma-4-26B-A4B-it) → QAT Q4_0 on disk at `/data/llm/Gemma-4-QAT/gemma-4-26B-A4B-it-QAT-Q4_0.gguf`
 **HF (drafter):** Google's official 26B-A4B assistant, community-packaged by Janvitos as MTP Q8_0. **This community drafter uses the correct `gemma4-assistant` arch string** (verified via `strings` on GGUF metadata) — unlike the E2B/E4B/12B community versions which had the underscore bug. So no re-conversion needed for this size.
 **Chat template:** Google's updated official Jinja (strip_thinking macro, OpenAI tool response handling)
@@ -18,6 +18,27 @@
 | MTP drafter | Google official assistant, Q8_0, 441 MiB (community-packaged, correct arch) |
 
 ## Benchmarks
+
+### `--spec-draft-n-max` sweep (2026-08-21, b10566, isolated card 2, 20 runs × 300 tok)
+
+**Result: run this model at `--spec-draft-n-max 5`, worth ~+10%.** The launcher currently passes `--spec-type draft-mtp` with no n-max, so it is on the default 3.
+
+Swept twice — once at the cross-model harness sampling and once at this model's own production sampling — because acceptance is sampling-dependent (finding #32) and the flag is a production setting:
+
+| n-max | harness (temp 0.6 / top-p 0.95 / top-k 20) | acc | production (temp 1.0 / top-k 64) | acc | verify batch |
+|---|---|---|---|---|---|
+| 3 | 59.46 | 88.7% | 58.77 | 77.8% | 4 |
+| **5** ⭐ | **65.34 (+9.9%)** | 81.6% | **64.75 (+10.2%)** | 83.7% | 6 |
+| 7 | 61.88 (+4.1%) | 75.7% | 60.88 (+3.6%) | 65.0% | 8 |
+| 8 | 44.10 (−25.8%) | 83.8% | — | — | 9 |
+
+VRAM held at 17.85 GiB for n-max 3–7 and stepped to 18.95 at 8. Prefill was flat at ~1,633 @ 12K across the whole sweep.
+
+**Why 5 and not 7.** Acceptance *decays* along the chain here — 88.7% → 81.6% → 75.7% — so marginal drafted tokens stop covering their cost. Nemotron 3.5 Lightning, whose acceptance is flat at 99.5–100%, peaks at 7 instead. Step-cost growth per drafted token is nearly identical for the two models (+0.161 vs +0.174 of a baseline step), so **chain decay is the entire difference** (finding #30).
+
+**Why never 8.** Crossing verify batch 9 costs **+71.3%** in step time — and Nemotron shows +70.6% at exactly the same boundary with the same VRAM signature. That agreement across two unrelated architectures is what makes `n_max ≤ 7` a hard rule for this card rather than a per-model observation.
+
+**Three acceptance figures now exist for this same model + drafter:** 97.2% (the greedy `/completion` bench below), 88.7% (harness sampling), 77.8% (production sampling). They are not comparable, and quoting the 97.2% into a throughput model is what produced a wrong "+14% at n-max 7" prediction. **Tune on decode tok/s; read acceptance only to see whether the chain holds or decays.**
 
 ### On b10433 build (2026-08-21, isolated `/completion`, cold card, warm NEO cache, `cache_prompt=false`, greedy)
 
@@ -173,4 +194,5 @@ docker run -d --name llamacpp-sycl \
 - `--reasoning off` currently used because PEG parser 500s; Google official template makes `--reasoning on` viable but hasn't been re-locked
 - MTP drafter absolutely worth it: +15.6% decode on b10068, and on b10215 the MTP acceptance rate hits 96-100% on real prompts vs 37-89% previously — the newer build's kernel path apparently interacts better with the draft/target coherence
 - 256K context loads but leaves zero margin; 128K–192K is the safe range
+- **`--spec-draft-n-max` is a free +10%** and is not set in the launcher. See the sweep at the top of Benchmarks; the ceiling on this card is 7 for *any* drafted model (finding #30), and this model's own optimum inside that is 5.
 - **VRAM co-residence:** QAT Q4_0 + MTP at 17.5 GiB fits alongside current prod stack (embed 2.65 + TEI 0.9 = 3.55 GiB non-chat) with 3 GiB headroom. Q4_K_M at 19.7 GiB is also workable with 0.8 GiB headroom. Both are much more co-res friendly than the historical 22.9 GiB Q4_K_M b10068 configuration.
