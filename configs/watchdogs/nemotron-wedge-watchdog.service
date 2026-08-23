@@ -1,0 +1,16 @@
+[Unit]
+Description=Wedge watchdog for llamacpp-nemotron :8011 (agent slot, card 2)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Environment=CONTAINER=llamacpp-nemotron PORT=8011 STALL_WINDOW=90 STALL_THRESHOLD=2 POLL_INTERVAL=20
+Type=simple
+ExecStart=/data/llm/launch/nemotron-wedge-watchdog.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

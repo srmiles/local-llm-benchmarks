@@ -190,3 +190,29 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     **Context growth is a separate and mostly client-side effect.** Prefix reuse was working — LCP similarity 0.99+ on most turns, `--cache-ram` (8 GiB default) and `-ctxcp` (32 checkpoints × 8,192 spacing = 262K coverage) both adequate and untouched. But at 82,763 tokens prefill has decayed to 1,031 tok/s from 1,772 at 12K, so the two client-side history rewrites in that window (`f_sim_best` dropping to 0.16 and 0.14 — opencode compaction, not a server fault) each cost a **70,500-token, 68-second** re-prefill. The lever there is the agent's compaction threshold, not a server flag.
 
     **Recipe for any drafted model serving an agent:** set `--spec-draft-p-min` before touching `--spec-draft-n-max`, sweep it on decode tok/s over a realistic long-generation probe, and expect the optimum near 0.6. Then leave n-max at the finding-#27 ceiling of 7 and let p-min do the cutting.
+
+35. **A wedged llama.cpp slot is invisible to `/health`, and the standard wedge watchdog false-positives on any model that generates for more than a minute.** The Nemotron agent slot went unresponsive 2026-08-23, ~100 minutes after the finding-#34 retune. Diagnosis from the log:
+
+    - Task 10104 launched normally, generated to `n_gen = 1211` at a healthy 56 tok/s, then **stopped emitting anything** mid-stream.
+    - Nearly six minutes later the client gave up: `srv stop: cancel task, id_task = 10104`. **The cancel never produced a `slot release`.**
+    - `/slots` still reported `is_processing: true` on the cancelled task. GPU power sat at 50 W — idle, not computing.
+    - With `--parallel 1`, every subsequent request queued behind the dead slot forever. The next one (10417) was also cancelled, by a client that had simply timed out.
+    - **`/health` returned `200` the entire time**, because it only proves the HTTP listener is alive. `--restart unless-stopped` is no help either: Docker restarts on *exit*, not on unhealthy, and the process never exited.
+
+    The preceding 40+ turns in the same container all completed cleanly, and this was the only cancel in the whole log — so there is no pattern to point at, and no evidence either clearing or implicating the `--spec-draft-p-min` change made the same day. Restarting the container cleared it immediately.
+
+    **The gap was that `:8011` had no watchdog.** The box already runs `e2b-wedge-watchdog.sh` on the categorise, embed and rerank slots; Nemotron was deployed the day before without one. But dropping the E2B watchdog straight onto it does not work, and the reason generalises:
+
+    **`llamacpp:prompt_tokens_total` and `tokens_predicted_total` only advance when a request *completes*.** The E2B detector treats "both counters frozen while `requests_processing > 0`" as a wedge, which is correct for sub-second categorise requests and badly wrong for a model that generates for minutes. Measured directly: a perfectly healthy 4,000-token generation drove it to **`frozen 3/6`**, and a 131K cold prefill (~127 s at 1,030 tok/s) would exceed the threshold on its own. Left in place it would have restarted the slot mid-answer, repeatedly.
+
+    **The signal that does work is intra-request log progress.** `llama-server` emits a line every ~2–3 s whenever it is actually working — `prompt processing, n_tokens = …, progress = …` during prefill, `n_gen = …, tg = … t/s` during decode. A wedge is *a request in flight with zero log output*, which is precisely the 10104 signature. `configs/watchdogs/nemotron-wedge-watchdog.sh` polls every 20 s and restarts after 2 consecutive 90-second windows of total silence with `requests_processing > 0`, keeping the E2B script's "metrics unreachable" branch for the deadlocked-HTTP case.
+
+    Both branches were validated on the live slot: an **8,000-token, 125-second** generation produced **zero** stall warnings (the old detector would have reached 8/6), and a deliberate `docker pause` was detected and auto-restarted in **65 seconds**.
+
+    **Three transferable rules:**
+
+    - **`/health` on llama.cpp is a liveness check for the HTTP server, not for the inference slot.** Never treat 200 as "the model is serving". Any single-slot service needs a progress-based watchdog on top.
+    - **Match the watchdog's progress signal to the request duration of the workload.** Completion counters work for sub-second services and break for long-generation ones. Check what actually advances *during* a request before setting a threshold — on this build neither `/metrics` nor `/slots` exposes a live decode counter, so the log is the only source.
+    - **`--parallel 1` turns any single stuck request into a total outage.** It is the right setting for VRAM here, but it removes all slack, which makes the watchdog mandatory rather than nice to have.
+
+    Also fixed while here: `e2b-card-sweep.sh` still listed the card-2 mirror services (`llamacpp-categorise:8009`, `llamacpp-embed-c2:8012`, `tei-rerank-c2:8013`) that were retired in the 2026-08-22 B580 migration, and did not know `llamacpp-nemotron`. Its `card_of` returned `unknown` for the trigger, so a Nemotron wedge silently skipped the sweep entirely.

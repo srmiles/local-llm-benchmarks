@@ -173,6 +173,19 @@ Both clients can still override per request — send `temperature` in the body i
 
 The much larger change on the same day was `--spec-draft-p-min 0.6` (was the `0.00` default, i.e. the drafter always ran its full 7 passes even with no confidence): **+26% decode on its own.** Combined, real code-generation throughput went **35.02 → 50.71 tok/s, +44.8%**. Full sweep in [finding #34](../docs/findings.md) and on the [model page](../models/tested/nemotron-3.5-lightning-30b-a3b.md).
 
+### If it goes completely unresponsive
+
+The slot can wedge: a generation stops mid-stream, the client's cancel fails to release it, and with `--parallel 1` everything afterwards queues forever. **`/health` still returns `200`** — it only proves the HTTP listener is up. Since 2026-08-23 a watchdog catches this automatically (restart within ~2–3 minutes; see finding #35), but if you want to check or force it yourself:
+
+```bash
+# is the slot stuck? is_processing true with no log movement = wedged
+curl -sS http://100.70.193.48:8011/slots | python3 -c "import sys,json;print(json.load(sys.stdin)[0]['is_processing'])"
+ssh llm.local 'journalctl -u nemotron-wedge-watchdog -n 20 --no-pager'
+ssh llm.local 'sudo docker restart llamacpp-nemotron'   # ~35s back to healthy
+```
+
+A restart discards the cached conversation, so the first turn afterwards pays a full re-prefill.
+
 ### If it still feels slow, it is the conversation length
 
 Prefix reuse works and needs no tuning. But prefill decays with context — 1,772 tok/s at 12K, **1,031 tok/s at 82K** — so every time the client rewrites its history (compaction, a new session, a changed system prompt or tool list) the server re-prefills from the divergence point. Measured on a real session: two compaction events, each a **70,500-token, 68-second** stall. Decode at 82K also runs roughly a third of its 2K figure. **Lower the agent's compaction threshold to ~40K** and both halve. No server flag helps here.

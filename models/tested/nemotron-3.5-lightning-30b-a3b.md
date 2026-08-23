@@ -211,6 +211,12 @@ Raw results: `/data/llm/benchmarks/20260822-codetune/`. Probe: `/data/llm/benchm
 
 Prefix reuse works: LCP similarity is 0.99+ on most turns, and `--cache-ram` (8 GiB default) and `-ctxcp` (32 checkpoints × 8,192 spacing = 262K of coverage) are both adequate untouched. What hurts is the size of the conversation itself. At 82,763 tokens prefill has decayed to **1,031 tok/s** from 1,772 at 12K, so each time the client rewrites history — two events in the observed window, `f_sim_best` dropping to 0.16 and 0.14, i.e. opencode compaction — the server re-prefills **70,500 tokens in 68 seconds**. Halving the agent's compaction threshold roughly halves both that stall and the decode penalty. No server flag fixes it.
 
+### Operational: the slot can wedge, and `/health` will not tell you
+
+2026-08-23, ~100 minutes after the retune: a generation stalled mid-stream at `n_gen = 1211`, the client's cancel never produced a `slot release`, and `/slots` kept reporting `is_processing: true` on the dead task with the GPU idle at 50 W. `--parallel 1` meant every later request queued behind it indefinitely. **`/health` returned `200` the whole time** — it checks the HTTP listener, not the inference slot — and `--restart unless-stopped` never fired because the process never exited. Only the preceding 40+ turns' clean completions and this single cancel exist in the log, so the cause is not established; a restart cleared it.
+
+`:8011` now runs [`nemotron-wedge-watchdog.sh`](../../configs/watchdogs/nemotron-wedge-watchdog.sh) (systemd unit alongside it), which restarts the container after two consecutive 90-second windows of **zero server-log output with a request in flight**. It deliberately does *not* use the `e2b-wedge-watchdog.sh` detector: that one keys on completion counters, which a long generation freezes by design — measured, a healthy 4,000-token turn reached `frozen 3/6`. Full reasoning in finding #35.
+
 ### Gotcha found during deployment
 
 The first launcher revision omitted `--host`/`--port`, so llama.cpp bound its **default 8080** while the container published 8000 — health checks failed with `Recv failure: Connection reset by peer` even though the model had loaded fine. The repo's other launchers all pass `--host 0.0.0.0 --port 8000` explicitly; that is not optional.
