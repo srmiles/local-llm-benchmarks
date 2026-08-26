@@ -4,10 +4,10 @@ Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlema
 
 All numbers below are measured on the same physical hardware. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) at the current build tag.
 
-**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`; not cut over to production.
+**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`. **Nemotron `:8011` was cut over 2026-08-26 to `sycl-f16-moereorder`** — bb4caa754 plus a local `ggml-sycl` patch (+32% decode on that slot). Two further local builds are on disk and not deployed: `sycl-f16-q3kmoe` and `sycl-f16-allfixes`. [Patch exports.](configs/patches/README.md) [Patches, per-op data and the default-bench re-run.](models/tested/2026-08-26-sycl-patches-default-bench.md)
 
 **Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
-**Key findings (numbered #1-#33) →** [`docs/findings.md`](docs/findings.md)
+**Key findings (numbered #1-#42) →** [`docs/findings.md`](docs/findings.md)
 
 ## Current production stack
 
@@ -18,7 +18,7 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 | Host | Port | Container | GPU | Model | Purpose |
 |---|---|---|---|---|---|
 | llm.local | 8002 | `llamacpp-sycl` | B60 card 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent — **sole backend** |
-| llm.local | **8011** | `llamacpp-nemotron` | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
+| llm.local | **8011** | `llamacpp-nemotron` *(on `sycl-f16-moereorder`)* | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
 | llm.local | 8004 | `llamacpp-embed` | B60 card 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | llm.local | 8008 | `tei-rerank` | B60 card 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
 | llm.local | 8006 | `llamacpp-categorise-c1` | B60 card 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise |
@@ -42,6 +42,10 @@ Card 1 sits at ~20.5 GiB with four services co-resident; card 2 at ~22.8 GiB wit
 The per-service hostnames (`embed`/`rerank`/`categorise`/`ornith.srmiles.com`) carry the same backend pairs. **Nemotron on :8011 has no Traefik route at all** — agent-test traffic cannot reach a production pool and vice versa.
 
 ## Recent stack changes
+
+- **2026-08-26** — **Four `ggml-sycl` patches written and measured; Nemotron `:8011` cut over for +32% decode.** The SoA weight reorder that dense tensors have had for seven quant types covered MoE *expert* tensors for only three — leaving **Q4_0, Q8_0 and Q3_K** on the slow path, which is exactly what our MoE models use. Patched all three, plus the batch-8 MMVQ cliff from finding #30 and a `supports_op` guard for `TQ1_0/TQ2_0`. Per-op: **q4_0 5.12× and q8_0 6.44× at n=1**, with already-reordered q4_K/q6_K flat as a control. End-to-end, interleaved A/B against the immediate parent commit: **Nemotron Q4_0 +32%**, **Gemma 4 26B-A4B QAT +28.7%**, **Ornith-1.5-35B APEX +21.4%** (Q3_K). The TQ guard makes `test-backend-ops` complete on this backend for the first time — **1022/1022 MUL_MAT and 869/869 MUL_MAT_ID**, where it previously aborted after 214 lines. **The catch worth reading:** the reorder only helps at **batch 1**, so on our default bench (99.9% acceptance filler prompt, n-max 3) Nemotron shows just **+3.2%** — the same patch that is worth +32% on real agent traffic. [Findings #36–#42.](docs/findings.md) · [Full write-up.](models/tested/2026-08-26-sycl-patches-default-bench.md) · **Not yet submittable upstream** — #27517 is assigned to someone else, and PR text must be human-written ([blockers](configs/patches/README.md)).
+
+- **2026-08-26** — **`run-nmax-sweep.sh` was missing `--spec-draft-p-min` — the mechanism behind the 08-25 regression.** The harness drafted the full `n_max` every step while production truncates at ~3 tokens under `p-min 0.6`, so the cap it was optimising never materialised in the deployed slot: bench said +15%, production lost 12%. Every n-max number that harness ever produced is invalid for a p-min deployment. Fixed, with the reason recorded inline. Also saved a reproducible runner + comparator for the five-model default bench, after four control models scattered ±13% on a cross-date comparison. [Findings #40 and #41.](docs/findings.md)
 
 - **2026-08-23** — **Nemotron `:8011` wedged; watchdog added, and the standard one would have made it worse.** A generation stalled mid-stream at `n_gen=1211`, the client's cancel never released the slot, and with `--parallel 1` every later request queued behind it forever — while **`/health` returned 200 throughout**, because it only proves the HTTP listener is alive. The slot had no watchdog. The existing `e2b-wedge-watchdog.sh` could not be reused as-is: it keys on `prompt_tokens_total`/`tokens_predicted_total`, which only advance when a request *completes*, so a healthy 4,000-token generation drove it to `frozen 3/6` and a cold 131K prefill would trip it outright. New detector keys on **intra-request log progress** instead. Validated both ways on the live slot: an 8,000-token / 125-second generation produced zero warnings, and a deliberate `docker pause` was caught and auto-restarted in 65s. [Finding #35.](docs/findings.md) · [Watchdog + unit.](configs/watchdogs/)
 

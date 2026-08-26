@@ -1,0 +1,49 @@
+From 29b17c681f00a03ea2be9d165d159f7edd7a2eb8 Mon Sep 17 00:00:00 2001
+From: Steve Miles <srmiles@srmiles.com>
+Date: Wed, 26 Aug 2026 10:23:04 +0000
+Subject: [PATCH 4/5] sycl: report MUL_MAT/MUL_MAT_ID unsupported for
+ TQ1_0/TQ2_0
+
+ggml_backend_sycl_device_supports_op() returns true for MUL_MAT and
+MUL_MAT_ID on any src0 type, but the backend has no path that can execute
+TQ1_0/TQ2_0: the MMVQ per-type switch aborts in default:, and so does the
+dequantize path that MMVQ would otherwise fall through to.
+
+  ggml/src/ggml-sycl/mmvq.cpp:2488:   fatal error: unsupport data type=tq2_0
+  ggml/src/ggml-sycl/convert.cpp:724: fatal error: unsupport data type=tq2_0
+
+Claiming support therefore converts a missing kernel into an abort instead
+of a CPU fallback, and it means test-backend-ops -o MUL_MAT -b SYCL0 cannot
+run to completion on this backend at any configuration - so the op suite is
+unavailable for precisely the numerical-regression checking it exists for.
+
+Gating in can_use_mul_mat_vec_q() alone is not sufficient; that only moves
+the abort from mmvq.cpp to convert.cpp. The check belongs in supports_op.
+
+The list is explicit rather than derived because ggml_get_to_fp32_sycl()
+aborts instead of returning null, so there is no way to probe for a
+conversion without triggering the failure being guarded against.
+---
+ ggml/src/ggml-sycl/ggml-sycl.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/ggml/src/ggml-sycl/ggml-sycl.cpp b/ggml/src/ggml-sycl/ggml-sycl.cpp
+index 63215fcc6..46a95560f 100644
+--- a/ggml/src/ggml-sycl/ggml-sycl.cpp
++++ b/ggml/src/ggml-sycl/ggml-sycl.cpp
+@@ -6142,6 +6142,12 @@ static bool do_ggml_backend_sycl_device_supports_op(ggml_backend_dev_t dev, cons
+ 
+                 ggml_type src0_type = op->src[0]->type;
+ 
++                // TQ1_0/TQ2_0 have no MMVQ kernel and no dequantize path here, so both
++                // dispatch routes abort. Say no, and let ggml use the CPU.
++                if (src0_type == GGML_TYPE_TQ1_0 || src0_type == GGML_TYPE_TQ2_0) {
++                    return false;
++                }
++
+                 // TODO: The configuration below needs more work to be supported with oneDNN
+                 if (ggml_is_permuted(a) && !ggml_is_contiguous(a) &&
+                     a->ne[2] > 1 && a->ne[3] > 1 && src0_type == GGML_TYPE_F16) {
+-- 
+2.53.0
+

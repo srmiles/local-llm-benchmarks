@@ -2,9 +2,30 @@
 
 Journey through llama.cpp SYCL builds and the impact of each release on this stack. Referenced from the main README.
 
-**Current build:** `llama.cpp:sycl-f16` (b10433, commit `9b05354ec`, cutover 2026-08-14).
+**Current build:** `llama.cpp:sycl-f16` (b10433, commit `9b05354ec`, cutover 2026-08-14) for all services except Nemotron `:8011`, which runs the locally patched `sycl-f16-moereorder` (b10566 + MoE reorder) since 2026-08-26.
 **Rollback tags on disk:** `llama.cpp:sycl-f16-b10256-safe`, `llama.cpp:sycl-f16-b10215-safe`.
 **Upstream (as of 2026-08-20):** b10519 — 86 commits ahead of our current, not yet qualified for this stack.
+
+## Local `ggml-sycl` patches on b10566 (2026-08-26)
+
+Not upstream. Branch `all-fixes` off `bb4caa754` in `/data/llm/build/llama.cpp`; patches exported to `/data/llm/build/upstream-patches/`.
+
+| image | commits | deployed |
+|---|---|---|
+| `llama.cpp:sycl-f16-moereorder` | `68e55f242` MoE reorder Q4_0/Q8_0 | **Nemotron `:8011`, 2026-08-26** |
+| `llama.cpp:sycl-f16-q3kmoe` | + `9d1f04528` MoE reorder Q3_K, `ad76cd30a` TQ1_0/TQ2_0 `supports_op` guard | no |
+| `llama.cpp:sycl-f16-allfixes` | + `419f85698` MMVQ chunking above batch 8 | no |
+
+| change | measured impact |
+|---|---|
+| MoE reorder Q4_0/Q8_0 | per-op **q4_0 5.12× / q8_0 6.44× at n=1**, flat at n≥4. End-to-end **Nemotron Q4_0 +32%**, **Gemma 4 26B-A4B QAT +28.7%** (interleaved A/B vs parent commit) |
+| MoE reorder Q3_K | **Ornith-1.5-35B APEX +21.4%** (90 of 123 expert tensors are Q3_K) |
+| TQ1_0/TQ2_0 guard | `test-backend-ops` completes on SYCL for the first time: **1022/1022 MUL_MAT**, **869/869 MUL_MAT_ID** (previously aborted at 214 lines) |
+| MMVQ chunking | removes the finding-#30 batch-8 cliff: Qwen3-4B batch 9 **+104%**; Nemotron at n-max 9 **97.41 vs 78.95 tok/s (+23.4%)**. Default build unchanged to ±0.4% — the cap is env-gated at 8 |
+
+**Read the reorder numbers with finding #36 in hand:** the gain exists only at batch 1, so a high-acceptance synthetic bench shows +3.2% where real agent traffic shows +32%.
+
+[Full write-up, per-op tables and the default-bench re-run.](../models/tested/2026-08-26-sycl-patches-default-bench.md)
 
 ## b10433 impact (measured 2026-08-14, isolated `/completion` probes on 5K real-workload prompts, warmup preflight)
 

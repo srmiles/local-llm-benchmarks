@@ -10,6 +10,9 @@ Benches for the four candidates shortlisted in [`2026-08-21-new-candidates-sweep
 
 > **VRAM caveat:** peak observed during a bench that never exceeds 12K context, so these are directly comparable *to each other* but lower than prod steady-state at full context. The Ornith reference reads 14.62 GiB here against 20.7 GiB in production at 262K. Read the column as a ranking, not as a co-residence budget.
 
+
+> **Re-run 2026-08-26 — read these numbers with a ±10% band.** This bench was replayed on a locally patched build and **four control models moved +12.9%, +9.5%, +0.7% and −3.3%** despite the change under test being unable to affect them. The cause is that this run had **no saved runner script**, so per-model contexts were not reproducible — peak VRAM differs inconsistently between the two runs (ornith 14.62 → 10.83 GiB, lfm2.5 8.63 → 10.50). The Ornith reference row here is also degraded: σ 16.41 with one sample at 0.0 tok/s. Treat this table as a ranking, not as a baseline for measuring single-digit or low-teens effects. [Re-run and finding #40.](2026-08-26-sycl-patches-default-bench.md)
+
 ---
 
 ## Results

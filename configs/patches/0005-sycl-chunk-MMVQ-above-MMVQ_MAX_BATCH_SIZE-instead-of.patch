@@ -1,0 +1,89 @@
+From 94a7e5aa3134922467ed11bd8c03718e29d69385 Mon Sep 17 00:00:00 2001
+From: Steve Miles <srmiles@srmiles.com>
+Date: Wed, 26 Aug 2026 04:17:20 +0000
+Subject: [PATCH 5/5] sycl: chunk MMVQ above MMVQ_MAX_BATCH_SIZE instead of
+ falling back to dequant+GEMM
+
+The per-type MMVQ kernels accept at most MMVQ_MAX_BATCH_SIZE activation
+columns. Above that, can_use_mul_mat_vec_q() declined and dispatch fell
+through to ggml_sycl_op_mul_mat_sycl, which materializes the whole weight
+tile as fp16 and calls oneDNN GEMM - a large regression for decode-shaped
+work. On Battlemage this shows up as a ~59% decode throughput drop between
+batch 8 and batch 9.
+
+Chunk the request into groups of <= MMVQ_MAX_BATCH_SIZE instead, so each
+chunk sees exactly the shapes the existing kernels already handle. The
+upper bound at which GEMM becomes preferable is exposed as
+GGML_SYCL_MMVQ_MAX_COLS (default unchanged at MMVQ_MAX_BATCH_SIZE).
+---
+ ggml/src/ggml-sycl/ggml-sycl.cpp | 11 ++++++++++-
+ ggml/src/ggml-sycl/mmvq.cpp      | 21 ++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/ggml/src/ggml-sycl/ggml-sycl.cpp b/ggml/src/ggml-sycl/ggml-sycl.cpp
+index 46a95560f..ea4989f3c 100644
+--- a/ggml/src/ggml-sycl/ggml-sycl.cpp
++++ b/ggml/src/ggml-sycl/ggml-sycl.cpp
+@@ -4619,9 +4619,18 @@ static bool can_use_dequantize_mul_mat_vec(const ggml_tensor * src0, const ggml_
+            src0->ne[0] % dmmv_x_required == 0 && src1->ne[1] == 1;
+ }
+ 
++// Max activation columns routed through MMVQ. Above this, dequantize + GEMM wins.
++static int64_t mmvq_max_cols() {
++    static int64_t v = [] {
++        const char * s = std::getenv("GGML_SYCL_MMVQ_MAX_COLS");
++        return s ? std::max<int64_t>(1, std::atoll(s)) : (int64_t) MMVQ_MAX_BATCH_SIZE;
++    }();
++    return v;
++}
++
+ static bool can_use_mul_mat_vec_q(const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst) {
+     return ggml_is_quantized(src0->type) && src1->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32 &&
+-           src1->ne[1] <= MMVQ_MAX_BATCH_SIZE;
++           src1->ne[1] <= mmvq_max_cols();
+ }
+ 
+ static void ggml_sycl_mul_mat(ggml_backend_sycl_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst) {
+diff --git a/ggml/src/ggml-sycl/mmvq.cpp b/ggml/src/ggml-sycl/mmvq.cpp
+index 46bbe985d..6187fc467 100644
+--- a/ggml/src/ggml-sycl/mmvq.cpp
++++ b/ggml/src/ggml-sycl/mmvq.cpp
+@@ -1,3 +1,4 @@
++#include <algorithm>
+ #include "mmvq.hpp"
+ 
+ #include "ggml.h"
+@@ -2150,7 +2151,7 @@ static void mul_mat_vec_iq4_xs_q8_1_sycl_switch_ncols(
+     }
+ }
+ 
+-void ggml_sycl_op_mul_mat_vec_q(ggml_backend_sycl_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
++static void ggml_sycl_op_mul_mat_vec_q_impl(ggml_backend_sycl_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
+                                 ggml_tensor * dst, const char * src0_dd_i, const float * src1_ddf_i,
+                                 const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low,
+                                 const int64_t row_high, const int64_t src1_ncols, const int64_t src1_padded_col_size,
+@@ -2853,3 +2854,21 @@ bool ggml_sycl_mul_mat_vec_q_glu_reorder(enum ggml_type src0_type, enum ggml_glu
+             return false;
+     }
+ }
++
++// The per-type kernels take at most MMVQ_MAX_BATCH_SIZE columns. Split bigger
++// requests into chunks of that size, so each chunk keeps a shape they handle.
++void ggml_sycl_op_mul_mat_vec_q(ggml_backend_sycl_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
++                                ggml_tensor * dst, const char * src0_dd_i, const float * src1_ddf_i,
++                                const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low,
++                                const int64_t row_high, const int64_t src1_ncols, const int64_t src1_padded_col_size,
++                                const dpct::queue_ptr & stream) {
++    const size_t q8_1_ts = sizeof(block_q8_1);
++    const size_t q8_1_bs = QK8_1;
++    for (int64_t col0 = 0; col0 < src1_ncols; col0 += MMVQ_MAX_BATCH_SIZE) {
++        const int64_t ncols = std::min<int64_t>(MMVQ_MAX_BATCH_SIZE, src1_ncols - col0);
++        const char *  src1_chunk = src1_ddq_i + col0 * src1_padded_col_size * q8_1_ts / q8_1_bs;
++        float *       dst_chunk  = dst_dd_i + col0 * dst->ne[0];
++        ggml_sycl_op_mul_mat_vec_q_impl(ctx, src0, src1, dst, src0_dd_i, src1_ddf_i, src1_chunk,
++                                        dst_chunk, row_low, row_high, ncols, src1_padded_col_size, stream);
++    }
++}
+-- 
+2.53.0
+
