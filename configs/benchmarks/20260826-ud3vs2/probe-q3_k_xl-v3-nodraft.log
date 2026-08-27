@@ -1,0 +1,30 @@
+  run 1: 8.66 tok/s  (n=300)
+  run 2: 8.78 tok/s  (n=300)
+  run 3: 8.79 tok/s  (n=300)
+  run 4: 8.79 tok/s  (n=300)
+  run 5: 8.79 tok/s  (n=300)
+  run 6: ERROR HTTP Error 500: Internal Server Error
+  run 7: 8.78 tok/s  (n=300)
+  run 8: 8.79 tok/s  (n=300)
+  run 9: 8.79 tok/s  (n=300)
+  run10: 8.79 tok/s  (n=300)
+   metric: llamacpp:spec_decode_num_draft_tokens_total 0.0
+   metric: llamacpp:spec_decode_num_drafts_total 0.0
+{
+ "name": "q3_k_xl-v3-nodraft",
+ "all_full_length": true,
+ "decode": {
+  "median": 8.79,
+  "mean": 8.77,
+  "stdev": 0.04,
+  "min": 8.66,
+  "max": 8.79
+ },
+ "spec": {
+  "drafts": 0.0,
+  "draft_tokens": 0.0,
+  "accepted": 0.0,
+  "acceptance_pct": null,
+  "accepted_per_draft": null
+ }
+}

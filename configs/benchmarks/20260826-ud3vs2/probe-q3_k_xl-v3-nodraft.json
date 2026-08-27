@@ -1,0 +1,35 @@
+{
+ "name": "q3_k_xl-v3-nodraft",
+ "runs": 10,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 8.79,
+  "mean": 8.77,
+  "stdev": 0.04,
+  "min": 8.66,
+  "max": 8.79
+ },
+ "spec": {
+  "drafts": 0.0,
+  "draft_tokens": 0.0,
+  "accepted": 0.0,
+  "acceptance_pct": null,
+  "accepted_per_draft": null
+ },
+ "per_run": [
+  8.66,
+  8.78,
+  8.79,
+  8.79,
+  8.79,
+  8.78,
+  8.79,
+  8.79,
+  8.79
+ ],
+ "ok_runs": 9,
+ "errors": [
+  "run6: HTTP Error 500: Internal Server Error"
+ ]
+}

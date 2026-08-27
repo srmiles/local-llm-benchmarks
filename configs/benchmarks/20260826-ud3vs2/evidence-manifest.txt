@@ -1,0 +1,176 @@
+# Evidence manifest — generated 2026-08-27T01:17:00Z on llm.local
+
+## Local file sizes (bytes)
+1369590656  /data/llm/qwen3.8-27b-unsloth/MTP/mtp-Qwen3.8-27B-Q4_0.gguf
+1369590656  /data/llm/qwen3.8-27b-unsloth/mtp-Qwen3.8-27B-Q4_0.gguf
+13146393504  /data/llm/qwen3.8-27b-unsloth/Qwen3.8-27B-UD-Q3_K_XL.gguf
+17559178144  /data/llm/qwen3.8-27b-unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf
+1369590656  /data/llm/qwen3.8-27b-unsloth-v2/mtp-Qwen3.8-27B-Q4_0.gguf
+13441059904  /data/llm/qwen3.8-27b-unsloth-v2/Qwen3.8-27B-UD-Q3_K_XL.gguf
+17923394624  /data/llm/qwen3.8-27b-unsloth-v2/Qwen3.8-27B-UD-Q4_K_XL.gguf
+
+## HF blob sizes, unsloth/Qwen3.8-27B-GGUF — both revisions
+(the size table's Q2_K_XL and IQ2_XXS rows come from here; those files were never downloaded)
+--- revision main ---
+   49986159616  BF16/Qwen3.8-27B-BF16-00001-of-00002.gguf
+    4671576000  BF16/Qwen3.8-27B-BF16-00002-of-00002.gguf
+    1369590656  MTP/mtp-Qwen3.8-27B-Q4_0.gguf
+   16056478688  Qwen3.8-27B-Q4_0.gguf
+   17540705248  Qwen3.8-27B-Q4_1.gguf
+   29047086048  Qwen3.8-27B-Q8_0.gguf
+    6729166848  Qwen3.8-27B-UD-IQ1_M.gguf
+    6192222208  Qwen3.8-27B-UD-IQ1_S.gguf
+    8371970048  Qwen3.8-27B-UD-IQ2_S.gguf
+    7266070528  Qwen3.8-27B-UD-IQ2_XXS.gguf
+   12040883104  Qwen3.8-27B-UD-IQ3_S.gguf
+   10934860704  Qwen3.8-27B-UD-IQ3_XXS.gguf
+   14252845984  Qwen3.8-27B-UD-IQ4_XS.gguf
+    9828981664  Qwen3.8-27B-UD-Q2_K_XL.gguf
+   13146393504  Qwen3.8-27B-UD-Q3_K_XL.gguf
+   16464440224  Qwen3.8-27B-UD-Q4_K_M.gguf
+   15358213024  Qwen3.8-27B-UD-Q4_K_S.gguf
+   17559178144  Qwen3.8-27B-UD-Q4_K_XL.gguf
+   19771509664  Qwen3.8-27B-UD-Q5_K_M.gguf
+   18665753504  Qwen3.8-27B-UD-Q5_K_S.gguf
+   20876938144  Qwen3.8-27B-UD-Q5_K_XL.gguf
+   21983677344  Qwen3.8-27B-UD-Q6_K.gguf
+   24193919904  Qwen3.8-27B-UD-Q6_K_L.gguf
+   23088409504  Qwen3.8-27B-UD-Q6_K_M.gguf
+   25299061664  Qwen3.8-27B-UD-Q6_K_XL.gguf
+   28045695904  Qwen3.8-27B-UD-Q8_K_L.gguf
+   31457991680  Qwen3.8-27B-UD-Q8_K_XL.gguf
+     931146432  mmproj-BF16.gguf
+     927607488  mmproj-F16.gguf
+--- revision f1bfb127c64f ---
+   49986159616  BF16/Qwen3.8-27B-BF16-00001-of-00002.gguf
+    4671576000  BF16/Qwen3.8-27B-BF16-00002-of-00002.gguf
+   16337628128  Qwen3.8-27B-IQ4_NL.gguf
+   15705861088  Qwen3.8-27B-IQ4_XS.gguf
+   13818690528  Qwen3.8-27B-Q3_K_M.gguf
+   12574489568  Qwen3.8-27B-Q3_K_S.gguf
+   16056478688  Qwen3.8-27B-Q4_0.gguf
+   17540705248  Qwen3.8-27B-Q4_1.gguf
+   17106775008  Qwen3.8-27B-Q4_K_M.gguf
+   16121359328  Qwen3.8-27B-Q4_K_S.gguf
+   19834055648  Qwen3.8-27B-Q5_K_M.gguf
+   19270036448  Qwen3.8-27B-Q5_K_S.gguf
+   22884408288  Qwen3.8-27B-Q6_K.gguf
+   29047086048  Qwen3.8-27B-Q8_0.gguf
+   10319907904  Qwen3.8-27B-UD-IQ2_M.gguf
+    9010048064  Qwen3.8-27B-UD-IQ2_XXS.gguf
+   11913559104  Qwen3.8-27B-UD-IQ3_XXS.gguf
+   10676423744  Qwen3.8-27B-UD-Q2_K_XL.gguf
+   13441059904  Qwen3.8-27B-UD-Q3_K_XL.gguf
+   17923394624  Qwen3.8-27B-UD-Q4_K_XL.gguf
+   20218178624  Qwen3.8-27B-UD-Q5_K_XL.gguf
+   25924152384  Qwen3.8-27B-UD-Q6_K_XL.gguf
+   31457991680  Qwen3.8-27B-UD-Q8_K_XL.gguf
+     931146432  mmproj-BF16.gguf
+     927607488  mmproj-F16.gguf
+
+## Per-tensor quant-type histograms (gguf-types.py output)
+qwen3.8-27b-unsloth-v2/Qwen3.8-27B-UD-Q4_K_XL.gguf tensors: 866
+   Q5_K       325 tensors    18.82 G-elems
+   IQ4_XS      65 tensors     5.79 G-elems
+   Q6_K        19 tensors     1.41 G-elems
+   Q4_K        97 tensors     1.29 G-elems
+   F32        360 tensors     0.00 G-elems
+
+qwen3.8-27b-unsloth/Qwen3.8-27B-UD-Q4_K_XL.gguf tensors: 866
+   Q5_K       191 tensors    11.53 G-elems
+   IQ4_XS      70 tensors     5.88 G-elems
+   Q4_K        69 tensors     5.44 G-elems
+   Q6_K        56 tensors     3.49 G-elems
+   IQ4_NL       6 tensors     0.50 G-elems
+   Q3_K         3 tensors     0.27 G-elems
+   Q8_0       110 tensors     0.12 G-elems
+   IQ3_S        1 tensors     0.09 G-elems
+   F32        360 tensors     0.00 G-elems
+
+qwen3.8-27b-unsloth-v2/Qwen3.8-27B-UD-Q3_K_XL.gguf tensors: 866
+   IQ4_XS     357 tensors    13.10 G-elems
+   IQ3_S      130 tensors    11.59 G-elems
+   Q5_K        18 tensors     1.36 G-elems
+   Q3_K         1 tensors     1.27 G-elems
+   F32        360 tensors     0.00 G-elems
+
+qwen3.8-27b-unsloth/Qwen3.8-27B-UD-Q3_K_XL.gguf tensors: 866
+   IQ4_XS     156 tensors     9.36 G-elems
+   IQ3_S      111 tensors     8.21 G-elems
+   IQ3_XXS     34 tensors     2.35 G-elems
+   Q3_K        12 tensors     2.02 G-elems
+   Q5_K        26 tensors     1.71 G-elems
+   IQ2_S       15 tensors     1.28 G-elems
+   Q4_K        36 tensors     1.14 G-elems
+   Q6_K         7 tensors     0.42 G-elems
+   IQ2_XS       4 tensors     0.36 G-elems
+   Q2_K         3 tensors     0.19 G-elems
+   IQ2_XXS      2 tensors     0.18 G-elems
+   IQ4_NL       2 tensors     0.07 G-elems
+   Q8_0        98 tensors     0.03 G-elems
+   F32        360 tensors     0.00 G-elems
+
+MTP/mtp-Qwen3.8-27B-Q4_0.gguf tensors: 18
+   Q3_K         2 tensors     2.54 G-elems
+   Q4_K         4 tensors     0.32 G-elems
+   Q6_K         4 tensors     0.10 G-elems
+   F32          8 tensors     0.00 G-elems
+
+
+## LFS SHA256 — proof that the Q8_0 referee is the same blob in both revisions
+--- revision main ---
+b9966e82b7a4d87028b5eae061d578ee826305ebf8baea5bfc6e09bad0ba191f     49986159616  BF16/Qwen3.8-27B-BF16-00001-of-00002.gguf
+92e3943c4f9bd6292a7bef82369f65fed9bfed088b9df0fb2fa2ce17c9edfa02      4671576000  BF16/Qwen3.8-27B-BF16-00002-of-00002.gguf
+50d9ce5a6da381bbcfb31061cf73df94a90e6faf8efeddee379a9cb8f1501c6e      1369590656  MTP/mtp-Qwen3.8-27B-Q4_0.gguf
+ede16c7b36e578ca87a8c70e011e4b4633a32c831c0ce76d0f474582384e671d     16056478688  Qwen3.8-27B-Q4_0.gguf
+3e020514545c310dfc511dc8d3ddc23482b645189cb9287816d84bed6eddd4ac     17540705248  Qwen3.8-27B-Q4_1.gguf
+a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348     29047086048  Qwen3.8-27B-Q8_0.gguf
+1b5165a7149ea51e683c8eaf23372188ad9fc9d1a795386f7a1b558acf847dc6      6729166848  Qwen3.8-27B-UD-IQ1_M.gguf
+3895b6eaa91e705c06ad1938d16c22e86f073c6a67df86260a1da79be3d1f887      6192222208  Qwen3.8-27B-UD-IQ1_S.gguf
+7897d2c5a5cee46aef50895141b2c8a0803c1185f3d03c4fda4cd137a7ad77fe      8371970048  Qwen3.8-27B-UD-IQ2_S.gguf
+e792d8fb3142fe6d9171876d6da0f71f05a71028718debc72dbec93ff645e67d      7266070528  Qwen3.8-27B-UD-IQ2_XXS.gguf
+d847e2c1e4aa276e4b7b8e9ad7628050e61e165d49ab995407bc36677a6f3864     12040883104  Qwen3.8-27B-UD-IQ3_S.gguf
+c0b7c3038681ed2e3040456c1dd45f9858b6c2290bed172c70388a94874f3eee     10934860704  Qwen3.8-27B-UD-IQ3_XXS.gguf
+40fac4050e940397dbf13087afd50f4734a11805bf9d65ef8ddd7483470e6199     14252845984  Qwen3.8-27B-UD-IQ4_XS.gguf
+fd4730dd8aad070517978752b63d530aeb1740d2283cab9fa24f1e404032ddb0      9828981664  Qwen3.8-27B-UD-Q2_K_XL.gguf
+8c2a45ff85e7674ca185ec8eb6cdeab0e617ed9d8018caed0b64380eb2a67a5e     13146393504  Qwen3.8-27B-UD-Q3_K_XL.gguf
+322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482     16464440224  Qwen3.8-27B-UD-Q4_K_M.gguf
+75bc9c8adba2842e72f0ab5201aaa07133c5010b566305c09187fcbdcd364017     15358213024  Qwen3.8-27B-UD-Q4_K_S.gguf
+3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e     17559178144  Qwen3.8-27B-UD-Q4_K_XL.gguf
+2de73110cb254cbf09b54b717578dadff12ef1194e7271527e68202f39ba4bfd     19771509664  Qwen3.8-27B-UD-Q5_K_M.gguf
+d8d62ffcf84d42658dd6ccf9782b4d0404700af78b26d750507510c7597b5bfe     18665753504  Qwen3.8-27B-UD-Q5_K_S.gguf
+8601193d3d5760c37fb8ce1b43afebc69df5fb24e1fbc5a547c32e2200305276     20876938144  Qwen3.8-27B-UD-Q5_K_XL.gguf
+c9c206812fbe4ac7b76a729e25928b63f2ae89d37f69da7a71c20aec763cd436     21983677344  Qwen3.8-27B-UD-Q6_K.gguf
+121355b4c7422771da25adc74090e3c90138f77ce5c92d348687d47824ec80f4     24193919904  Qwen3.8-27B-UD-Q6_K_L.gguf
+493301830a596b8ad56dc1329f80bbcb578c8e910da395feafdc9cd8263430bb     23088409504  Qwen3.8-27B-UD-Q6_K_M.gguf
+701d8fa9ed214ab21bfc130cd2a7df19ca89bbef7713e2dfb19f3c63696aa917     25299061664  Qwen3.8-27B-UD-Q6_K_XL.gguf
+2a13bba36d2efa213f9275abc430c40e4d914b145bfde976f30f1bb5b7e23ac2     28045695904  Qwen3.8-27B-UD-Q8_K_L.gguf
+af36ecb6b5db1407953345b746c14ac93f0657dda413910b4348683a2d990377     31457991680  Qwen3.8-27B-UD-Q8_K_XL.gguf
+83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53       931146432  mmproj-BF16.gguf
+cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e       927607488  mmproj-F16.gguf
+--- revision f1bfb127c64f ---
+b9966e82b7a4d87028b5eae061d578ee826305ebf8baea5bfc6e09bad0ba191f     49986159616  BF16/Qwen3.8-27B-BF16-00001-of-00002.gguf
+92e3943c4f9bd6292a7bef82369f65fed9bfed088b9df0fb2fa2ce17c9edfa02      4671576000  BF16/Qwen3.8-27B-BF16-00002-of-00002.gguf
+466c6714b0eca21c032690c801391a3c1e8f464ef01bbf420b70840027590c38     16337628128  Qwen3.8-27B-IQ4_NL.gguf
+9fd40d7036f5e0918e20aaeebf11468fafd06bb53d4d980eef6bb7e4e4ace666     15705861088  Qwen3.8-27B-IQ4_XS.gguf
+7f3b845b563888ec3abc269474cf744bf703a7ce8766dbb7f696c63975facfd7     13818690528  Qwen3.8-27B-Q3_K_M.gguf
+0fc041075efd255732ce6de77617ac31520b35a8dbffc06ef56cb80e5c8762ca     12574489568  Qwen3.8-27B-Q3_K_S.gguf
+ede16c7b36e578ca87a8c70e011e4b4633a32c831c0ce76d0f474582384e671d     16056478688  Qwen3.8-27B-Q4_0.gguf
+3e020514545c310dfc511dc8d3ddc23482b645189cb9287816d84bed6eddd4ac     17540705248  Qwen3.8-27B-Q4_1.gguf
+7e78da5d7e3ae28d178121f58646953305f3e5bd3cb46f4a75584e8b6c6fe169     17106775008  Qwen3.8-27B-Q4_K_M.gguf
+22200efcd98a7aeeaf83f59b0f1400b055d9e0437900e26b930ef2d42a3eb3f9     16121359328  Qwen3.8-27B-Q4_K_S.gguf
+07deb7fa91bf751d3000774fe5bb8afae5ffb41255fd19980147468052e07177     19834055648  Qwen3.8-27B-Q5_K_M.gguf
+a272bd49a992e38c2aa30216a966c9d1334afff0a0812b9837bb222e31d14b00     19270036448  Qwen3.8-27B-Q5_K_S.gguf
+562fbf760503008f118e5df38de5b3e97992d1f693f475815631198547486727     22884408288  Qwen3.8-27B-Q6_K.gguf
+a680f44a06920e5d689774823782006aa3acc8db95750323373b24139b67e348     29047086048  Qwen3.8-27B-Q8_0.gguf
+04a89ef4fa9c8726d09331433346809bbab692b4851d49d0738ba8d58a1ae740     10319907904  Qwen3.8-27B-UD-IQ2_M.gguf
+8d1b37297d6cf98303cd396896f35e01089ddcc904053a9c6997f7a1c35b8524      9010048064  Qwen3.8-27B-UD-IQ2_XXS.gguf
+0a6129dcbbbe72f423dc67e0e3bbfbbdf3e923981a3637687ebb96a46c59d6be     11913559104  Qwen3.8-27B-UD-IQ3_XXS.gguf
+46151b52a5cad673d90a00222103254864326c251130b8fc4381d6f34386b3c8     10676423744  Qwen3.8-27B-UD-Q2_K_XL.gguf
+00cf92e666c6af6566996c38c89a44ccdb6449ea25ef0f112a452c853b2a71e2     13441059904  Qwen3.8-27B-UD-Q3_K_XL.gguf
+bee238bbeb3dc0a34bde4d0dedbaee1f98c009e8bb4226f03070054c12fb1372     17923394624  Qwen3.8-27B-UD-Q4_K_XL.gguf
+176a6a3f034e9cdc447c10cd00329fc9b31002e6589b9295f2ad4f1eefe0f6ab     20218178624  Qwen3.8-27B-UD-Q5_K_XL.gguf
+739202186fd9389bb58497c58b56c8a0d4253d99d20131e6a0427e363e678fc8     25924152384  Qwen3.8-27B-UD-Q6_K_XL.gguf
+af36ecb6b5db1407953345b746c14ac93f0657dda413910b4348683a2d990377     31457991680  Qwen3.8-27B-UD-Q8_K_XL.gguf
+83ee4f4f205fa514161778c41df1ea14144faa0f713510893b63c2395f5c2d53       931146432  mmproj-BF16.gguf
+cbb841a9ee0636b2ec172f5bb8df2ea8dfeb01e90fe7c6126581d662a0b4e43e       927607488  mmproj-F16.gguf

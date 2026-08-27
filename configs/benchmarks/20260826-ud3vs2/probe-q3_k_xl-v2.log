@@ -1,0 +1,28 @@
+  run 1: 7.47 tok/s  (n=300)
+  run 2: 7.94 tok/s  (n=300)
+  run 3: 8.03 tok/s  (n=300)
+  run 4: 7.63 tok/s  (n=300)
+  run 5: 8.62 tok/s  (n=300)
+  run 6: 7.23 tok/s  (n=300)
+  run 7: 7.06 tok/s  (n=300)
+  run 8: 7.83 tok/s  (n=300)
+  run 9: 8.01 tok/s  (n=300)
+  run10: 8.44 tok/s  (n=300)
+{
+ "name": "q3_k_xl-v2",
+ "all_full_length": true,
+ "decode": {
+  "median": 7.89,
+  "mean": 7.83,
+  "stdev": 0.5,
+  "min": 7.06,
+  "max": 8.62
+ },
+ "spec": {
+  "drafts": 1121.0,
+  "draft_tokens": 3346.0,
+  "accepted": 1866.0,
+  "acceptance_pct": 55.8,
+  "accepted_per_draft": 1.66
+ }
+}

@@ -2,7 +2,27 @@
 
 **Status:** **Tested 2026-08-14/15, then stopped.** Ran briefly on card 2 as the first tenant of the 2nd B60. Decode came in at 23 tps on 27B dense hybrid — roughly half of Gemma 4 26B-A4B Q4_K_M (47.7 tps) at the same VRAM class. Vision niche is already covered by Muse Glimmer-30B at similar speed with a working DFlash drafter. Stopped 2026-08-15 to free card 2 for the dedicated Gemma 4 E2B categorise slot (99% of real workload). Launcher preserved on disk for on-demand relaunch.
 
-**Revisit trigger:** either (a) upstream SYCL Gated DeltaNet / SSM_SCAN / SSM_CONV kernels gain proper XMX GEMM path (currently functional but not XMX-optimised — decode ceiling would roughly double when they do), or (b) a use case appears that specifically needs Qwen 3.8's long-context or vision behaviour that Muse Glimmer can't cover. Otherwise recheck in ~1 month.
+**Revisit trigger:** ~~either (a) upstream SYCL Gated DeltaNet / SSM_SCAN / SSM_CONV kernels gain proper XMX GEMM path (currently functional but not XMX-optimised — decode ceiling would roughly double when they do), or (b)~~ **(a) was disproved by finding #25 — the 23 tps is the dense-27B bandwidth wall, and no upstream SSM kernel work will move it.** What remains: a use case that specifically needs Qwen 3.8's long-context or vision behaviour that Muse Glimmer can't cover.
+
+> ## 2026-08-27 update — two numbers on this page are misleading
+>
+> A [Dynamic 3.0 vs 2.0 bench](2026-08-27-unsloth-dynamic-3-vs-2.md) re-measured this model properly on `sycl-f16-allfixes` and corrected two things below.
+>
+> **The 57.9% MTP acceptance is not the model's number — it is one 489-token single-shot probe at `temp 1.0`.** Measured over 10 × 300-token generations at `temp 0.6 / top-p 0.95`, acceptance is **53.5–55.8%** across the three drafted arms — the same ballpark, though 57.9% sits above that whole range. The same harness on a *filler* prompt reports **84.6–96.9%**. Acceptance on this model is dominated by prompt predictability, not by the quant. Neither number should be quoted without the prompt alongside it.
+>
+> **Decode is quant-dependent in a way the single Q4_K_M row hides**, and the ladder does not behave the way a bandwidth-bound model should:
+>
+> | Quant | Size | Decode (real prompt, `ignore_eos`) |
+> |---|---:|---:|
+> | unsloth UD-Q4_K_XL v2.0 | 17.92 GB | **19.68** (18.82 in an earlier pass) |
+> | unsloth UD-Q4_K_XL v3.0 | 17.56 GB | 16.95 |
+> | unsloth UD-Q3_K_XL v2.0 | 13.44 GB | 7.89 |
+> | unsloth UD-Q3_K_XL v3.0 | 13.15 GB | *wedges the server* |
+>
+> **Going below Q4_K buys nothing here** — Q3_K_XL is 25% smaller and decodes at 40% of the speed (finding #45). And **unsloth's v3.0 `UD-Q3_K_XL` must not be used on this stack**: a token id of `-1` reaches the batch and, once a drafter is attached, the slot 500s permanently — 3 of 4 attempts, with `/health` still returning 200 throughout (finding #46).
+>
+> Model still parked. The revisit trigger is unchanged, but "try a smaller quant to get past 23 tps" is now a closed avenue.
+
 
 **HF (base):** [`ggml-org/Qwen3.8-27B-GGUF`](https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF) — llama.cpp team's official conversion. Weights on disk at `/data/llm/qwen3.8-27b-GGUF/`.
 **HF (upstream):** [`Qwen/Qwen3.8-27B`](https://huggingface.co/Qwen/Qwen3.8-27B) — original PyTorch checkpoint from Alibaba.

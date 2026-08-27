@@ -164,21 +164,59 @@ Three controls that today's MoE work provably cannot touch moved **+12.9%, +9.5%
 
 A runner (`default-bench-allfixes.sh`) and comparator (`compare-default.py`) are now saved on the box so future default benches are reproducible.
 
-## 6. Prefill: the limiter, and why "flat prefill" was an artifact
+## 6. Prefill - corrected 2026-08-27
 
-The earlier observation that prefill sits flat at 2,797–2,868 tok/s across batch 1–16 was **a property of the harness, not of the backend**. That sweep varied `-npl` with `-ub` pinned at 512, and `-npl` does not change the micro-batch — so it cannot change per-token prefill cost. Flatness was the expected result.
+**The first version of this section was measured on the wrong model and reached the wrong conclusion.** `q3k-window.sh` exported `MODEL_DIR`/`MODEL` for the Ornith A/B, then called `prefill-ub-sweep.sh` in the same shell where `${MODEL_DIR:-default}` let the exports win. The sweep labelled "Qwen3-4B Q4_K_M" was really **Ornith-1.5-35B-A3B APEX**, and the roofline arithmetic that followed used Qwen's parameter count against Ornith's timings.
 
-Sweeping `-ub` instead (Qwen3-4B Q4_K_M, `-npp 4096 -npl 1 -fa on`):
+Re-measured on an **idle** card 0 (all four card-0 services stopped, embed/rerank/categorise failing over to llm2), with `ub=1024` run first, mid and last as a drift control - 3452.4 / 3433.2 / 3435.6, a 0.6% spread:
 
 | `-ub` | 128 | 256 | 512 | 1024 | 2048 | 4096 |
 |---|---:|---:|---:|---:|---:|---:|
-| prefill tok/s | 306.9 | 434.7 | 610.1 | 836.2 | 1096.2 | 1317.9 |
+| **Qwen3-4B Q4_K_M** (dense) | 1357.0 | 2148.0 | 2954.5 | **3452.4** | 3046.2 | 3457.4 |
+| Ornith-1.5-35B APEX (MoE) - *the original sweep* | 306.9 | 434.7 | 610.1 | 836.2 | 1096.2 | 1317.9 |
 
-**A 4.3× swing from micro-batch alone**, monotonic with diminishing returns — the signature of a fixed per-forward-pass cost being amortised, not an arithmetic roof.
+### The GEMM path is healthy - "XMX sits idle" is wrong for prefill
 
-Order-of-magnitude check: the implied fixed cost is ~0.3–0.5 s/pass, while dequantising 4B params to fp16 and reading it back is ~16 GB at 456 GB/s ≈ 35 ms. An order of magnitude apart, so the dominant per-pass cost is probably overhead — pool alloc/free, oneDNN primitive setup, synchronisation — rather than dequant bandwidth. **Not isolated; do not treat the cause as known.** The model is dense, so the MoE prefill host-sync is not the explanation.
+`test-backend-ops perf -o MUL_MAT` at prefill shape (m=4096, n=512, k=14336), idle card. At n=512 the quantized types are on the dequant+GEMM path, which is what prefill uses:
 
-Two consequences: the launchers already run `-ub 2048 -b 2048`, right at the knee, so prefill tuning on this box is essentially done — and **XMX / `joint_matrix` investment stays deferred**, because prefill is nowhere near the arithmetic roof.
+| type_a | TFLOPS | us/run | vs f16 |
+|---|---:|---:|---:|
+| **f16** | **59.79** | 1005.7 | 1.00x |
+| bf16 | 60.44 | 994.9 | 1.01x |
+| q5_K | 45.74 | 1314.7 | 0.77x |
+| q6_K | 42.00 | 1431.7 | 0.70x |
+| q8_0 | 41.77 | 1439.7 | 0.70x |
+| q4_K | 36.27 | 1658.0 | 0.61x |
+| q4_0 | 32.87 | 1829.1 | 0.55x |
+| q3_K | 23.23 | 2587.9 | 0.39x |
+| mxfp4 | 14.45 | 4160.7 | 0.24x |
+
+**f16 reaches 59.8 TFLOPS, about 61% of the ~98 TFLOPS fp16 peak.** oneDNN is the XMX path on this backend and it is getting a respectable fraction of the card. There is much less headroom in `joint_matrix` work than the original survey implied.
+
+**Dequantization is the real quantized-prefill cost.** Every matmul call pool-allocates an fp16 buffer, runs `to_fp16_sycl` over the *entire* weight tile, hands it to oneDNN, then frees it - so every micro-batch re-dequantizes the whole model, and nothing is cached across passes:
+
+```c
+ggml_sycl_pool_alloc<sycl::half> src0_as_f16(ctx.pool());
+to_fp16_sycl(src0_dd_i, src0_as_f16.get(), ne, stream);   // whole weight tile
+...
+auto matmul_pd = dnnl::matmul::primitive_desc(...);        // rebuilt per call, ~250/pass
+```
+
+That is precisely what MMQ removes, which moves "revive MMQ" back up the list.
+
+### End-to-end is close to its own kernels
+
+Qwen3-4B at the `ub=1024` plateau does 3452 t/s = ~27.6 TFLOPS, against the isolated q4_K kernel's 36.3 - **about 76%**. Framework overhead is real but it is not the dominant term, and the earlier claim that it ate 70% was an artifact of the mislabelled model.
+
+### Where the per-pass cost does dominate: MoE
+
+Dense Qwen3-4B plateaus at `ub` ~1024. The 35B MoE was still climbing at 4096. That is the per-node host sync and the `n_as` serial dispatches in the MoE prefill path, and it is the strongest evidence yet for the grouped-GEMM item.
+
+### oneDNN is not earning its place here
+
+`GGML_SYCL_ENABLE_DNN=0` falls back to `dpct`/oneMKL and was **1-4% faster** at every `ub` tested (2145 vs 2105 at 256, 3565 vs 3468 at 1024, 3583 vs 3451 at 4096).
+
+Unconfirmed: `ub=2048` measured 3046 against ~3450 at both 1024 and 4096. Single sample, not repeated.
 
 ## Environment
 

@@ -1,0 +1,34 @@
+{
+ "name": "q4_k_xl-v2",
+ "runs": 10,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 19.68,
+  "mean": 19.26,
+  "stdev": 2.04,
+  "min": 15.14,
+  "max": 21.88
+ },
+ "spec": {
+  "drafts": 1128.0,
+  "draft_tokens": 3370.0,
+  "accepted": 1860.0,
+  "acceptance_pct": 55.2,
+  "accepted_per_draft": 1.65
+ },
+ "per_run": [
+  21.88,
+  17.94,
+  15.14,
+  19.54,
+  19.82,
+  21.4,
+  20.29,
+  20.21,
+  17.04,
+  19.36
+ ],
+ "ok_runs": 10,
+ "errors": []
+}

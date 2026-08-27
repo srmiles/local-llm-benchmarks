@@ -1,0 +1,50 @@
+{
+  "name": "q3_k_xl-v2",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-08-27T00:02:41Z",
+  "load_seconds": 0.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 253.5,
+      "tps_median": 257.5
+    },
+    "2000": {
+      "n": 1805,
+      "tps_mean": 532.1,
+      "tps_median": 534.7
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 547.9,
+      "tps_median": 549.7
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 588.3,
+      "tps_median": 588.2
+    }
+  },
+  "decode": {
+    "mean": 9.81,
+    "median": 11.37,
+    "min": 5.83,
+    "max": 11.5,
+    "stdev": 2.15,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1128.0,
+    "draft_tokens": 3364.0,
+    "accepted": 3067.0,
+    "acceptance_pct": 91.2,
+    "accepted_per_draft": 2.72
+  },
+  "peak_vram_mib": 16782.0,
+  "peak_vram_gib": 16.39
+}

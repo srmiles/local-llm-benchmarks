@@ -1,0 +1,99 @@
+=== q3_k_xl-v3 healthy after 0s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=471 ms=1893.8 tps=249
+  size~500 s2: n=470 ms=1857.8 tps=253
+  size~500 s3: n=474 ms=1851.1 tps=256
+  MEAN ~500: 253 tok/s
+
+  size~2000 s1: n=1808 ms=3413.3 tps=530
+  size~2000 s2: n=1809 ms=3368.4 tps=537
+  size~2000 s3: n=1807 ms=3371.6 tps=536
+  MEAN ~2000: 534 tok/s
+
+  size~5000 s1: n=4470 ms=8201.2 tps=545
+  size~5000 s2: n=4473 ms=8173.2 tps=547
+  size~5000 s3: n=4475 ms=8167.6 tps=548
+  MEAN ~5000: 547 tok/s
+
+  size~12000 s1: n=10693 ms=18216.5 tps=587
+  size~12000 s2: n=10696 ms=18217.4 tps=587
+  size~12000 s3: n=10692 ms=18228.5 tps=587
+  MEAN ~12000: 587 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 10.88 tok/s  (predicted_n=300)
+  run2: ERROR HTTP Error 500: Internal Server Error
+  run3: ERROR HTTP Error 500: Internal Server Error
+  run4: ERROR HTTP Error 500: Internal Server Error
+  run5: ERROR HTTP Error 500: Internal Server Error
+  run6: ERROR HTTP Error 500: Internal Server Error
+  run7: ERROR HTTP Error 500: Internal Server Error
+  run8: ERROR HTTP Error 500: Internal Server Error
+  run9: ERROR HTTP Error 500: Internal Server Error
+  run10: ERROR HTTP Error 500: Internal Server Error
+  run11: ERROR HTTP Error 500: Internal Server Error
+  run12: ERROR HTTP Error 500: Internal Server Error
+  run13: ERROR HTTP Error 500: Internal Server Error
+  run14: ERROR HTTP Error 500: Internal Server Error
+  run15: ERROR HTTP Error 500: Internal Server Error
+  run16: ERROR HTTP Error 500: Internal Server Error
+  run17: ERROR HTTP Error 500: Internal Server Error
+  run18: ERROR HTTP Error 500: Internal Server Error
+  run19: ERROR HTTP Error 500: Internal Server Error
+  run20: ERROR HTTP Error 500: Internal Server Error
+
+=== summary ===
+{
+  "name": "q3_k_xl-v3",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-08-27T00:12:20Z",
+  "load_seconds": 0.0,
+  "prefill": {
+    "500": {
+      "n": 472,
+      "tps_mean": 252.6,
+      "tps_median": 253.0
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 534.2,
+      "tps_median": 535.9
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 546.7,
+      "tps_median": 547.3
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 586.9,
+      "tps_median": 587.0
+    }
+  },
+  "decode": {
+    "mean": 10.88,
+    "median": 10.88,
+    "min": 10.88,
+    "max": 10.88,
+    "stdev": 0.0,
+    "n": 1
+  },
+  "spec": {
+    "drafts": 76.0,
+    "draft_tokens": 247.0,
+    "accepted": 222.0,
+    "acceptance_pct": 89.9,
+    "accepted_per_draft": 2.92
+  },
+  "peak_vram_mib": 16512.6,
+  "peak_vram_gib": 16.13
+}
+
+wrote /data/llm/benchmarks/20260826-ud3vs2/bench-q3_k_xl-v3.json

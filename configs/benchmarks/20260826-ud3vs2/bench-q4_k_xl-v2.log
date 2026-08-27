@@ -1,0 +1,99 @@
+=== q4_k_xl-v2 healthy after 0s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=471 ms=1185.9 tps=397
+  size~500 s2: n=475 ms=1171.1 tps=406
+  size~500 s3: n=475 ms=1157.7 tps=410
+  MEAN ~500: 404 tok/s
+
+  size~2000 s1: n=1809 ms=2684.9 tps=674
+  size~2000 s2: n=1801 ms=2645.8 tps=681
+  size~2000 s3: n=1810 ms=2655.0 tps=682
+  MEAN ~2000: 679 tok/s
+
+  size~5000 s1: n=4473 ms=6480.1 tps=690
+  size~5000 s2: n=4472 ms=6457.4 tps=693
+  size~5000 s3: n=4475 ms=6464.9 tps=692
+  MEAN ~5000: 692 tok/s
+
+  size~12000 s1: n=10692 ms=15027.0 tps=712
+  size~12000 s2: n=10695 ms=15030.0 tps=712
+  size~12000 s3: n=10695 ms=15164.9 tps=705
+  MEAN ~12000: 709 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 27.55 tok/s  (predicted_n=300)
+  run 2: 27.25 tok/s  (predicted_n=300)
+  run 3: 28.08 tok/s  (predicted_n=300)
+  run 4: 27.86 tok/s  (predicted_n=300)
+  run 5: 28.09 tok/s  (predicted_n=300)
+  run 6: 28.12 tok/s  (predicted_n=300)
+  run 7: 28.08 tok/s  (predicted_n=300)
+  run 8: 27.42 tok/s  (predicted_n=300)
+  run 9: 28.11 tok/s  (predicted_n=300)
+  run10: 27.48 tok/s  (predicted_n=300)
+  run11: 28.06 tok/s  (predicted_n=300)
+  run12: 16.62 tok/s  (predicted_n=8)
+  run13: 28.09 tok/s  (predicted_n=300)
+  run14: 28.09 tok/s  (predicted_n=300)
+  run15: 27.14 tok/s  (predicted_n=300)
+  run16: 27.83 tok/s  (predicted_n=300)
+  run17: 28.11 tok/s  (predicted_n=300)
+  run18: 27.27 tok/s  (predicted_n=300)
+  run19: 28.04 tok/s  (predicted_n=300)
+  run20: 26.23 tok/s  (predicted_n=300)
+
+=== summary ===
+{
+  "name": "q4_k_xl-v2",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-08-26T23:51:11Z",
+  "load_seconds": 0.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 404.4,
+      "tps_median": 405.6
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 678.7,
+      "tps_median": 680.7
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 691.7,
+      "tps_median": 692.2
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 709.4,
+      "tps_median": 711.5
+    }
+  },
+  "decode": {
+    "mean": 27.18,
+    "median": 27.95,
+    "min": 16.62,
+    "max": 28.12,
+    "stdev": 2.53,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1460.0,
+    "draft_tokens": 4357.0,
+    "accepted": 4222.0,
+    "acceptance_pct": 96.9,
+    "accepted_per_draft": 2.89
+  },
+  "peak_vram_mib": 20850.9,
+  "peak_vram_gib": 20.36
+}
+
+wrote /data/llm/benchmarks/20260826-ud3vs2/bench-q4_k_xl-v2.json

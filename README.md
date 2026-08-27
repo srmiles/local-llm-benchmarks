@@ -7,7 +7,7 @@ All numbers below are measured on the same physical hardware. Unless a row says 
 **Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`. **Nemotron `:8011` was cut over 2026-08-26 to `sycl-f16-moereorder`** — bb4caa754 plus a local `ggml-sycl` patch (+32% decode on that slot). Two further local builds are on disk and not deployed: `sycl-f16-q3kmoe` and `sycl-f16-allfixes`. [Patch exports.](configs/patches/README.md) [Patches, per-op data and the default-bench re-run.](models/tested/2026-08-26-sycl-patches-default-bench.md)
 
 **Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
-**Key findings (numbered #1-#47) →** [`docs/findings.md`](docs/findings.md)
+**Key findings (numbered #1-#48) →** [`docs/findings.md`](docs/findings.md)
 
 ## Current production stack
 

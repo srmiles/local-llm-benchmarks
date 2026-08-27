@@ -1,0 +1,29 @@
+  run 1: 8.07 tok/s  (n=300)
+  run 2: 8.28 tok/s  (n=300)
+  run 3: 7.37 tok/s  (n=300)
+  run 4: 7.90 tok/s  (n=300)
+  run 5: 7.68 tok/s  (n=300)
+  run 6: 7.86 tok/s  (n=300)
+  run 7: 7.44 tok/s  (n=300)
+Traceback (most recent call last):
+  File "/data/llm/benchmarks/20260826-ud3vs2/probe-decode.py", line 44, in <module>
+    d = run(); t = d["timings"]
+  File "/data/llm/benchmarks/20260826-ud3vs2/probe-decode.py", line 38, in run
+    with urllib.request.urlopen(req, timeout=900) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 493, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.14/urllib/request.py", line 602, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/usr/lib/python3.14/urllib/request.py", line 531, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.14/urllib/request.py", line 611, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 500: Internal Server Error

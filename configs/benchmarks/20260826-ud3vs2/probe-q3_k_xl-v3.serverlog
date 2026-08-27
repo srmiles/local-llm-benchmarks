@@ -1,0 +1,80 @@
+2.41.669.369 I slot print_timing: id  0 | task 353 | n_gen =    100, tg =   9.02 t/s, tg_3s =   9.11 t/s
+2.44.851.310 I slot print_timing: id  0 | task 353 | n_gen =    123, tg =   8.62 t/s, tg_3s =   7.23 t/s
+2.48.035.326 I slot print_timing: id  0 | task 353 | n_gen =    149, tg =   8.54 t/s, tg_3s =   8.17 t/s
+2.51.219.772 I slot print_timing: id  0 | task 353 | n_gen =    174, tg =   8.43 t/s, tg_3s =   7.85 t/s
+2.54.403.253 I slot print_timing: id  0 | task 353 | n_gen =    197, tg =   8.27 t/s, tg_3s =   7.22 t/s
+2.57.591.300 I slot print_timing: id  0 | task 353 | n_gen =    224, tg =   8.29 t/s, tg_3s =   8.47 t/s
+3.00.776.527 I slot print_timing: id  0 | task 353 | n_gen =    247, tg =   8.18 t/s, tg_3s =   7.22 t/s
+3.03.960.222 I slot print_timing: id  0 | task 353 | n_gen =    269, tg =   8.06 t/s, tg_3s =   6.91 t/s
+3.07.145.742 I slot print_timing: id  0 | task 353 | n_gen =    292, tg =   7.98 t/s, tg_3s =   7.22 t/s
+3.08.560.588 I slot print_timing: id  0 | task 353 | prompt eval time =    1447.76 ms /    43 tokens (   33.67 ms per token,    29.70 tokens per second)
+3.08.560.592 I slot print_timing: id  0 | task 353 |        eval time =   37863.72 ms /   300 tokens (  126.63 ms per token,     7.90 tokens per second)
+3.08.560.593 I slot print_timing: id  0 | task 353 |       total time =   39311.48 ms /   343 tokens
+3.08.560.593 I slot print_timing: id  0 | task 353 |    graphs reused =        420
+3.08.560.596 I slot print_timing: id  0 | task 353 | draft acceptance = 0.59813 (  192 accepted /   321 generated), mean len =  2.79
+3.08.560.617 I slot      release: id  0 | task 353 | stop processing: n_tokens = 342, truncated = 0
+3.08.562.264 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 74641295971
+3.08.745.835 I slot launch_slot_: id  0 | task 469 | processing task, is_child = 0
+3.23.298.927 I slot print_timing: id  0 | task 469 | n_gen =    101, tg =   7.64 t/s, tg_3s =   7.71 t/s
+3.26.487.024 I slot print_timing: id  0 | task 469 | n_gen =    128, tg =   7.80 t/s, tg_3s =   8.47 t/s
+3.29.670.840 I slot print_timing: id  0 | task 469 | n_gen =    151, tg =   7.71 t/s, tg_3s =   7.22 t/s
+3.32.856.572 I slot print_timing: id  0 | task 469 | n_gen =    180, tg =   7.90 t/s, tg_3s =   9.10 t/s
+3.36.042.269 I slot print_timing: id  0 | task 469 | n_gen =    208, tg =   8.01 t/s, tg_3s =   8.79 t/s
+3.39.228.687 I slot print_timing: id  0 | task 469 | n_gen =    233, tg =   7.99 t/s, tg_3s =   7.85 t/s
+3.42.412.031 I slot print_timing: id  0 | task 469 | n_gen =    253, tg =   7.82 t/s, tg_3s =   6.28 t/s
+3.45.597.523 I slot print_timing: id  0 | task 469 | n_gen =    272, tg =   7.66 t/s, tg_3s =   5.96 t/s
+3.48.782.187 I slot print_timing: id  0 | task 469 | n_gen =    296, tg =   7.65 t/s, tg_3s =   7.54 t/s
+3.49.136.531 I slot print_timing: id  0 | task 469 | prompt eval time =    1460.46 ms /    36 tokens (   40.57 ms per token,    24.65 tokens per second)
+3.49.136.535 I slot print_timing: id  0 | task 469 |        eval time =   38930.17 ms /   300 tokens (  130.20 ms per token,     7.68 tokens per second)
+3.49.136.535 I slot print_timing: id  0 | task 469 |       total time =   40390.64 ms /   336 tokens
+3.49.136.536 I slot print_timing: id  0 | task 469 |    graphs reused =        528
+3.49.136.539 I slot print_timing: id  0 | task 469 | draft acceptance = 0.57273 (  189 accepted /   330 generated), mean len =  2.72
+3.49.136.561 I slot      release: id  0 | task 469 | stop processing: n_tokens = 335, truncated = 0
+3.49.137.866 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 74681871915
+3.49.327.545 I slot launch_slot_: id  0 | task 589 | processing task, is_child = 0
+4.02.107.892 I slot print_timing: id  0 | task 589 | n_gen =    103, tg =   9.00 t/s, tg_3s =   9.09 t/s
+4.05.298.760 I slot print_timing: id  0 | task 589 | n_gen =    135, tg =   9.23 t/s, tg_3s =  10.03 t/s
+4.08.482.933 I slot print_timing: id  0 | task 589 | n_gen =    157, tg =   8.81 t/s, tg_3s =   6.91 t/s
+4.11.667.889 I slot print_timing: id  0 | task 589 | n_gen =    177, tg =   8.42 t/s, tg_3s =   6.28 t/s
+4.14.854.738 I slot print_timing: id  0 | task 589 | n_gen =    210, tg =   8.68 t/s, tg_3s =  10.36 t/s
+4.18.042.724 I slot print_timing: id  0 | task 589 | n_gen =    232, tg =   8.47 t/s, tg_3s =   6.90 t/s
+4.21.231.014 I slot print_timing: id  0 | task 589 | n_gen =    255, tg =   8.34 t/s, tg_3s =   7.21 t/s
+4.24.417.825 I slot print_timing: id  0 | task 589 | n_gen =    274, tg =   8.11 t/s, tg_3s =   5.96 t/s
+4.27.605.674 I slot print_timing: id  0 | task 589 | n_gen =    292, tg =   7.90 t/s, tg_3s =   5.65 t/s
+4.28.800.634 I slot print_timing: id  0 | task 589 | prompt eval time =    1447.60 ms /    41 tokens (   35.31 ms per token,    28.32 tokens per second)
+4.28.800.639 I slot print_timing: id  0 | task 589 |        eval time =   38025.43 ms /   300 tokens (  127.18 ms per token,     7.86 tokens per second)
+4.28.800.639 I slot print_timing: id  0 | task 589 |       total time =   39473.03 ms /   341 tokens
+4.28.800.640 I slot print_timing: id  0 | task 589 |    graphs reused =        632
+4.28.800.643 I slot print_timing: id  0 | task 589 | draft acceptance = 0.59502 (  191 accepted /   321 generated), mean len =  2.77
+4.28.800.676 I slot      release: id  0 | task 589 | stop processing: n_tokens = 340, truncated = 0
+4.28.801.970 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 74721536030
+4.28.995.384 I slot launch_slot_: id  0 | task 706 | processing task, is_child = 0
+4.42.484.556 I slot print_timing: id  0 | task 706 | n_gen =    100, tg =   8.23 t/s, tg_3s =   8.31 t/s
+4.45.668.059 I slot print_timing: id  0 | task 706 | n_gen =    125, tg =   8.15 t/s, tg_3s =   7.85 t/s
+4.48.852.413 I slot print_timing: id  0 | task 706 | n_gen =    151, tg =   8.15 t/s, tg_3s =   8.16 t/s
+4.52.036.448 I slot print_timing: id  0 | task 706 | n_gen =    177, tg =   8.15 t/s, tg_3s =   8.17 t/s
+4.55.220.365 I slot print_timing: id  0 | task 706 | n_gen =    201, tg =   8.07 t/s, tg_3s =   7.54 t/s
+4.58.405.877 I slot print_timing: id  0 | task 706 | n_gen =    220, tg =   7.83 t/s, tg_3s =   5.96 t/s
+5.01.592.595 I slot print_timing: id  0 | task 706 | n_gen =    248, tg =   7.93 t/s, tg_3s =   8.79 t/s
+5.04.777.109 I slot print_timing: id  0 | task 706 | n_gen =    267, tg =   7.75 t/s, tg_3s =   5.97 t/s
+5.07.959.221 I slot print_timing: id  0 | task 706 | n_gen =    277, tg =   7.36 t/s, tg_3s =   3.14 t/s
+5.10.612.858 I slot print_timing: id  0 | task 706 | prompt eval time =    1455.45 ms /    40 tokens (   36.39 ms per token,    27.48 tokens per second)
+5.10.612.862 I slot print_timing: id  0 | task 706 |        eval time =   40162.00 ms /   300 tokens (  134.32 ms per token,     7.44 tokens per second)
+5.10.612.862 I slot print_timing: id  0 | task 706 |       total time =   41617.45 ms /   340 tokens
+5.10.612.863 I slot print_timing: id  0 | task 706 |    graphs reused =        742
+5.10.612.866 I slot print_timing: id  0 | task 706 | draft acceptance = 0.55357 (  186 accepted /   336 generated), mean len =  2.66
+5.10.612.888 I slot      release: id  0 | task 706 | stop processing: n_tokens = 339, truncated = 0
+5.10.614.240 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 74763348242
+5.10.803.746 I slot launch_slot_: id  0 | task 829 | processing task, is_child = 0
+5.12.255.841 E init: invalid token[0] = -1
+5.12.255.844 E decode: failed to initialize batch
+5.12.255.844 E llama_decode: failed to decode, ret = -1
+5.12.255.846 E spec        draft: llama_decode[1] returned -1
+5.12.255.926 E init: invalid token[1] = -1
+5.12.255.929 E decode: failed to initialize batch
+5.12.255.929 E llama_decode: failed to decode, ret = -1
+5.12.255.950 E srv        decode: Invalid input batch. off = 0, n_batch = 2048, ret = -1
+5.12.255.953 E srv    send_error: task id = 829, error: Invalid input batch.
+5.12.255.957 I slot      release: id  0 | task 829 | stop processing: n_tokens = 47, truncated = 0
+5.12.255.972 W srv          stop: cancel task, id_task = 829
+5.12.267.528 E srv  update_slots: decode() failed: Invalid input batch.

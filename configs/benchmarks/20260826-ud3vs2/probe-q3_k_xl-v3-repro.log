@@ -1,0 +1,17 @@
+  run 1: 7.57 tok/s  (n=300)
+  run 2: ERROR HTTP Error 500: Internal Server Error
+  run 3: ERROR HTTP Error 500: Internal Server Error
+  run 4: ERROR HTTP Error 500: Internal Server Error
+  run 5: ERROR HTTP Error 500: Internal Server Error
+  run 6: ERROR HTTP Error 500: Internal Server Error
+  run 7: ERROR HTTP Error 500: Internal Server Error
+  run 8: ERROR HTTP Error 500: Internal Server Error
+  run 9: ERROR HTTP Error 500: Internal Server Error
+  run10: ERROR HTTP Error 500: Internal Server Error
+Traceback (most recent call last):
+  File "/data/llm/benchmarks/20260826-ud3vs2/probe-decode.py", line 69, in <module>
+    "stdev": round(statistics.stdev(vals), 2),
+                   ~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.14/statistics.py", line 620, in stdev
+    raise StatisticsError('stdev requires at least two data points')
+statistics.StatisticsError: stdev requires at least two data points

@@ -1,0 +1,60 @@
+1.09.166.218 E srv    send_error: task id = 143, error: Invalid input batch.
+1.09.166.225 I slot      release: id  0 | task 143 | stop processing: n_tokens = 45, truncated = 0
+1.09.166.247 W srv          stop: cancel task, id_task = 143
+1.09.176.056 E srv  update_slots: decode() failed: Invalid input batch.
+1.09.176.074 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 75485468204
+1.09.176.128 I slot launch_slot_: id  0 | task 149 | processing task, is_child = 0
+1.10.616.453 E init: invalid token[0] = -1
+1.10.616.457 E decode: failed to initialize batch
+1.10.616.457 E llama_decode: failed to decode, ret = -1
+1.10.616.458 E spec        draft: llama_decode[1] returned -1
+1.10.616.513 E init: invalid token[1] = -1
+1.10.616.514 E decode: failed to initialize batch
+1.10.616.515 E llama_decode: failed to decode, ret = -1
+1.10.616.540 E srv        decode: Invalid input batch. off = 0, n_batch = 2048, ret = -1
+1.10.616.542 E srv    send_error: task id = 149, error: Invalid input batch.
+1.10.616.547 I slot      release: id  0 | task 149 | stop processing: n_tokens = 43, truncated = 0
+1.10.616.559 W srv          stop: cancel task, id_task = 149
+1.10.629.558 E srv  update_slots: decode() failed: Invalid input batch.
+1.10.629.571 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 75486918525
+1.10.629.613 I slot launch_slot_: id  0 | task 154 | processing task, is_child = 0
+1.12.089.070 E init: invalid token[0] = -1
+1.12.089.075 E decode: failed to initialize batch
+1.12.089.075 E llama_decode: failed to decode, ret = -1
+1.12.089.077 E spec        draft: llama_decode[1] returned -1
+1.12.089.139 E init: invalid token[1] = -1
+1.12.089.144 E decode: failed to initialize batch
+1.12.089.144 E llama_decode: failed to decode, ret = -1
+1.12.089.160 E srv        decode: Invalid input batch. off = 0, n_batch = 2048, ret = -1
+1.12.089.167 E srv    send_error: task id = 154, error: Invalid input batch.
+1.12.089.171 I slot      release: id  0 | task 154 | stop processing: n_tokens = 45, truncated = 0
+1.12.089.182 W srv          stop: cancel task, id_task = 154
+1.12.100.666 E srv  update_slots: decode() failed: Invalid input batch.
+1.12.100.679 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 75488391149
+1.12.100.718 I slot launch_slot_: id  0 | task 159 | processing task, is_child = 0
+1.13.542.525 E init: invalid token[0] = -1
+1.13.542.528 E decode: failed to initialize batch
+1.13.542.528 E llama_decode: failed to decode, ret = -1
+1.13.542.529 E spec        draft: llama_decode[1] returned -1
+1.13.542.595 E init: invalid token[1] = -1
+1.13.542.596 E decode: failed to initialize batch
+1.13.542.596 E llama_decode: failed to decode, ret = -1
+1.13.542.623 E srv        decode: Invalid input batch. off = 0, n_batch = 2048, ret = -1
+1.13.542.626 E srv    send_error: task id = 159, error: Invalid input batch.
+1.13.542.630 I slot      release: id  0 | task 159 | stop processing: n_tokens = 47, truncated = 0
+1.13.542.645 W srv          stop: cancel task, id_task = 159
+1.13.552.299 E srv  update_slots: decode() failed: Invalid input batch.
+1.13.552.310 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 75489844608
+1.13.552.348 I slot launch_slot_: id  0 | task 164 | processing task, is_child = 0
+1.14.995.111 E init: invalid token[0] = -1
+1.14.995.115 E decode: failed to initialize batch
+1.14.995.116 E llama_decode: failed to decode, ret = -1
+1.14.995.117 E spec        draft: llama_decode[1] returned -1
+1.14.995.174 E init: invalid token[1] = -1
+1.14.995.177 E decode: failed to initialize batch
+1.14.995.177 E llama_decode: failed to decode, ret = -1
+1.14.995.191 E srv        decode: Invalid input batch. off = 0, n_batch = 2048, ret = -1
+1.14.995.192 E srv    send_error: task id = 164, error: Invalid input batch.
+1.14.995.197 I slot      release: id  0 | task 164 | stop processing: n_tokens = 45, truncated = 0
+1.14.995.227 W srv          stop: cancel task, id_task = 164
+1.15.005.510 E srv  update_slots: decode() failed: Invalid input batch.

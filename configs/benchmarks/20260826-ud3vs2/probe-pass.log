@@ -1,0 +1,68 @@
+[00:20:32] freeing card 2
+[00:20:37] === probe q4_k_xl-v2
+llamacpp-bench (q4_k_xl-v2) starting on :8020 card2 image=llama.cpp:sycl-f16-allfixes
+  "median": 18.82,
+  "mean": 18.63,
+  "stdev": 1.13,
+  "min": 16.69,
+  "max": 20.42
+ },
+ "spec": {
+  "drafts": 0,
+  "draft_tokens": 0,
+  "accepted": 0,
+  "acceptance_pct": null,
+  "accepted_per_draft": null
+ }
+}
+[00:24:02] === probe q4_k_xl-v3
+llamacpp-bench (q4_k_xl-v3) starting on :8020 card2 image=llama.cpp:sycl-f16-allfixes
+  "median": 16.95,
+  "mean": 16.98,
+  "stdev": 0.9,
+  "min": 15.78,
+  "max": 18.35
+ },
+ "spec": {
+  "drafts": 1148.0,
+  "draft_tokens": 3432.0,
+  "accepted": 1837.0,
+  "acceptance_pct": 53.5,
+  "accepted_per_draft": 1.6
+ }
+}
+[00:27:46] === probe q3_k_xl-v2
+llamacpp-bench (q3_k_xl-v2) starting on :8020 card2 image=llama.cpp:sycl-f16-allfixes
+  "median": 7.89,
+  "mean": 7.83,
+  "stdev": 0.5,
+  "min": 7.06,
+  "max": 8.62
+ },
+ "spec": {
+  "drafts": 1121.0,
+  "draft_tokens": 3346.0,
+  "accepted": 1866.0,
+  "acceptance_pct": 55.8,
+  "accepted_per_draft": 1.66
+ }
+}
+[00:35:02] === probe q3_k_xl-v3
+llamacpp-bench (q3_k_xl-v3) starting on :8020 card2 image=llama.cpp:sycl-f16-allfixes
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 493, in open
+    response = meth(req, response)
+  File "/usr/lib/python3.14/urllib/request.py", line 602, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "/usr/lib/python3.14/urllib/request.py", line 531, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.14/urllib/request.py", line 611, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 500: Internal Server Error
+[00:40:23] PROBE PASS COMPLETE
+[00:40:23] restoring nemotron
+HEALTHY

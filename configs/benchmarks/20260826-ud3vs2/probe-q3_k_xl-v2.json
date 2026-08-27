@@ -1,0 +1,32 @@
+{
+ "name": "q3_k_xl-v2",
+ "runs": 10,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 7.89,
+  "mean": 7.83,
+  "stdev": 0.5,
+  "min": 7.06,
+  "max": 8.62
+ },
+ "spec": {
+  "drafts": 1121.0,
+  "draft_tokens": 3346.0,
+  "accepted": 1866.0,
+  "acceptance_pct": 55.8,
+  "accepted_per_draft": 1.66
+ },
+ "per_run": [
+  7.47,
+  7.94,
+  8.03,
+  7.63,
+  8.62,
+  7.23,
+  7.06,
+  7.83,
+  8.01,
+  8.44
+ ]
+}
