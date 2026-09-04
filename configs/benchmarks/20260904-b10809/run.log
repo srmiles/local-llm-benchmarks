@@ -1,0 +1,394 @@
+=== [old] ornith-1.5-9b : llama.cpp:sycl-f16-b10742-patched-a82c13531 ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-b10742-patched-a82c13531
+  },
+  "ts": "2026-09-04T18:30:28Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1162.4,
+      "tps_median": 1182.6
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1868.2,
+      "tps_median": 1879.5
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1898.1,
+      "tps_median": 1913.5
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 1906.7,
+      "tps_median": 1905.6
+    }
+  },
+  "decode": {
+    "mean": 60.51,
+    "median": 61.39,
+    "min": 42.62,
+    "max": 76.55,
+    "stdev": 12.65,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1859.0,
+    "draft_tokens": 5561.0,
+    "accepted": 3713.0,
+    "acceptance_pct": 66.8,
+    "accepted_per_draft": 2.0
+  },
+  "peak_vram_mib": 11595.6,
+  "peak_vram_gib": 11.32
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/ornith-1.5-9b-old.json
+=== [old] done ===
+=== [new] ornith-1.5-9b : llama.cpp:sycl-f16-b10809-patched-f937ca544 ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-b10809-patched-f937ca544
+  },
+  "ts": "2026-09-04T18:33:17Z",
+  "load_seconds": 25.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 1284.8,
+      "tps_median": 1303.4
+    },
+    "2000": {
+      "n": 1805,
+      "tps_mean": 1944.0,
+      "tps_median": 1931.0
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1906.1,
+      "tps_median": 1915.6
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 1903.7,
+      "tps_median": 1901.6
+    }
+  },
+  "decode": {
+    "mean": 76.63,
+    "median": 76.99,
+    "min": 51.31,
+    "max": 90.06,
+    "stdev": 13.9,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1788.0,
+    "draft_tokens": 5348.0,
+    "accepted": 4108.0,
+    "acceptance_pct": 76.8,
+    "accepted_per_draft": 2.3
+  },
+  "peak_vram_mib": 11559.7,
+  "peak_vram_gib": 11.29
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/ornith-1.5-9b-new.json
+=== [new] done ===
+=== [old] gemma-4-E2B : llama.cpp:sycl-f16-b10742-patched-a82c13531 ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-b10742-patched-a82c13531
+  },
+  "ts": "2026-09-04T18:35:57Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 1869.8,
+      "tps_median": 1945.6
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 3230.9,
+      "tps_median": 3441.1
+    },
+    "5000": {
+      "n": 4477,
+      "tps_mean": 3301.1,
+      "tps_median": 3342.1
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 3335.8,
+      "tps_median": 3338.1
+    }
+  },
+  "decode": {
+    "mean": 188.41,
+    "median": 199.41,
+    "min": 155.68,
+    "max": 205.11,
+    "stdev": 17.89,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 926.0,
+    "draft_tokens": 2765.0,
+    "accepted": 2744.0,
+    "acceptance_pct": 99.2,
+    "accepted_per_draft": 2.96
+  },
+  "peak_vram_mib": 4062.9,
+  "peak_vram_gib": 3.97
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/gemma-4-E2B-old.json
+=== [old] done ===
+=== [new] gemma-4-E2B : llama.cpp:sycl-f16-b10809-patched-f937ca544 ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-b10809-patched-f937ca544
+  },
+  "ts": "2026-09-04T18:37:03Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 478,
+      "tps_mean": 1858.6,
+      "tps_median": 1921.9
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 3244.1,
+      "tps_median": 3432.6
+    },
+    "5000": {
+      "n": 4477,
+      "tps_mean": 3297.3,
+      "tps_median": 3334.8
+    },
+    "12000": {
+      "n": 10699,
+      "tps_mean": 3336.5,
+      "tps_median": 3336.2
+    }
+  },
+  "decode": {
+    "mean": 192.88,
+    "median": 204.45,
+    "min": 166.35,
+    "max": 209.5,
+    "stdev": 17.0,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 933.0,
+    "draft_tokens": 2788.0,
+    "accepted": 2725.0,
+    "acceptance_pct": 97.7,
+    "accepted_per_draft": 2.92
+  },
+  "peak_vram_mib": 4063.1,
+  "peak_vram_gib": 3.97
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/gemma-4-E2B-new.json
+=== [new] done ===
+=== [old] gemma-4-26B-A4B : llama.cpp:sycl-f16-b10742-patched-a82c13531 ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-b10742-patched-a82c13531
+  },
+  "ts": "2026-09-04T18:38:10Z",
+  "load_seconds": 30.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 722.4,
+      "tps_median": 748.2
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 1432.8,
+      "tps_median": 1464.6
+    },
+    "5000": {
+      "n": 4477,
+      "tps_mean": 1200.2,
+      "tps_median": 1509.3
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1649.6,
+      "tps_median": 1652.8
+    }
+  },
+  "decode": {
+    "mean": 60.61,
+    "median": 66.35,
+    "min": 27.49,
+    "max": 79.87,
+    "stdev": 16.7,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 1187.0,
+    "draft_tokens": 5896.0,
+    "accepted": 4022.0,
+    "acceptance_pct": 68.2,
+    "accepted_per_draft": 3.39
+  },
+  "peak_vram_mib": 21186.4,
+  "peak_vram_gib": 20.69
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/gemma-4-26B-A4B-old.json
+=== [old] done ===
+=== [new] gemma-4-26B-A4B : llama.cpp:sycl-f16-b10809-patched-f937ca544 ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-b10809-patched-f937ca544
+  },
+  "ts": "2026-09-04T18:41:17Z",
+  "load_seconds": 25.0,
+  "prefill": {
+    "500": {
+      "n": 477,
+      "tps_mean": 738.6,
+      "tps_median": 772.3
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 1450.4,
+      "tps_median": 1475.2
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 1516.6,
+      "tps_median": 1529.1
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1668.4,
+      "tps_median": 1668.9
+    }
+  },
+  "decode": {
+    "mean": 62.66,
+    "median": 64.95,
+    "min": 25.97,
+    "max": 90.78,
+    "stdev": 20.24,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1351.0,
+    "draft_tokens": 6720.0,
+    "accepted": 4052.0,
+    "acceptance_pct": 60.3,
+    "accepted_per_draft": 3.0
+  },
+  "peak_vram_mib": 21186.7,
+  "peak_vram_gib": 20.69
+}
+
+wrote /data/llm/benchmarks/20260904-b10809/gemma-4-26B-A4B-new.json
+=== [new] done ===
+=== [old] nemotron-3.5-lightning : llama.cpp:sycl-f16-b10742-patched-a82c13531 ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-b10742-patched-a82c13531
+=== nemotron-3.5-lightning-old healthy after 35s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=473 ms=682.4 tps=693
+  size~500 s2: n=475 ms=606.5 tps=783
+  size~500 s3: n=477 ms=613.6 tps=777
+  MEAN ~500: 751 tok/s
+
+  size~2000 s1: n=1804 ms=1242.2 tps=1452
+  size~2000 s2: n=1805 ms=1181.1 tps=1528
+  size~2000 s3: n=1808 ms=1171.7 tps=1543
+  MEAN ~2000: 1508 tok/s
+
+  size~5000 s1: n=4475 ms=2793.0 tps=1602
+  size~5000 s2: n=4476 ms=2749.3 tps=1628
+  size~5000 s3: n=4473 ms=2758.2 tps=1622
+  MEAN ~5000: 1617 tok/s
+
+Done                       python3 /data/llm/benchmarks/bench-candidate.py --port 8020 --card 1 --name "${alias}-${LABEL}" --out "${OUT}/${alias}-${LABEL}.json" 2>&1 | tail -45
+!! [old] nemotron-3.5-lightning bench rc=143 — server log tail:
+0.45.135.692 I slot print_timing: id  0 | task 25 |    graphs reused =          1
+0.45.135.773 I slot      release: id  0 | task 25 | stop processing: n_tokens = 1808, truncated = 0
+0.45.639.082 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 315735894889
+0.45.709.576 I slot launch_slot_: id  0 | task 29 | processing task, is_child = 0
+0.48.502.575 I slot print_timing: id  0 | task 29 | prompt eval time =    2792.98 ms /  4475 tokens (    0.62 ms per token,  1602.23 tokens per second)
+0.48.502.579 I slot print_timing: id  0 | task 29 |        eval time =       0.00 ms /     1 tokens (    0.00 ms per token,     0.00 tokens per second)
+0.48.502.579 I slot print_timing: id  0 | task 29 |       total time =    2792.98 ms /  4476 tokens
+0.48.502.580 I slot print_timing: id  0 | task 29 |    graphs reused =          1
+0.48.502.712 I slot      release: id  0 | task 29 | stop processing: n_tokens = 4475, truncated = 0
+0.49.006.296 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 315739261827
+0.49.106.313 I slot launch_slot_: id  0 | task 36 | processing task, is_child = 0
+0.51.855.674 I slot print_timing: id  0 | task 36 | prompt eval time =    2749.34 ms /  4476 tokens (    0.61 ms per token,  1628.03 tokens per second)
+0.51.855.677 I slot print_timing: id  0 | task 36 |        eval time =       0.00 ms /     1 tokens (    0.00 ms per token,     0.00 tokens per second)
+0.51.855.677 I slot print_timing: id  0 | task 36 |       total time =    2749.34 ms /  4477 tokens
+0.51.855.678 I slot print_timing: id  0 | task 36 |    graphs reused =          1
+0.51.855.847 I slot      release: id  0 | task 36 | stop processing: n_tokens = 4476, truncated = 0
+0.52.359.137 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 315742614963
+0.52.459.122 I slot launch_slot_: id  0 | task 42 | processing task, is_child = 0
+0.55.217.376 I slot print_timing: id  0 | task 42 | prompt eval time =    2758.23 ms /  4473 tokens (    0.62 ms per token,  1621.69 tokens per second)
+0.55.217.380 I slot print_timing: id  0 | task 42 |        eval time =       0.00 ms /     1 tokens (    0.00 ms per token,     0.00 tokens per second)
+0.55.217.380 I slot print_timing: id  0 | task 42 |       total time =    2758.23 ms /  4474 tokens
+0.55.217.381 I slot print_timing: id  0 | task 42 |    graphs reused =          1
+0.55.217.523 I slot      release: id  0 | task 42 | stop processing: n_tokens = 4473, truncated = 0
+0.55.723.754 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 315745976639
+0.55.822.789 I slot launch_slot_: id  0 | task 50 | processing task, is_child = 0
+=== [old] done ===
+=== [new] nemotron-3.5-lightning : llama.cpp:sycl-f16-b10809-patched-f937ca544 ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-b10809-patched-f937ca544
+=== nemotron-3.5-lightning-new healthy after 25s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=475 ms=685.5 tps=693
+  size~500 s2: n=476 ms=602.9 tps=789
+  size~500 s3: n=473 ms=599.5 tps=789
+  MEAN ~500: 757 tok/s
+
+  size~2000 s1: n=1810 ms=1226.8 tps=1475
+  size~2000 s2: n=1809 ms=1192.4 tps=1517
+  size~2000 s3: n=1806 ms=1165.1 tps=1550
+  MEAN ~2000: 1514 tok/s
+
+  size~5000 s1: n=4474 ms=2797.4 tps=1599
+  size~5000 s2: n=4476 ms=2725.8 tps=1642
+  size~5000 s3: n=4476 ms=2757.7 tps=1623
+  MEAN ~5000: 1622 tok/s
+
+  size~12000 s1: n=10698 ms=6134.8 tps=1744
+  size~12000 s2: n=10693 ms=6116.1 tps=1748
+  size~12000 s3: n=10698 ms=6116.5 tps=1749
+  MEAN ~12000: 1747 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 98.81 tok/s  (predicted_n=300)
+  run 2: 99.23 tok/s  (predicted_n=300)
+  run 3: 99.23 tok/s  (predicted_n=300)
+Done                       python3 /data/llm/benchmarks/bench-candidate.py --port 8020 --card 1 --name "${alias}-${LABEL}" --out "${OUT}/${alias}-${LABEL}.json" 2>&1 | tail -45
+!! [new] nemotron-3.5-lightning bench rc=143 — server log tail:
+1.05.975.226 I slot launch_slot_: id  0 | task 85 | processing task, is_child = 0
+1.09.612.949 I slot print_timing: id  0 | task 85 | prompt eval time =     611.51 ms /   478 tokens (    1.28 ms per token,   781.67 tokens per second)
+1.09.612.954 I slot print_timing: id  0 | task 85 |        eval time =    3026.05 ms /   300 tokens (   10.12 ms per token,    98.81 tokens per second)
+1.09.612.954 I slot print_timing: id  0 | task 85 |       total time =    3637.56 ms /   778 tokens
+1.09.612.955 I slot print_timing: id  0 | task 85 |    graphs reused =         35
+1.09.612.960 I slot print_timing: id  0 | task 85 | draft acceptance = 1.00000 (  261 accepted /   261 generated), mean len =  7.87
+1.09.612.999 I slot      release: id  0 | task 85 | stop processing: n_tokens = 777, truncated = 0
+1.09.914.656 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 316450934642
+1.09.979.966 I slot launch_slot_: id  0 | task 128 | processing task, is_child = 0
+1.13.596.690 I slot print_timing: id  0 | task 128 | prompt eval time =     603.48 ms /   474 tokens (    1.27 ms per token,   785.44 tokens per second)
+1.13.596.695 I slot print_timing: id  0 | task 128 |        eval time =    3013.09 ms /   300 tokens (   10.08 ms per token,    99.23 tokens per second)
+1.13.596.696 I slot print_timing: id  0 | task 128 |       total time =    3616.57 ms /   774 tokens
+1.13.596.696 I slot print_timing: id  0 | task 128 |    graphs reused =         69
+1.13.596.703 I slot print_timing: id  0 | task 128 | draft acceptance = 1.00000 (  261 accepted /   261 generated), mean len =  7.87
+1.13.596.754 I slot      release: id  0 | task 128 | stop processing: n_tokens = 773, truncated = 0
+1.13.898.232 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 316454918397
+1.13.965.696 I slot launch_slot_: id  0 | task 170 | processing task, is_child = 0
+1.17.576.144 I slot print_timing: id  0 | task 170 | prompt eval time =     597.06 ms /   471 tokens (    1.27 ms per token,   788.87 tokens per second)
+1.17.576.147 I slot print_timing: id  0 | task 170 |        eval time =    3013.24 ms /   300 tokens (   10.08 ms per token,    99.23 tokens per second)
+1.17.576.148 I slot print_timing: id  0 | task 170 |       total time =    3610.30 ms /   771 tokens
+1.17.576.148 I slot print_timing: id  0 | task 170 |    graphs reused =        104
+1.17.576.152 I slot print_timing: id  0 | task 170 | draft acceptance = 1.00000 (  261 accepted /   261 generated), mean len =  7.87
+1.17.576.187 I slot      release: id  0 | task 170 | stop processing: n_tokens = 770, truncated = 0
+1.17.877.792 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = 316458897830
+1.17.942.554 I slot launch_slot_: id  0 | task 214 | processing task, is_child = 0

@@ -4,7 +4,7 @@ Local LLM benchmarks & configs for **2× Intel Arc Pro B60 (24 GB each, Battlema
 
 All numbers below are measured on the same physical hardware. Unless a row says otherwise, benchmarks were taken on [`llama.cpp:sycl-f16`](configs/images/llama.cpp-sycl-f16/README.md) at the current build tag.
 
-**Current llama.cpp build:** `b10433` (commit `9b05354ec`, cutover 2026-08-14) for all production services. Rollback tags `sycl-f16-b10256-safe` and `sycl-f16-b10215-safe` preserved on disk. A **b10566** image (`sycl-f16-next-bb4caa754`, commit `bb4caa754`) is also on disk — built 2026-08-21 for the candidate bench because it carries `bailingmoe3`. **Nemotron `:8011` was cut over 2026-08-26 to `sycl-f16-moereorder`** — bb4caa754 plus a local `ggml-sycl` patch (+32% decode on that slot). Two further local builds are on disk and not deployed: `sycl-f16-q3kmoe` and `sycl-f16-allfixes`. [Patch exports.](configs/patches/README.md) [Patches, per-op data and the default-bench re-run.](models/tested/2026-08-26-sycl-patches-default-bench.md)
+**Current llama.cpp builds (verified from the running containers 2026-09-04 — the previous single-build line was stale):** `llama.cpp:sycl-f16` = **b10688 + local patches** (`880b848f4`) on Ornith `:8002` and embed `:8004`; `sycl-f16-concurrency-a6553043f` on categorise `:8006`; `sycl-f16-b10742-patched-a82c13531` on Nemotron `:8011`. **Candidate built + benched 2026-09-04, not deployed:** `sycl-f16-b10809-patched-f937ca544` (master `85d5703a3` + the 8-commit local `ggml-sycl` series, #28159 revert dropped) — **Ornith +25.4% decode**, everything else parity, Nemotron unbenchable behind a GPU engine reset that reproduces on the current production image too. [Rebase notes and A/B.](models/tested/2026-09-04-b10809-rebase-ab.md) Rollback tags for every image above are on disk. [Patch exports.](configs/patches/README.md) [Earlier patches, per-op data and the default-bench re-run.](models/tested/2026-08-26-sycl-patches-default-bench.md)
 
 **Build history + per-release impact tables →** [`docs/build-history.md`](docs/build-history.md)
 **Key findings (numbered #1-#48) →** [`docs/findings.md`](docs/findings.md)
@@ -18,7 +18,7 @@ Traefik consolidates all endpoints under `https://llm.levirge.com/v1/*` (path-ba
 | Host | Port | Container | GPU | Model | Purpose |
 |---|---|---|---|---|---|
 | llm.local | 8002 | `llamacpp-sycl` | B60 card 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent — **sole backend** |
-| llm.local | **8011** | `llamacpp-nemotron` *(on `sycl-f16-moereorder`)* | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
+| llm.local | **8011** | `llamacpp-nemotron` *(on `sycl-f16-b10742-patched-a82c13531`)* | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
 | llm.local | 8004 | `llamacpp-embed` | B60 card 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | llm.local | 8008 | `tei-rerank` | B60 card 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
 | llm.local | 8006 | `llamacpp-categorise-c1` | B60 card 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise |

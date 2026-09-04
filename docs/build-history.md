@@ -2,9 +2,33 @@
 
 Journey through llama.cpp SYCL builds and the impact of each release on this stack. Referenced from the main README.
 
-**Current build:** `llama.cpp:sycl-f16` (b10433, commit `9b05354ec`, cutover 2026-08-14) for all services except Nemotron `:8011`, which runs the locally patched `sycl-f16-moereorder` (b10566 + MoE reorder) since 2026-08-26.
-**Rollback tags on disk:** `llama.cpp:sycl-f16-b10256-safe`, `llama.cpp:sycl-f16-b10215-safe`.
-**Upstream (as of 2026-08-20):** b10519 — 86 commits ahead of our current, not yet qualified for this stack.
+**Deployed builds (2026-09-04, verified from the running containers — this line was stale before today):**
+
+| slot | image | base |
+|---|---|---|
+| `:8002` Ornith chat, `:8004` embed | `llama.cpp:sycl-f16` | b10688 + patches (`880b848f4`) |
+| `:8006` categorise | `sycl-f16-concurrency-a6553043f` | b10688-era + concurrency patch |
+| `:8011` Nemotron | `sycl-f16-b10742-patched-a82c13531` | b10742 + 9 patches incl. the #28159 revert |
+
+**Candidate, built + benched 2026-09-04, NOT deployed:** `llama.cpp:sycl-f16-b10809-patched-f937ca544` — master `85d5703a3` + the 8-commit local series, revert dropped. [Rebase notes, A/B and the Nemotron GPU-reset block.](../models/tested/2026-09-04-b10809-rebase-ab.md)
+**Rollback tags on disk:** every image in the table above, plus `sycl-f16-b10433-safe`, `sycl-f16-b10256-safe`, `sycl-f16-b10215-safe`.
+
+## b10809 rebase (2026-09-04) — 73 upstream commits, local series carried
+
+Base moved `be789c344` (b10742) → `85d5703a3` (master, b10809 series). Eight local `ggml-sycl` commits rebased; the local revert of #28159 dropped because upstream's follow-up (`d11b3cc7e`, #28173) landed in the window.
+
+| model | decode median | prefill 12K | MTP acceptance |
+|---|---|---|---|
+| Ornith 1.5-9B + MTP | 61.39 → **76.99 tok/s (+25.4%)** | flat | 66.8% → **76.8%** |
+| Gemma 4 E2B + MTP | 199.41 → 204.45 (parity) | flat | 99.2% → 97.7% |
+| Gemma 4 26B-A4B + MTP | 66.35 → 64.95 (parity) | +1.1% | 68.2% → 60.3% |
+| Nemotron 30B-A3B + MTP | **no data — GPU engine reset on both arms** | | |
+
+Only Ornith clears the ~15% single-pass noise floor (finding #47). The gain tracks drafter acceptance (2.00 → 2.30 accepted/draft) with prefill flat as a control, and the leading — unconfirmed — explanation is the dropped revert restoring correct `n_layer_nextn` handling for the MTP head. See findings #49 and #50.
+
+**Rebase trap worth carrying forward:** upstream `4aa6ffba2` generalised the Q4_K MMVQ path with a `reorder_vec_dot_shared_activations<T>` trait and a `static_assert` on `rows_per_sg`; our GLU-fusion patch's hardcoded `rows_per_sg = 2` at `ncols_dst == 2` becomes a **compile error** for every non-Q4_K type it adds. Fixed with an `if constexpr` gate. Our series sits on the code upstream keeps generalising — re-check semantics on every bump, not just conflict markers.
+
+[Full write-up.](../models/tested/2026-09-04-b10809-rebase-ab.md)
 
 ## Local `ggml-sycl` patches on b10566 (2026-08-26)
 
