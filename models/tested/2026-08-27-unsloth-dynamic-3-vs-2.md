@@ -2,7 +2,7 @@
 
 **Question:** unsloth re-quantized `unsloth/Qwen3.8-27B-GGUF` and now advertises [Dynamic 3.0](https://unsloth.ai/docs/basics/dynamic-3.0-ggufs) as ">10% top-1% better accuracy at the same size compared to every other provider". Does 3.0 actually beat the 2.0 files it replaced, on our hardware?
 
-**Answer, short:** **yes on accuracy, no on throughput, and one file is unusable.** v3.0 is measurably closer to the Q8_0 referee at both sizes *while being smaller* — on mean, median and tail KLD, and on RMS Δp. (It is **not** uniformly better: it loses on 99.0% Δp at both sizes, and on top-1 agreement at 4-bit. See the table.) It also decodes **roughly 10–14% slower** at Q4_K_XL (see the warning box in the throughput section — the sign is solid, the magnitude is a cross-pass figure), alongside a much more heterogeneous block-type mix. And **v3.0's `UD-Q3_K_XL` wedges llama-server**: a token id of `-1` reaches the batch, initialisation fails, and with a drafter attached every subsequent request 500s until restart.
+**Answer, short:** **yes on accuracy, no on throughput, and one file is unusable.** v3.0 is measurably closer to the Q8_0 referee at both sizes *while being smaller* — on mean, median and tail KLD, and on RMS Δp. (It is **not** uniformly better: it loses on 99.0% Δp at both sizes, and on top-1 agreement at 4-bit. See the table.) It also decodes **9.5% slower** at Q4_K_XL (pooled medians over an interleaved A/B, Welch t = 4.05), alongside a much more heterogeneous block-type mix. And **v3.0's `UD-Q3_K_XL` wedges llama-server**: a token id of `-1` reaches the batch, initialisation fails, and with a drafter attached every subsequent request 500s until restart.
 
 ## The A/B is unusually clean
 
@@ -117,17 +117,19 @@ A run that stops after 8 tokens reports first-token latency dressed up as tok/s,
 
 Re-measured with `ignore_eos` so every run does identical work — `probe-decode.py`, 10 runs × 300 tokens, a real generative prompt, `--spec-draft-n-max 3`, no p-min (against finding #41's rule — these arms are therefore **not** production-representative, they are matched to each other), ctx 32768, card 2, same MTP head hardlinked into both dirs.
 
-**The two passes are not on the same scale, and EOS is not why.** Every arm is much slower under the probe (v2.0 Q4_K_XL 27.95 → 19.68). That is the **prompt**: acceptance collapses from 96.9% on the filler to 55.2% on a real generative prompt. The filler prompt is the caveat already recorded in the README for the default bench; it inflates every speculative-decoding number on this rig.
+**The two passes are not on the same scale, and EOS is not why.** Every arm is much slower under the probe (v2.0 Q4_K_XL 27.95 → 18.91). That is the **prompt**: acceptance collapses from 96.9% on the filler to 55.2% on a real generative prompt. The filler prompt is the caveat already recorded in the README for the default bench; it inflates every speculative-decoding number on this rig.
 
 | Arm | Decode tok/s (median) | σ | MTP acc | acc/draft | VRAM | Prefill @12K |
 |---|---:|---:|---:|---:|---:|---:|
-| Q4_K_XL **v2.0** | **19.68** | 2.04 | 55.2% | 1.65 | 20.36 GiB | **711.5** |
-| Q4_K_XL **v3.0** | 16.95 | 0.90 | 53.5% | 1.60 | 20.02 GiB | 684.7 |
+| Q4_K_XL **v2.0** | **18.91** ¶ | 1.93 | 55.2% | 1.65 | 20.36 GiB | **711.5** |
+| Q4_K_XL **v3.0** | 17.11 ¶ | 1.19 | 53.5% | 1.60 | 20.02 GiB | 684.7 |
 | Q3_K_XL **v2.0** | 7.89 | 0.50 | 55.8% | 1.66 | 16.39 GiB | 588.2 |
 | Q3_K_XL **v3.0** | *unusable — see below* | | | | 16.13 GiB | 587.0 |
 | Q3_K_XL v3.0, **no drafter** | 8.79 † | 0.04 | n/a | n/a | *not measured* | *not measured* |
 
 † 9 runs, not 10 — one request 500'd and the arm recovered; see the wedge section. VRAM and prefill are blank for this row on purpose: `final-pass.sh` launches it with `DRAFT=""` and runs only `probe-decode.py`, which records neither, so the 16.13 GiB / 587.0 above belong to the **with-drafter** slot and would overstate a no-drafter one by roughly the 1.37 GB head.
+
+¶ Pooled over the 16 interleaved runs per arm (see the box below), not the single-pass figures — those were 19.68 and 16.95 and are superseded. Acceptance columns are from the single-pass probes; the interleaved blocks agree within scatter.
 
 Prefill, median tok/s by prompt size (filler-prompt bench, retained because prefill is unaffected by the EOS problem):
 
@@ -140,11 +142,26 @@ Prefill, median tok/s by prompt size (filler-prompt bench, retained because pref
 
 **v3.0 loses decode at Q4_K_XL while being 2% smaller.** Acceptance barely moves (55.2% → 53.5%, 1.65 → 1.60 per draft), so drafter alignment does not explain it.
 
-> ⚠ **The size of that loss is softer than a single number suggests, and the reason is a methodology slip worth recording.** The v2.0 Q4_K_XL arm was measured **twice**, in two different passes: `run-probe-pass.sh` gave **18.82 (σ 1.13)** but with the acceptance counters reading zero (wrong metric names), and `final-pass.sh` re-ran that arm alone ~17 minutes later to recover them, giving **19.68 (σ 2.04)**. The v3.0 arm it is differenced against (16.95) comes from the **first** pass only. So the headline is a **cross-pass** comparison, which is exactly what findings #20, #33 and #40 warn against, and the two v2.0 measurements disagree by 4.6%.
+> ### Settled by a same-session interleaved A/B
 >
-> Depending on which v2.0 number is used the gap is **−9.9% to −13.9%**. The sign is not in doubt — every v2.0 measurement in both passes and both methodologies exceeds every v3.0 measurement — but **treat the magnitude as "roughly 10–14%", not as 13.9%.** Settling it needs the two arms re-run interleaved in one session. Compounding factor: the `final-pass.sh` re-run happened while unrelated card-0 work was live on the same host, and finding #33 is precisely a case of cross-card contention faking a double-digit delta.
+> The first answer to this was a **cross-pass** comparison and could not be trusted. The v2.0 arm had been measured twice — 18.82 (σ 1.13) in `run-probe-pass.sh`, then 19.68 (σ 2.04) when `final-pass.sh` re-ran it alone ~17 minutes later to recover acceptance counters lost to wrong metric names — while the v3.0 arm it was differenced against came from the first pass only. Findings #20, #33 and #40 all say that is not resolvable below ~10%, and the claimed gap was 13.9%.
+>
+> Re-run on a quiet host in **A-B-B-A block order** (so linear drift cancels rather than loading onto one arm), 8 runs × 300 tokens per block, everything else identical — `interleaved-q4.sh`:
+>
+> | Block | Median | σ | MTP acc |
+> |---|---:|---:|---:|
+> | v2.0 (a) | 18.59 | 2.76 | 56.4% |
+> | v3.0 (a) | 17.82 | 1.15 | 57.6% |
+> | v3.0 (b) | 16.98 | 1.01 | 51.9% |
+> | v2.0 (b) | 19.60 | 0.65 | 57.5% |
+> | **v2.0 pooled** (n=16) | **18.91** | 1.93 | — |
+> | **v3.0 pooled** (n=16) | **17.11** | 1.19 | — |
+>
+> **v3.0 is 9.5% slower on pooled medians (11.8% on means), Welch t = 4.05 at df ≈ 25 — solidly significant, and meaningfully smaller than the 13.9% the cross-pass comparison produced.** The 13.9% was roughly a third measurement noise. **Acceptance is equal within scatter** (v2.0 56.4/57.5 vs v3.0 57.6/51.9), which independently rules out drafter alignment as the mechanism and leaves the block-type mix.
+>
+> Lesson, again: the cross-pass number was inside the band findings #20/#33/#40 already declared unresolvable, and it was wrong by exactly the amount they predict. **Interleave, or do not quote a sub-15% delta.**
 
-**Q3_K_XL is not a speed play on this hardware at all.** It is 25% smaller than Q4_K_XL and decodes at **40% of its speed** (7.89 vs 19.68). On a bandwidth-bound dense model that is backwards, and it means the quant ladder below Q4_K buys nothing here: you give up accuracy *and* throughput. The 08-26 SoA reorder patches do not help — they extended MoE **expert** tensor reorder to Q3_K, and this model is dense.
+**Q3_K_XL is not a speed play on this hardware at all.** It is 25% smaller than Q4_K_XL and decodes at **~42% of its speed** (7.89 vs 18.91 — and that gap is 2.4×, far above the cross-pass noise floor of finding #47, so it needs no interleaved re-run to stand). On a bandwidth-bound dense model that is backwards, and it means the quant ladder below Q4_K buys nothing here: you give up accuracy *and* throughput. The 08-26 SoA reorder patches do not help — they extended MoE **expert** tensor reorder to Q3_K, and this model is dense.
 
 ## The v3.0 Q3_K_XL wedge
 
@@ -195,7 +212,7 @@ By element count it is overwhelmingly **Q3_K** (2.54 of 2.96 G-elems, 86%), so n
 
 ## What this changes
 
-- **Prefer Dynamic 3.0 when you care about output fidelity**, especially at 3-bit and below, where the top-1 gain is real. Prefer **2.0 when you care about tok/s on Battlemage** — it is roughly 10–14% faster at Q4_K_XL. If a workload is sensitive to worst-case tokens rather than average ones, 99.0% Δp goes the other way and 2.0 wins there too.
+- **Prefer Dynamic 3.0 when you care about output fidelity**, especially at 3-bit and below, where the top-1 gain is real. Prefer **2.0 when you care about tok/s on Battlemage** — it is 9.5% faster at Q4_K_XL. If a workload is sensitive to worst-case tokens rather than average ones, 99.0% Δp goes the other way and 2.0 wins there too.
 - **Avoid v3.0 `UD-Q3_K_XL` entirely on this stack** until the `-1` token is understood. If it must be used, run it without a drafter.
 - **Qwen 3.8-27B stays parked**, but the parked row's numbers are misleading and have been corrected — see [`qwen-3.8-27b.md`](qwen-3.8-27b.md).
 
@@ -212,6 +229,7 @@ Everything is in `/data/llm/benchmarks/20260826-ud3vs2/` on `llm.local`:
 | `run-ud3vs2.sh` | quality then throughput, all four arms |
 | `probe-decode.py` / `run-probe-pass.sh` | the `ignore_eos` decode probe |
 | `final-pass.sh` | drafter-vs-no-drafter isolation for the wedge |
+| `interleaved-q4.sh` | the A-B-B-A re-run that settled the Q4_K_XL decode gap; `il-*.json` and `interleaved-summary.json` are its output |
 | `gguf-types.py` | per-tensor quant-type histogram from a GGUF header |
 | `bench-per-run.json` | per-run tok/s and `predicted_n` for the first pass — the evidence for the EOS contamination |
 | `probe-*.serverlog` / `probe-*.log` | server-side logs, including the `invalid token[0] = -1` traces |

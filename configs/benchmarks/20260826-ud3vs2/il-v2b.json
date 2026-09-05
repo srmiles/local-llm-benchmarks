@@ -1,0 +1,32 @@
+{
+ "name": "v2b",
+ "runs": 8,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 19.6,
+  "mean": 19.5,
+  "stdev": 0.65,
+  "min": 18.71,
+  "max": 20.21
+ },
+ "spec": {
+  "drafts": 878.0,
+  "draft_tokens": 2627.0,
+  "accepted": 1511.0,
+  "acceptance_pct": 57.5,
+  "accepted_per_draft": 1.72
+ },
+ "per_run": [
+  20.21,
+  18.79,
+  20.06,
+  19.43,
+  20.2,
+  18.86,
+  18.71,
+  19.78
+ ],
+ "ok_runs": 8,
+ "errors": []
+}

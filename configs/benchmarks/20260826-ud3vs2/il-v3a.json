@@ -1,0 +1,32 @@
+{
+ "name": "v3a",
+ "runs": 8,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 17.82,
+  "mean": 17.76,
+  "stdev": 1.15,
+  "min": 16.4,
+  "max": 20.13
+ },
+ "spec": {
+  "drafts": 877.0,
+  "draft_tokens": 2625.0,
+  "accepted": 1511.0,
+  "acceptance_pct": 57.6,
+  "accepted_per_draft": 1.72
+ },
+ "per_run": [
+  17.98,
+  16.97,
+  16.4,
+  17.66,
+  18.1,
+  16.79,
+  20.13,
+  18.04
+ ],
+ "ok_runs": 8,
+ "errors": []
+}

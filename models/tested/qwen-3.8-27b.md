@@ -14,8 +14,8 @@
 >
 > | Quant | Size | Decode (real prompt, `ignore_eos`) |
 > |---|---:|---:|
-> | unsloth UD-Q4_K_XL v2.0 | 17.92 GB | **19.68** (18.82 in an earlier pass) |
-> | unsloth UD-Q4_K_XL v3.0 | 17.56 GB | 16.95 |
+> | unsloth UD-Q4_K_XL v2.0 | 17.92 GB | **18.91** |
+> | unsloth UD-Q4_K_XL v3.0 | 17.56 GB | 17.11 |
 > | unsloth UD-Q3_K_XL v2.0 | 13.44 GB | 7.89 |
 > | unsloth UD-Q3_K_XL v3.0 | 13.15 GB | *wedges the server* |
 >

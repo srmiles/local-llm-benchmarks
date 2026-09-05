@@ -1,0 +1,32 @@
+{
+ "name": "v3b",
+ "runs": 8,
+ "tokens": 300,
+ "all_full_length": true,
+ "decode": {
+  "median": 16.98,
+  "mean": 16.68,
+  "stdev": 1.01,
+  "min": 14.91,
+  "max": 17.84
+ },
+ "spec": {
+  "drafts": 935.0,
+  "draft_tokens": 2797.0,
+  "accepted": 1452.0,
+  "acceptance_pct": 51.9,
+  "accepted_per_draft": 1.55
+ },
+ "per_run": [
+  17.63,
+  14.91,
+  17.84,
+  16.94,
+  17.19,
+  16.29,
+  17.02,
+  15.6
+ ],
+ "ok_runs": 8,
+ "errors": []
+}

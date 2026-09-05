@@ -1,0 +1,26 @@
+  run 1: 17.63 tok/s  (n=300)
+  run 2: 14.91 tok/s  (n=300)
+  run 3: 17.84 tok/s  (n=300)
+  run 4: 16.94 tok/s  (n=300)
+  run 5: 17.19 tok/s  (n=300)
+  run 6: 16.29 tok/s  (n=300)
+  run 7: 17.02 tok/s  (n=300)
+  run 8: 15.60 tok/s  (n=300)
+{
+ "name": "v3b",
+ "all_full_length": true,
+ "decode": {
+  "median": 16.98,
+  "mean": 16.68,
+  "stdev": 1.01,
+  "min": 14.91,
+  "max": 17.84
+ },
+ "spec": {
+  "drafts": 935.0,
+  "draft_tokens": 2797.0,
+  "accepted": 1452.0,
+  "acceptance_pct": 51.9,
+  "accepted_per_draft": 1.55
+ }
+}
