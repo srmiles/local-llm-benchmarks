@@ -2,16 +2,9 @@
 
 Journey through llama.cpp SYCL builds and the impact of each release on this stack. Referenced from the main README.
 
-**Deployed builds (2026-09-04, verified from the running containers — this line was stale before today):**
+**Deployed builds (2026-09-04, after cutover):** `llama.cpp:sycl-f16-b10809-patched-f937ca544` — master `85d5703a3` + the 8-commit local `ggml-sycl` series — on **Ornith `:8002`, Gemma 4 E2B categorise `:8006`, and Nemotron `:8011`**. `llamacpp-embed :8004` and `tei-rerank :8008` are unchanged (`llama.cpp:sycl-f16` = b10688-patched `880b848f4`, and `tei:xpu-ipex-nomemleak`); **llm2.local is a separate box and was not touched.**
 
-| slot | image | base |
-|---|---|---|
-| `:8002` Ornith chat, `:8004` embed | `llama.cpp:sycl-f16` | b10688 + patches (`880b848f4`) |
-| `:8006` categorise | `sycl-f16-concurrency-a6553043f` | b10688-era + concurrency patch |
-| `:8011` Nemotron | `sycl-f16-b10742-patched-a82c13531` | b10742 + 9 patches incl. the #28159 revert |
-
-**Candidate, built + benched 2026-09-04, NOT deployed:** `llama.cpp:sycl-f16-b10809-patched-f937ca544` — master `85d5703a3` + the 8-commit local series, revert dropped. [Rebase notes, A/B and the Nemotron GPU-reset block.](../models/tested/2026-09-04-b10809-rebase-ab.md)
-**Rollback tags on disk:** every image in the table above, plus `sycl-f16-b10433-safe`, `sycl-f16-b10256-safe`, `sycl-f16-b10215-safe`.
+**Also on disk:** `sycl-f16-b10809-clean-85d5703a3` — the same base with **no local patches**, built as the control arm for the engine-reset question. Rollbacks: `sycl-f16-b10742-patched-a82c13531` (previous Nemotron), `llama.cpp:sycl-f16` (previous Ornith/embed), `sycl-f16-concurrency-a6553043f` (previous categorise), plus `sycl-f16-b10433-safe`, `-b10256-safe`, `-b10215-safe`. Every launcher carries a `.bak-preB10809-20260904` and an inline rollback line. [Rebase notes, A/B, control arm and cutover.](../models/tested/2026-09-04-b10809-rebase-ab.md)
 
 ## b10809 rebase (2026-09-04) — 73 upstream commits, local series carried
 
@@ -27,6 +20,10 @@ Base moved `be789c344` (b10742) → `85d5703a3` (master, b10809 series). Eight l
 Only Ornith clears the ~15% single-pass noise floor (finding #47). The gain tracks drafter acceptance (2.00 → 2.30 accepted/draft) with prefill flat as a control, and the leading — unconfirmed — explanation is the dropped revert restoring correct `n_layer_nextn` handling for the MTP head. See findings #49 and #50.
 
 **Rebase trap worth carrying forward:** upstream `4aa6ffba2` generalised the Q4_K MMVQ path with a `reorder_vec_dot_shared_activations<T>` trait and a `static_assert` on `rows_per_sg`; our GLU-fusion patch's hardcoded `rows_per_sg = 2` at `ncols_dst == 2` becomes a **compile error** for every non-Q4_K type it adds. Fixed with an `if constexpr` gate. Our series sits on the code upstream keeps generalising — re-check semantics on every bump, not just conflict markers.
+
+**What the patches are actually worth** (measured against an unpatched build of the same base, 2026-09-04): Gemma 4 E2B **+17.0%**, Nemotron **+6.3%**, Ornith **+2.7% (noise)**. Ornith's +25.4% above is upstream plus the dropped revert, not our series. See finding #51.
+
+**Deployed 2026-09-04** to `:8002`, `:8006` and `:8011`. Nemotron measures **98.91 tok/s** on the new image — a new high for this rig (previous best 91.91, 2026-08-21).
 
 [Full write-up.](../models/tested/2026-09-04-b10809-rebase-ab.md)
 
