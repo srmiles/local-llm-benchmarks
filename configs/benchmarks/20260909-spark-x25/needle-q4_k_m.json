@@ -1,0 +1,170 @@
+{
+  "name": "spark-x2.5-4b-q4_k_m",
+  "needle": "CORAL-ANVIL-77",
+  "grid": [
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 7111,
+      "depth": "start",
+      "pass": true,
+      "wall_s": 2.3,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 7111,
+      "depth": "quarter",
+      "pass": true,
+      "wall_s": 2.3,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 7111,
+      "depth": "middle",
+      "pass": true,
+      "wall_s": 2.2,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 7111,
+      "depth": "three_quarter",
+      "pass": true,
+      "wall_s": 2.2,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 8000,
+      "prompt_tokens": 7111,
+      "depth": "end",
+      "pass": true,
+      "wall_s": 0.8,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 28291,
+      "depth": "start",
+      "pass": true,
+      "wall_s": 8.1,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 28291,
+      "depth": "quarter",
+      "pass": true,
+      "wall_s": 8.5,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 28291,
+      "depth": "middle",
+      "pass": true,
+      "wall_s": 8.5,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 28291,
+      "depth": "three_quarter",
+      "pass": true,
+      "wall_s": 8.5,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 32000,
+      "prompt_tokens": 28291,
+      "depth": "end",
+      "pass": true,
+      "wall_s": 8.0,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 64000,
+      "prompt_tokens": 56521,
+      "depth": "start",
+      "pass": true,
+      "wall_s": 14.9,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 64000,
+      "prompt_tokens": 56521,
+      "depth": "quarter",
+      "pass": true,
+      "wall_s": 15.2,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 64000,
+      "prompt_tokens": 56521,
+      "depth": "middle",
+      "pass": true,
+      "wall_s": 15.1,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 64000,
+      "prompt_tokens": 56521,
+      "depth": "three_quarter",
+      "pass": true,
+      "wall_s": 15.0,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 64000,
+      "prompt_tokens": 56521,
+      "depth": "end",
+      "pass": true,
+      "wall_s": 14.2,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 120000,
+      "prompt_tokens": 105931,
+      "depth": "start",
+      "pass": true,
+      "wall_s": 36.6,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 120000,
+      "prompt_tokens": 105931,
+      "depth": "quarter",
+      "pass": true,
+      "wall_s": 56.6,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 120000,
+      "prompt_tokens": 105931,
+      "depth": "middle",
+      "pass": true,
+      "wall_s": 49.1,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 120000,
+      "prompt_tokens": 105931,
+      "depth": "three_quarter",
+      "pass": true,
+      "wall_s": 48.4,
+      "answer": "CORAL-ANVIL-77"
+    },
+    {
+      "target_tokens": 120000,
+      "prompt_tokens": 105931,
+      "depth": "end",
+      "pass": true,
+      "wall_s": 47.1,
+      "answer": "CORAL-ANVIL-77"
+    }
+  ],
+  "summary": {
+    "passed": 20,
+    "total": 20
+  }
+}
