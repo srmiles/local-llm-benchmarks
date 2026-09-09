@@ -1,0 +1,99 @@
+=== minicpm5-2b-dspark-q8-nmax7-nopmin healthy after 10s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=464 ms=186.7 tps=2485
+  size~500 s2: n=463 ms=123.4 tps=3752
+  size~500 s3: n=467 ms=137.4 tps=3399
+  MEAN ~500: 3212 tok/s
+
+  size~2000 s1: n=1797 ms=537.5 tps=3343
+  size~2000 s2: n=1802 ms=454.2 tps=3967
+  size~2000 s3: n=1796 ms=436.6 tps=4113
+  MEAN ~2000: 3808 tok/s
+
+  size~5000 s1: n=4464 ms=1184.0 tps=3770
+  size~5000 s2: n=4468 ms=1086.5 tps=4112
+  size~5000 s3: n=4466 ms=1096.2 tps=4074
+  MEAN ~5000: 3986 tok/s
+
+  size~12000 s1: n=10686 ms=2979.8 tps=3586
+  size~12000 s2: n=10686 ms=2950.4 tps=3622
+  size~12000 s3: n=10688 ms=2948.9 tps=3624
+  MEAN ~12000: 3611 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 301.46 tok/s  (predicted_n=300)
+  run 2: 296.08 tok/s  (predicted_n=300)
+  run 3: 302.46 tok/s  (predicted_n=300)
+  run 4: 305.55 tok/s  (predicted_n=300)
+  run 5: 304.00 tok/s  (predicted_n=300)
+  run 6: 300.47 tok/s  (predicted_n=300)
+  run 7: 299.60 tok/s  (predicted_n=300)
+  run 8: 284.23 tok/s  (predicted_n=300)
+  run 9: 302.25 tok/s  (predicted_n=300)
+  run10: 304.15 tok/s  (predicted_n=300)
+  run11: 299.77 tok/s  (predicted_n=300)
+  run12: 304.67 tok/s  (predicted_n=300)
+  run13: 301.78 tok/s  (predicted_n=300)
+  run14: 300.09 tok/s  (predicted_n=300)
+  run15: 305.59 tok/s  (predicted_n=300)
+  run16: 297.52 tok/s  (predicted_n=300)
+  run17: 299.93 tok/s  (predicted_n=300)
+  run18: 304.90 tok/s  (predicted_n=300)
+  run19: 304.18 tok/s  (predicted_n=300)
+  run20: 299.22 tok/s  (predicted_n=300)
+
+=== summary ===
+{
+  "name": "minicpm5-2b-dspark-q8-nmax7-nopmin",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-09-09T02:10:48Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 465,
+      "tps_mean": 3212.3,
+      "tps_median": 3399.3
+    },
+    "2000": {
+      "n": 1798,
+      "tps_mean": 3807.8,
+      "tps_median": 3967.4
+    },
+    "5000": {
+      "n": 4466,
+      "tps_mean": 3985.6,
+      "tps_median": 4074.2
+    },
+    "12000": {
+      "n": 10687,
+      "tps_mean": 3610.8,
+      "tps_median": 3621.8
+    }
+  },
+  "decode": {
+    "mean": 300.89,
+    "median": 301.62,
+    "min": 284.23,
+    "max": 305.59,
+    "stdev": 4.76,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 762.0,
+    "draft_tokens": 5239.0,
+    "accepted": 5218.0,
+    "acceptance_pct": 99.6,
+    "accepted_per_draft": 6.85
+  },
+  "peak_vram_mib": 8598.6,
+  "peak_vram_gib": 8.4
+}
+
+wrote /data/llm/benchmarks/20260909-round2/minicpm5-2b-dspark-q8-nmax7-nopmin.json

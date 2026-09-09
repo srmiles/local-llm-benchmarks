@@ -1,0 +1,56 @@
+{
+  "name": "minicpm5-2b-dspark",
+  "ts": "2026-09-09T02:13:36Z",
+  "tests": {
+    "coherence_thinking_off": {
+      "pass_": true,
+      "chars": 311,
+      "think_tag_leaked": false,
+      "wall_s": 0.67,
+      "sample": "A sliding-window attention layer is cheaper than a full-attention layer because it reduces the computational complexity from quadratic in sequence length to linear, allowing it to process longer sequences efficiently without the exponential memory and time cost of computing attention over every pair of tokens."
+    },
+    "thinking_on_arithmetic": {
+      "pass_": true,
+      "answer_has_14": true,
+      "reasoning_chars": 1422,
+      "content_chars": 483,
+      "wall_s": 3.1,
+      "sample": "We need to parse the problem: \"A shelf holds 3 red books, 5 blue books and twice as many green books as red. How many books total? Show reasoning.\"\n\nWe have 3 red books. The number of blue books is 5. The number of green books is twice as many as red books. Since red books = 3, green books = 2 * 3 = 6. So total number of books = 3 (red) + 5 (blue) + 6 (green) = 14.\n\nWe need to show reasoning. So w"
+    },
+    "tool_call_single": {
+      "pass_": true,
+      "note": "get_meter_reading({'meter_no': 'E4471290', 'date': '2026-09-08'})",
+      "n_calls": 1,
+      "args": {
+        "meter_no": "E4471290",
+        "date": "2026-09-08"
+      },
+      "wall_s": 0.42
+    },
+    "tool_result_roundtrip": {
+      "pass_": true,
+      "note": "cited 41.7",
+      "wall_s": 0.22,
+      "sample": "The electricity meter with number E4471290 recorded a reading of 41.7 kWh on 2026-09-08."
+    },
+    "needle_mid_context": {
+      "pass_": true,
+      "approx_tokens": 32000,
+      "wall_s": 9.57,
+      "sample": "CORAL-ANVIL-77"
+    },
+    "structured_json": {
+      "pass_": true,
+      "parsed": {
+        "city": "Paris",
+        "country": "France"
+      },
+      "wall_s": 0.56,
+      "sample": "{\"city\": \"Paris\", \"country\": \"France\"}"
+    }
+  },
+  "summary": {
+    "passed": 6,
+    "total": 6
+  }
+}

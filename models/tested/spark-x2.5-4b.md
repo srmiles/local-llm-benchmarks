@@ -145,6 +145,25 @@ Because Spark cannot load on *any* earlier build, no A/B is possible for it — 
 
 **5. The 1M context claim is unverified.** 106K is tested and clean. 131K is the harness ceiling. Anything above that is the vendor's word.
 
+## The drafter question — settled 2026-09-09
+
+Spark has no MTP head and **none can be built**: the safetensors index holds exactly 290 tensors, layers 0–35 with none missing and none spare, `model.embedding.weight` + `model.norm.weight` as the only non-layer entries, and no `mtp`/`nextn`/`eagle`/`medusa` naming anywhere. Tied embeddings mean there is not even a spare `lm_head`. The finding #28 conversion path is closed.
+
+But **`Spark-X2.5-1.7B` is vocabulary-identical** — 131,072 tokens, same `spark2_5` arch, same `head_dim` 256, same `sliding_window` 512 — so the *classic* draft-model path (`--spec-type draft-simple`) is open. Tested:
+
+| | undrafted | + 1.7B, n-max 3 | + 1.7B, n-max 5 (p-min 0.6) |
+|---|---|---|---|
+| Decode mean | 87.74 | 93.67 | **93.79** |
+| Decode σ | **0.35** | 2.53 | 0.76 |
+| Acceptance | — | 98.7% | **99.7%** |
+| Accepted/draft | — | 2.95 / 3 | 4.95 / 5 |
+| Prefill @ 12K | **3,643** | 2,585 | 2,583 |
+| Peak VRAM | **6.44 GiB** | 10.29 | 10.31 |
+
+**It works, and it is still not worth taking.** +6.8% decode costs **−29% prefill and +3.85 GiB (+60%)** — which spends exactly the VRAM advantage that made this model interesting against Ornith — and forfeits the σ 0.35 property.
+
+**The mechanism is the useful part.** Decode is *flat* between n-max 3 and 5 (+0.1%) while the drafter returns **4.95 of 5.00 tokens at 99.7% acceptance**. The drafter is giving back essentially everything asked of it and throughput does not move, so the ceiling is **the draft model's own forward cost**, not acceptance: each extra draft token costs a full 1.7B forward that consumes what the accepted token wins. A same-family sibling drafts with near-perfect alignment — size ratio does not hurt acceptance at all — but a 2.4× ratio caps the achievable speedup at ~+7% regardless. That is the structural difference from a one-layer MTP head, which drafts nearly free and therefore *does* scale with n-max (finding #55).
+
 ## Watch items
 
 - **Qualitative bake-off vs Ornith 1.5-9B on the pi.dev corpus** — tool-calling reliability, edit-diff correctness, scaffold quality. The only thing that decides a cutover. Same instrument as `docs/track2-quality-bakeoff.md`.
