@@ -1,0 +1,50 @@
+{
+  "name": "spark-x2.5-4b-q4_k_m-b10867",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-09-09T01:27:33Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1894.0,
+      "tps_median": 1947.6
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 3424.6,
+      "tps_median": 3581.2
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 3584.2,
+      "tps_median": 3621.9
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 3644.1,
+      "tps_median": 3643.3
+    }
+  },
+  "decode": {
+    "mean": 87.74,
+    "median": 87.72,
+    "min": 87.22,
+    "max": 88.38,
+    "stdev": 0.35,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 6591.6,
+  "peak_vram_gib": 6.44
+}

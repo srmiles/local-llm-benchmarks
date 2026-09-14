@@ -1,0 +1,56 @@
+{
+  "name": "spark-x2.5-4b-q4_k_m",
+  "ts": "2026-09-09T01:33:34Z",
+  "tests": {
+    "coherence_thinking_off": {
+      "pass_": true,
+      "chars": 153,
+      "think_tag_leaked": false,
+      "wall_s": 0.52,
+      "sample": "It only processes a fixed number of recent tokens at a time, so it requires far fewer multiply-accumulate operations than processing the entire sequence."
+    },
+    "thinking_on_arithmetic": {
+      "pass_": true,
+      "answer_has_14": true,
+      "reasoning_chars": 393,
+      "content_chars": 201,
+      "wall_s": 2.31,
+      "sample": "We are given: \"A shelf holds 3 red books, 5 blue books and twice as many green books as red. How many books total? Show reasoning.\"\n\nWe need to find the total number of books.\n\nRed books = 3\nBlue books = 5\nGreen books = twice as many green books as red. So green books = 2 * red = 2 * 3 = 6.\n\nTotal books = red + blue + green = 3 + 5 + 6 = 14.\n\nSo the answer is 14.\n\nWe need to show reasoning."
+    },
+    "tool_call_single": {
+      "pass_": true,
+      "note": "get_meter_reading({'meter_no': 'E4471290', 'date': '2026-09-08'})",
+      "n_calls": 1,
+      "args": {
+        "meter_no": "E4471290",
+        "date": "2026-09-08"
+      },
+      "wall_s": 0.64
+    },
+    "tool_result_roundtrip": {
+      "pass_": true,
+      "note": "cited 41.7",
+      "wall_s": 0.48,
+      "sample": "The meter E4471290 read **41.7 kWh** on 2026-09-08."
+    },
+    "needle_mid_context": {
+      "pass_": true,
+      "approx_tokens": 32000,
+      "wall_s": 9.42,
+      "sample": "CORAL-ANVIL-77"
+    },
+    "structured_json": {
+      "pass_": true,
+      "parsed": {
+        "city": "Paris",
+        "country": "France"
+      },
+      "wall_s": 0.64,
+      "sample": "{\"city\":\"Paris\",\"country\":\"France\"}"
+    }
+  },
+  "summary": {
+    "passed": 6,
+    "total": 6
+  }
+}

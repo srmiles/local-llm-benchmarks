@@ -1,0 +1,50 @@
+{
+  "name": "minicpm5-2b-dspark-q8",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-09-09T02:02:39Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 463,
+      "tps_mean": 3175.4,
+      "tps_median": 3401.8
+    },
+    "2000": {
+      "n": 1796,
+      "tps_mean": 3792.6,
+      "tps_median": 4093.4
+    },
+    "5000": {
+      "n": 4465,
+      "tps_mean": 3991.8,
+      "tps_median": 4075.0
+    },
+    "12000": {
+      "n": 10689,
+      "tps_mean": 3615.6,
+      "tps_median": 3617.1
+    }
+  },
+  "decode": {
+    "mean": 233.83,
+    "median": 233.42,
+    "min": 229.3,
+    "max": 238.03,
+    "stdev": 2.7,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1503.0,
+    "draft_tokens": 4490.0,
+    "accepted": 4476.0,
+    "acceptance_pct": 99.7,
+    "accepted_per_draft": 2.98
+  },
+  "peak_vram_mib": 8533.8,
+  "peak_vram_gib": 8.33
+}

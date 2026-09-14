@@ -1,0 +1,99 @@
+=== ornith-1.5-9b-b10867 healthy after 55s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=473 ms=388.4 tps=1218
+  size~500 s2: n=474 ms=363.1 tps=1306
+  size~500 s3: n=471 ms=367.4 tps=1282
+  MEAN ~500: 1268 tok/s
+
+  size~2000 s1: n=1804 ms=942.9 tps=1913
+  size~2000 s2: n=1804 ms=937.3 tps=1925
+  size~2000 s3: n=1808 ms=937.7 tps=1928
+  MEAN ~2000: 1922 tok/s
+
+  size~5000 s1: n=4475 ms=2326.9 tps=1923
+  size~5000 s2: n=4473 ms=2359.8 tps=1895
+  size~5000 s3: n=4472 ms=2347.1 tps=1905
+  MEAN ~5000: 1908 tok/s
+
+  size~12000 s1: n=10694 ms=5640.7 tps=1896
+  size~12000 s2: n=10698 ms=5653.2 tps=1892
+  size~12000 s3: n=10693 ms=5662.3 tps=1888
+  MEAN ~12000: 1892 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 69.64 tok/s  (predicted_n=300)
+  run 2: 84.36 tok/s  (predicted_n=300)
+  run 3: 89.27 tok/s  (predicted_n=300)
+  run 4: 49.25 tok/s  (predicted_n=300)
+  run 5: 89.55 tok/s  (predicted_n=300)
+  run 6: 83.77 tok/s  (predicted_n=300)
+  run 7: 66.45 tok/s  (predicted_n=300)
+  run 8: 72.98 tok/s  (predicted_n=300)
+  run 9: 76.37 tok/s  (predicted_n=300)
+  run10: 88.88 tok/s  (predicted_n=300)
+  run11: 85.99 tok/s  (predicted_n=300)
+  run12: 72.48 tok/s  (predicted_n=300)
+  run13: 90.00 tok/s  (predicted_n=300)
+  run14: 50.62 tok/s  (predicted_n=300)
+  run15: 86.42 tok/s  (predicted_n=300)
+  run16: 89.49 tok/s  (predicted_n=300)
+  run17: 72.45 tok/s  (predicted_n=300)
+  run18: 89.42 tok/s  (predicted_n=300)
+  run19: 90.16 tok/s  (predicted_n=300)
+  run20: 53.40 tok/s  (predicted_n=300)
+
+=== summary ===
+{
+  "name": "ornith-1.5-9b-b10867",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-09-09T01:22:25Z",
+  "load_seconds": 55.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 1268.4,
+      "tps_median": 1282.0
+    },
+    "2000": {
+      "n": 1805,
+      "tps_mean": 1922.0,
+      "tps_median": 1924.6
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1908.0,
+      "tps_median": 1905.4
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 1892.2,
+      "tps_median": 1892.4
+    }
+  },
+  "decode": {
+    "mean": 77.55,
+    "median": 84.07,
+    "min": 49.25,
+    "max": 90.16,
+    "stdev": 13.79,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1806.0,
+    "draft_tokens": 5403.0,
+    "accepted": 4170.0,
+    "acceptance_pct": 77.2,
+    "accepted_per_draft": 2.31
+  },
+  "peak_vram_mib": 11602.0,
+  "peak_vram_gib": 11.33
+}
+
+wrote /data/llm/benchmarks/20260909-spark-x25/ornith-1.5-9b-b10867.json

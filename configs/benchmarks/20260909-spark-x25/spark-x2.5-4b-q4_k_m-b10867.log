@@ -1,0 +1,99 @@
+=== spark-x2.5-4b-q4_k_m-b10867 healthy after 10s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=475 ms=268.5 tps=1769
+  size~500 s2: n=473 ms=242.9 tps=1948
+  size~500 s3: n=474 ms=241.2 tps=1965
+  MEAN ~500: 1894 tok/s
+
+  size~2000 s1: n=1807 ms=588.3 tps=3071
+  size~2000 s2: n=1808 ms=499.3 tps=3621
+  size~2000 s3: n=1808 ms=504.9 tps=3581
+  MEAN ~2000: 3425 tok/s
+
+  size~5000 s1: n=4475 ms=1278.6 tps=3500
+  size~5000 s2: n=4475 ms=1232.5 tps=3631
+  size~5000 s3: n=4476 ms=1235.8 tps=3622
+  MEAN ~5000: 3584 tok/s
+
+  size~12000 s1: n=10697 ms=2936.1 tps=3643
+  size~12000 s2: n=10697 ms=2937.6 tps=3641
+  size~12000 s3: n=10696 ms=2932.4 tps=3648
+  MEAN ~12000: 3644 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 87.22 tok/s  (predicted_n=300)
+  run 2: 87.28 tok/s  (predicted_n=300)
+  run 3: 88.38 tok/s  (predicted_n=300)
+  run 4: 87.34 tok/s  (predicted_n=300)
+  run 5: 88.01 tok/s  (predicted_n=300)
+  run 6: 87.73 tok/s  (predicted_n=300)
+  run 7: 87.47 tok/s  (predicted_n=300)
+  run 8: 88.27 tok/s  (predicted_n=300)
+  run 9: 87.49 tok/s  (predicted_n=300)
+  run10: 88.07 tok/s  (predicted_n=300)
+  run11: 87.70 tok/s  (predicted_n=300)
+  run12: 87.50 tok/s  (predicted_n=300)
+  run13: 88.19 tok/s  (predicted_n=300)
+  run14: 87.50 tok/s  (predicted_n=300)
+  run15: 88.03 tok/s  (predicted_n=300)
+  run16: 87.74 tok/s  (predicted_n=300)
+  run17: 87.63 tok/s  (predicted_n=300)
+  run18: 88.01 tok/s  (predicted_n=300)
+  run19: 87.32 tok/s  (predicted_n=300)
+  run20: 87.92 tok/s  (predicted_n=300)
+
+=== summary ===
+{
+  "name": "spark-x2.5-4b-q4_k_m-b10867",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-09-09T01:27:33Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1894.0,
+      "tps_median": 1947.6
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 3424.6,
+      "tps_median": 3581.2
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 3584.2,
+      "tps_median": 3621.9
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 3644.1,
+      "tps_median": 3643.3
+    }
+  },
+  "decode": {
+    "mean": 87.74,
+    "median": 87.72,
+    "min": 87.22,
+    "max": 88.38,
+    "stdev": 0.35,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 6591.6,
+  "peak_vram_gib": 6.44
+}
+
+wrote /data/llm/benchmarks/20260909-spark-x25/spark-x2.5-4b-q4_k_m-b10867.json

@@ -1,0 +1,56 @@
+{
+  "name": "spark-x2.5-4b-q8_0",
+  "ts": "2026-09-09T01:34:01Z",
+  "tests": {
+    "coherence_thinking_off": {
+      "pass_": true,
+      "chars": 215,
+      "think_tag_leaked": false,
+      "wall_s": 0.98,
+      "sample": "A sliding-window attention layer is cheaper than a full-attention layer because it computes attention only over a fixed, limited window of context per token instead of attending to all tokens in the entire sequence."
+    },
+    "thinking_on_arithmetic": {
+      "pass_": true,
+      "answer_has_14": true,
+      "reasoning_chars": 368,
+      "content_chars": 206,
+      "wall_s": 3.53,
+      "sample": "We are given: \"A shelf holds 3 red books, 5 blue books and twice as many green books as red. How many books total? Show reasoning.\"\n\nLet's break it down:\n- Red books: 3\n- Blue books: 5\n- Green books: twice as many as red. Since red is 3, twice as many is 2 * 3 = 6.\n- Total books = red + blue + green = 3 + 5 + 6 = 14.\n\nSo the answer is 14.\n\nWe need to show reasoning."
+    },
+    "tool_call_single": {
+      "pass_": true,
+      "note": "get_meter_reading({'meter_no': 'E4471290', 'date': '2026-09-08'})",
+      "n_calls": 1,
+      "args": {
+        "meter_no": "E4471290",
+        "date": "2026-09-08"
+      },
+      "wall_s": 0.94
+    },
+    "tool_result_roundtrip": {
+      "pass_": true,
+      "note": "cited 41.7",
+      "wall_s": 0.68,
+      "sample": "Meter E4471290 read **41.7 kWh** on 2026-09-08."
+    },
+    "needle_mid_context": {
+      "pass_": true,
+      "approx_tokens": 32000,
+      "wall_s": 10.19,
+      "sample": "CORAL-ANVIL-77"
+    },
+    "structured_json": {
+      "pass_": true,
+      "parsed": {
+        "city": "Paris",
+        "country": "France"
+      },
+      "wall_s": 0.73,
+      "sample": "{\"city\":\"Paris\",\"country\":\"France\"}"
+    }
+  },
+  "summary": {
+    "passed": 6,
+    "total": 6
+  }
+}
