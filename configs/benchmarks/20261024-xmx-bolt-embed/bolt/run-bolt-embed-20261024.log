@@ -1,0 +1,334 @@
+== 2026-10-24T00:43:02Z stopping llamacpp-nemotron for the card-2 window ==
+card2 empty (dev 1, 46 MiB)
+=== bolt-e4b-solo-r1 2026-10-24T00:43:03Z
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (bolt-e4b-solo-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4476,
+      "tps_mean": 3221.2,
+      "tps_median": 3302.5
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 3399.3,
+      "tps_median": 3399.2
+    }
+  },
+  "decode": {
+    "mean": 66.24,
+    "median": 66.18,
+    "min": 65.64,
+    "max": 66.98,
+    "stdev": 0.37,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 4790.7,
+  "peak_vram_gib": 4.68
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-e4b-solo-r1.json
+-- kernel faults since start: 0
+=== bolt-e4b-dflash7-r1 2026-10-24T00:44:46Z
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (bolt-e4b-dflash7-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4477,
+      "tps_mean": 2529.3,
+      "tps_median": 2616.4
+    },
+    "12000": {
+      "n": 10699,
+      "tps_mean": 2625.1,
+      "tps_median": 2623.0
+    }
+  },
+  "decode": {
+    "mean": 126.05,
+    "median": 98.01,
+    "min": 73.26,
+    "max": 267.7,
+    "stdev": 61.02,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 800.0,
+    "draft_tokens": 5590.0,
+    "accepted": 1808.0,
+    "acceptance_pct": 32.3,
+    "accepted_per_draft": 2.26
+  },
+  "peak_vram_mib": 9742.2,
+  "peak_vram_gib": 9.51
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-e4b-dflash7-r1.json
+-- kernel faults since start: 0
+=== bolt-74b-solo-r1 2026-10-24T00:46:03Z
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (bolt-74b-solo-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4474,
+      "tps_mean": 460.4,
+      "tps_median": 461.3
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 494.2,
+      "tps_median": 494.2
+    }
+  },
+  "decode": {
+    "mean": 15.71,
+    "median": 15.72,
+    "min": 15.6,
+    "max": 15.73,
+    "stdev": 0.03,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 22180.0,
+  "peak_vram_gib": 21.66
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-74b-solo-r1.json
+-- kernel faults since start: 0
+=== bolt-74b-dflash6-r1 2026-10-24T00:55:39Z
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (bolt-74b-dflash6-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+    call(make_prompt(100), n_predict=8)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/llm/benchmarks/bench-candidate.py", line 39, in call
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/usr/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/usr/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.14/urllib/request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "/usr/lib/python3.14/http/client.py", line 1459, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+                             " response")
+http.client.RemoteDisconnected: Remote end closed connection without response
+!! bolt-74b-dflash6-r1 bench failed
+-- kernel faults since start: 0
+=== bolt-e4b-solo-r2 2026-10-24T00:56:30Z
+card2 empty (dev 1, 44 MiB)
+llamacpp-bench (bolt-e4b-solo-r2) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4474,
+      "tps_mean": 3229.4,
+      "tps_median": 3304.7
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 3398.7,
+      "tps_median": 3398.7
+    }
+  },
+  "decode": {
+    "mean": 66.49,
+    "median": 66.4,
+    "min": 66.14,
+    "max": 67.08,
+    "stdev": 0.29,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 4790.9,
+  "peak_vram_gib": 4.68
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-e4b-solo-r2.json
+-- kernel faults since start: 0
+=== bolt-e4b-dflash7-r2 2026-10-24T00:58:15Z
+card2 empty (dev 1, 44 MiB)
+llamacpp-bench (bolt-e4b-dflash7-r2) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4475,
+      "tps_mean": 2531.2,
+      "tps_median": 2613.4
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 2631.3,
+      "tps_median": 2631.1
+    }
+  },
+  "decode": {
+    "mean": 152.98,
+    "median": 111.85,
+    "min": 68.79,
+    "max": 269.33,
+    "stdev": 77.87,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 912.0,
+    "draft_tokens": 6345.0,
+    "accepted": 2768.0,
+    "acceptance_pct": 43.6,
+    "accepted_per_draft": 3.04
+  },
+  "peak_vram_mib": 9754.4,
+  "peak_vram_gib": 9.53
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-e4b-dflash7-r2.json
+-- kernel faults since start: 0
+=== bolt-74b-solo-r2 2026-10-24T00:59:35Z
+card2 empty (dev 1, 44 MiB)
+llamacpp-bench (bolt-74b-solo-r2) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+      "n": 4473,
+      "tps_mean": 460.9,
+      "tps_median": 461.9
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 494.1,
+      "tps_median": 494.1
+    }
+  },
+  "decode": {
+    "mean": 15.77,
+    "median": 15.77,
+    "min": 15.77,
+    "max": 15.78,
+    "stdev": 0.0,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 22218.2,
+  "peak_vram_gib": 21.7
+}
+
+wrote /data/llm/benchmarks/20261024-bolt/bolt-74b-solo-r2.json
+-- kernel faults since start: 0
+=== bolt-74b-dflash6-r2 2026-10-24T01:08:59Z
+card2 empty (dev 1, 44 MiB)
+llamacpp-bench (bolt-74b-dflash6-r2) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+    call(make_prompt(100), n_predict=8)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/llm/benchmarks/bench-candidate.py", line 39, in call
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/usr/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/usr/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/usr/lib/python3.14/urllib/request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/urllib/request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "/usr/lib/python3.14/http/client.py", line 1459, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+                             " response")
+http.client.RemoteDisconnected: Remote end closed connection without response
+!! bolt-74b-dflash6-r2 bench failed
+-- kernel faults since start: 0
+BOLT DONE 2026-10-24T01:09:51Z
+=== quantize 2026-10-24T01:09:51Z
+  what():  can not find preferred GPU platform
+PLEASE submit a bug report to https://software.intel.com/en-us/support/priority-support and include the crash backtrace and instructions to reproduce the bug.
+  what():  can not find preferred GPU platform
+PLEASE submit a bug report to https://software.intel.com/en-us/support/priority-support and include the crash backtrace and instructions to reproduce the bug.
+total 17777032
+drwxrwxr-x  2 srmiles srmiles        4096 Oct 23 23:36 .
+drwxr-xr-x 34 srmiles srmiles        4096 Oct 23 23:36 ..
+-rw-rw-r--  1 srmiles srmiles  2289844352 Oct 23 23:36 nemotron-3.5-embed-1b-f16.gguf
+-rw-rw-r--  1 srmiles srmiles 15913813568 Oct 23 23:37 nemotron-3.5-embed-8b-f16.gguf
+=== CPU refs 2026-10-24T01:09:53Z
+saved (96, 2048) nan False 116.4 s
+  warnings.warn(
+=== embgemma-q8 2026-10-24T02:00:51Z
+card2 empty (dev 1, 44 MiB)
+READY embeddinggemma-300m-qat-Q8_0.gguf after 8s
+scifact {"ndcg10": 0.7911232565369742, "mrr10": 0.7570767195767196, "recall10": 0.917222222222222, "recall100": 0.9866666666666667} docs/s 100.9 p50 17.3
+nfcorpus {"ndcg10": 0.3855389662224407, "mrr10": 0.5947970416236671, "recall10": 0.1908827015708643, "recall100": 0.3638614351316369} docs/s 96.0 p50 10.7
+csn-python {"ndcg10": 0.9590763961809965, "mrr10": 0.9476111111111111, "recall10": 0.993, "recall100": 0.999} docs/s 127.4 p50 15.5
+-- kernel faults since start: 0
+=== nemo-1b-q8 2026-10-24T02:02:53Z
+card2 empty (dev 1, 44 MiB)
+READY nemotron-3.5-embed-1b-Q8_0.gguf after 6s
+{"tag": "nemo-1b-q8", "dim": 2048, "cos_mean": 0.9998911023139954, "cos_min": 0.9996270537376404, "cos_q_mean": 0.9997833967208862, "cos_doc_mean": 0.9999451041221619, "frac_ge_0_99": 1.0, "simmatrix_pearson": 0.9999328521863606}
+scifact {"ndcg10": 0.7509439346104275, "mrr10": 0.7220925925925925, "recall10": 0.864888888888889, "recall100": 0.96} docs/s 31.1 p50 10.0
+nfcorpus {"ndcg10": 0.3655717894702609, "mrr10": 0.5682244827755664, "recall10": 0.1769460014890137, "recall100": 0.3236974663103346} docs/s 29.2 p50 7.4
+csn-python {"ndcg10": 0.9195116478904558, "mrr10": 0.897197619047619, "recall10": 0.987, "recall100": 0.995} docs/s 41.4 p50 11.2
+-- kernel faults since start: 0
+=== nemo-1b-f16 2026-10-24T02:08:46Z
+card2 empty (dev 1, 44 MiB)
+READY nemotron-3.5-embed-1b-f16.gguf after 8s
+{"tag": "nemo-1b-f16", "dim": 2048, "cos_mean": 1.0, "cos_min": 0.9999996423721313, "cos_q_mean": 0.9999999403953552, "cos_doc_mean": 1.0, "frac_ge_0_99": 1.0, "simmatrix_pearson": 0.9999999551021114}
+scifact {"ndcg10": 0.7506599944570206, "mrr10": 0.7216957671957672, "recall10": 0.864888888888889, "recall100": 0.96} docs/s 37.4 p50 11.7
+nfcorpus {"ndcg10": 0.3650949932090966, "mrr10": 0.5648225957049486, "recall10": 0.17669644141689675, "recall100": 0.3250309723220448} docs/s 34.6 p50 10.4
+csn-python {"ndcg10": 0.9191425776440274, "mrr10": 0.896697619047619, "recall10": 0.987, "recall100": 0.995} docs/s 47.2 p50 13.2
+-- kernel faults since start: 0
+=== nemo-8b-q8 2026-10-24T02:13:49Z
+card2 empty (dev 1, 44 MiB)
+READY nemotron-3.5-embed-8b-Q8_0.gguf after 10s
+{"tag": "nemo-8b-q8", "dim": 4096, "cos_mean": 0.9999014735221863, "cos_min": 0.9997059106826782, "cos_q_mean": 0.9998718500137329, "cos_doc_mean": 0.9999162554740906, "frac_ge_0_99": 1.0, "simmatrix_pearson": 0.9999642505503216}
+scifact {"ndcg10": 0.8365004838615497, "mrr10": 0.8053730158730158, "recall10": 0.9433333333333334, "recall100": 0.99} docs/s 5.9 p50 36.6
+nfcorpus {"ndcg10": 0.4229749679384998, "mrr10": 0.6273711238881517, "recall10": 0.2102842032069765, "recall100": 0.3840975806077791} docs/s 5.6 p50 27.8
+csn-python {"ndcg10": 0.9427330426619129, "mrr10": 0.9266428571428571, "recall10": 0.991, "recall100": 0.996} docs/s 7.9 p50 38.7
+-- kernel faults since start: 0
+=== rerank 2026-10-24T02:43:43Z
+card2 empty (dev 1, 44 MiB)
+Loading weights:   0%|          | 0/393 [00:00<?, ?it/s]Loading weights:   2%|▏         | 9/393 [00:00<00:26, 14.46it/s]Loading weights: 100%|██████████| 393/393 [00:00<00:00, 621.66it/s]
+scifact {"before": {"ndcg10": 0.7911232565369742, "mrr10": 0.7570767195767196, "recall10": 0.917222222222222, "recall100": 0.9866666666666667}, "after": {"ndcg10": 0.7527040910918897, "mrr10": 0.7198055555555556, "recall10": 0.8818888888888888, "recall100": 0.9693333333333334}, "pairs": 15000, "pairs_per_s": 143.5, "peak_mem_gib": 1.42}
+nfcorpus {"before": {"ndcg10": 0.3855389662224407, "mrr10": 0.5947970416236671, "recall10": 0.1908827015708643, "recall100": 0.3638614351316369}, "after": {"ndcg10": 0.3529684827144935, "mrr10": 0.5564732910708143, "recall10": 0.16925428638345688, "recall100": 0.30391629236114487}, "pairs": 16150, "pairs_per_s": 150.7, "peak_mem_gib": 1.42}
+    batch[key] = batch[key].to(target_device)
+                 ~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+RuntimeError: level_zero backend failed with error: 20 (UR_RESULT_ERROR_DEVICE_LOST)
+-- kernel faults since start: 8
+ALLDONE 2026-10-24T03:42:05Z
+== 2026-10-24T03:42:05Z restoring llamacpp-nemotron ==
+llamacpp-nemotron
+ grep -vi warn | tail -3

@@ -1,0 +1,42 @@
+warn: LLAMA_ARG_HOST environment variable is set, but will be overwritten by command line argument --host
+warn: LLAMA_ARG_PORT environment variable is set, but will be overwritten by command line argument --port
+0.00.225.006 I srv  llama_server: initializing ...
+0.00.225.020 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.225.745 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.227.408 I srv    load_model: loading model '/models/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB.gguf'
+0.00.540.049 E llama_init_from_model: failed to initialize the context: dflash requires ctx_other to be set (this warning is normal during memory fitting)
+0.00.562.021 W operator(): failed to measure the memory of the extra model, fitting without it: failed to create llama_context from model
+0.00.562.071 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 99, abort
+0.06.600.110 I cmn          init: llama threadpool init, n_threads = 6
+0.10.363.575 I common_speculative_init_result: loading draft model '/models/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB-LiLiCorr.gguf'
+0.11.147.661 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
+0.11.149.183 I common_speculative_impl_draft_dflash: adding speculative implementation 'draft-dflash'
+0.11.149.186 I common_speculative_impl_draft_dflash: - n_max=6, n_min=0, p_min=0.00
+0.11.149.187 I common_speculative_impl_draft_dflash: - block_size=8, mask_token_id=990, n_extract=6, sample_from_anchor=true
+0.20.805.051 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.20.805.115 I srv  llama_server: model loaded
+0.20.805.125 I srv  llama_server: listening on http://0.0.0.0:8000
+0.25.096.539 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 0, t_last = -1
+0.25.096.581 I slot launch_slot_: id  0 | task 1 | processing task, is_child = 0
+/app/ggml/src/ggml-sycl/outprod.cpp:12: GGML_ASSERT(ggml_is_contiguous(src0)) failed
+libggml-base.so.0(+0x13658)[0x745fa3990658]
+libggml-base.so.0(+0x13635)[0x745fa3990635]
+libggml-base.so.0(ggml_abort+0x109)[0x745fa398f6a9]
+/app/libggml-sycl.so(_Z21ggml_sycl_op_out_prodR25ggml_backend_sycl_contextP11ggml_tensor+0xa27)[0x745f97902817]
+/app/libggml-sycl.so(+0x289820)[0x745f97647820]
+/app/libggml-sycl.so(+0x287449)[0x745f97645449]
+libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x3ee)[0x745fa39b8a7e]
+libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdc)[0x745fa3c74e9c]
+libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x21e)[0x745fa3c7455e]
+libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x8d5)[0x745fa3c767c5]
+libllama-common.so.0(_ZN36common_speculative_impl_draft_dflash5draftERSt6vectorI31common_speculative_draft_paramsSaIS1_EE+0x3ae)[0x745fa435392e]
+libllama-common.so.0(_Z24common_speculative_draftP18common_speculative+0xd6)[0x745fa4341cc6]
+libllama-server-impl.so(_ZN12server_queue14yield_to_queueEOSt8functionIFvvEE+0xb1)[0x745fa464d5d1]
+libllama-server-impl.so(_ZN19server_context_impl10pre_decodeEv+0x1c6)[0x745fa46bf4b6]
+libllama-server-impl.so(_ZN19server_context_impl12update_slotsEv+0xd8)[0x745fa46be6e8]
+libllama-server-impl.so(_ZN12server_queue10start_loopEl+0x165)[0x745fa464da15]
+libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x9b35)[0x745fa45d7135]
+libllama-server-impl.so(_Z12llama_serveriPPc+0xc8)[0x745fa45c6618]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x745fa2e381ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x745fa2e3828b]
+/app/llama-server[0x406415]

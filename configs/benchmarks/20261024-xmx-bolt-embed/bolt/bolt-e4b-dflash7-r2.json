@@ -1,0 +1,50 @@
+{
+  "name": "bolt-e4b-dflash7-r2",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-24T00:58:16Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 1592.2,
+      "tps_median": 1725.9
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 2404.5,
+      "tps_median": 2604.3
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 2531.2,
+      "tps_median": 2613.4
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 2631.3,
+      "tps_median": 2631.1
+    }
+  },
+  "decode": {
+    "mean": 152.98,
+    "median": 111.85,
+    "min": 68.79,
+    "max": 269.33,
+    "stdev": 77.87,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 912.0,
+    "draft_tokens": 6345.0,
+    "accepted": 2768.0,
+    "acceptance_pct": 43.6,
+    "accepted_per_draft": 3.04
+  },
+  "peak_vram_mib": 9754.4,
+  "peak_vram_gib": 9.53
+}

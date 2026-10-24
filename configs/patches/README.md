@@ -11,6 +11,9 @@ Source of truth is branch `all-fixes` in `/data/llm/build/llama.cpp`; these file
 | `0003-test-backend-ops-...perf-c.patch` | add Q3_K to the `MUL_MAT_ID` perf cases (they covered q4_0/q8_0/q4_K/q6_K/iq2_xs but not q3_K) |
 | `0004-...-TQ1_0.patch` | report MUL_MAT/MUL_MAT_ID unsupported for TQ1_0/TQ2_0 |
 | `0005-...-MMVQ_MAX_BATCH_SIZE.patch` | chunk MMVQ above batch 8 instead of falling back to dequant+GEMM |
+| `0006-...-OUT_PROD-unsupported-for-non-contiguous.patch` | *(2026-10-24, against `9ae73e68f`)* report `OUT_PROD` unsupported for non-contiguous src0/dst so the scheduler falls back instead of aborting at `outprod.cpp:12` — hit by the Nemotron 3.5 Bolt 74B DFlash drafter (finding #60). **Committed on host branch `bmg-tilekv-9ae73e68f` as `ba6c3f9fc`; not yet built or measured.** |
+
+**2026-10-24 rebase onto `9ae73e68f` (b11850):** 0005 and its follow-up "let the reorder survive a concurrent batch" were **dropped**, not merged — upstream #29864 rewrote the same `can_use_mul_mat_vec_q` gate, and both patches are inert at the `GGML_SYCL_MMVQ_MAX_COLS=8` that production pins. The remaining six applied cleanly. [Details.](../../models/tested/2026-10-24-b11850-xmx-ab.md#build)
 
 Total: 191 insertions, 5 deletions across `ggml-sycl.cpp`, `mmvq.cpp`, `test-backend-ops.cpp`.
 
