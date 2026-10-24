@@ -1,0 +1,50 @@
+{
+  "name": "ornith-1.5-9b-new",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-24T00:06:12Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1201.1,
+      "tps_median": 1240.3
+    },
+    "2000": {
+      "n": 1804,
+      "tps_mean": 1908.2,
+      "tps_median": 1936.2
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1970.3,
+      "tps_median": 1990.0
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 2060.3,
+      "tps_median": 2067.0
+    }
+  },
+  "decode": {
+    "mean": 104.16,
+    "median": 103.46,
+    "min": 73.16,
+    "max": 125.48,
+    "stdev": 20.75,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 1779.0,
+    "draft_tokens": 5322.0,
+    "accepted": 3870.0,
+    "acceptance_pct": 72.7,
+    "accepted_per_draft": 2.18
+  },
+  "peak_vram_mib": 11578.5,
+  "peak_vram_gib": 11.31
+}

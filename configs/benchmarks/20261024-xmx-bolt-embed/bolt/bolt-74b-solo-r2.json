@@ -1,0 +1,50 @@
+{
+  "name": "bolt-74b-solo-r2",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-24T00:59:36Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 472,
+      "tps_mean": 291.5,
+      "tps_median": 298.2
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 405.7,
+      "tps_median": 409.5
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 460.9,
+      "tps_median": 461.9
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 494.1,
+      "tps_median": 494.1
+    }
+  },
+  "decode": {
+    "mean": 15.77,
+    "median": 15.77,
+    "min": 15.77,
+    "max": 15.78,
+    "stdev": 0.0,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 22218.2,
+  "peak_vram_gib": 21.7
+}

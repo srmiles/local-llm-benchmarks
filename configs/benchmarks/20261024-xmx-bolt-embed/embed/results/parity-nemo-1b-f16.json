@@ -1,0 +1,10 @@
+{
+ "tag": "nemo-1b-f16",
+ "dim": 2048,
+ "cos_mean": 1.0,
+ "cos_min": 0.9999996423721313,
+ "cos_q_mean": 0.9999999403953552,
+ "cos_doc_mean": 1.0,
+ "frac_ge_0_99": 1.0,
+ "simmatrix_pearson": 0.9999999551021114
+}

@@ -1,0 +1,50 @@
+{
+  "name": "bolt-e4b-solo-r2",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-24T00:56:31Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1902.2,
+      "tps_median": 1973.0
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 2915.4,
+      "tps_median": 3343.9
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 3229.4,
+      "tps_median": 3304.7
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 3398.7,
+      "tps_median": 3398.7
+    }
+  },
+  "decode": {
+    "mean": 66.49,
+    "median": 66.4,
+    "min": 66.14,
+    "max": 67.08,
+    "stdev": 0.29,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 4790.9,
+  "peak_vram_gib": 4.68
+}

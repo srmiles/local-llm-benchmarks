@@ -1,0 +1,50 @@
+{
+  "name": "nemotron-3.5-lightning-new",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-23T23:46:01Z",
+  "load_seconds": 30.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 810.3,
+      "tps_median": 851.5
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1618.4,
+      "tps_median": 1649.0
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1790.5,
+      "tps_median": 1805.6
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 1967.1,
+      "tps_median": 1965.3
+    }
+  },
+  "decode": {
+    "mean": 99.63,
+    "median": 99.71,
+    "min": 99.14,
+    "max": 100.02,
+    "stdev": 0.22,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 760.0,
+    "draft_tokens": 5220.0,
+    "accepted": 5220.0,
+    "acceptance_pct": 100.0,
+    "accepted_per_draft": 6.87
+  },
+  "peak_vram_mib": 22591.6,
+  "peak_vram_gib": 22.06
+}

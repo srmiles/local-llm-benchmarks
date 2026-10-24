@@ -1,0 +1,50 @@
+{
+  "name": "nemotron-3.5-lightning-noxmx",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-23T23:48:31Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 472,
+      "tps_mean": 807.2,
+      "tps_median": 855.8
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1604.3,
+      "tps_median": 1621.7
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1785.9,
+      "tps_median": 1794.7
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 1941.4,
+      "tps_median": 1943.2
+    }
+  },
+  "decode": {
+    "mean": 97.73,
+    "median": 99.31,
+    "min": 68.4,
+    "max": 99.63,
+    "stdev": 6.91,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 725.0,
+    "draft_tokens": 4980.0,
+    "accepted": 4972.0,
+    "acceptance_pct": 99.8,
+    "accepted_per_draft": 6.86
+  },
+  "peak_vram_mib": 22590.2,
+  "peak_vram_gib": 22.06
+}

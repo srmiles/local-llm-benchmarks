@@ -1,0 +1,15 @@
+## boot -1 (pre-reboot): first card-2 hang during the two-tenant window
+Oct 11 00:59:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=410, lrc_seqno=410, guc_id=2, flags=0x20 in llama-server [3196634]
+Oct 17 18:33:00 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=4, lrc_seqno=4, guc_id=11, flags=0x20 in llama-server [697438]
+Oct 24 00:18:46 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=4294967201, lrc_seqno=4294967201, guc_id=10, flags=0x20 in llama-server [519788]
+Oct 24 00:18:52 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=917744, lrc_seqno=917744, guc_id=0, flags=0x73 in no process [-1]
+Oct 24 00:18:52 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Kernel-submitted job timed out
+Oct 24 00:18:52 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: reset started
+
+## boot 0: Nemotron-Rerank-8B under torch-xpu
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine memory CAT error [1]: class=ccs, logical_mask: 0x1, guc_id=3
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine memory CAT error [1]: class=ccs, logical_mask: 0x1, guc_id=3
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine memory CAT error [1]: class=ccs, logical_mask: 0x1, guc_id=3
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine memory CAT error [1]: class=ccs, logical_mask: 0x1, guc_id=3
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine memory CAT error [1]: class=ccs, logical_mask: 0x1, guc_id=3
+Oct 24 03:30:30 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine reset: engine_class=ccs, logical_mask: 0x1, guc_id=3, state=0x249

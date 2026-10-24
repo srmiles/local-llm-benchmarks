@@ -1,0 +1,50 @@
+{
+  "name": "ornith-1.5-9b-noxmx",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-23T23:41:17Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1175.1,
+      "tps_median": 1220.6
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1948.0,
+      "tps_median": 1981.7
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1971.4,
+      "tps_median": 1989.2
+    },
+    "12000": {
+      "n": 10692,
+      "tps_mean": 2059.2,
+      "tps_median": 2063.4
+    }
+  },
+  "decode": {
+    "mean": 80.39,
+    "median": 80.3,
+    "min": 54.99,
+    "max": 98.01,
+    "stdev": 13.21,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1847.0,
+    "draft_tokens": 5530.0,
+    "accepted": 4052.0,
+    "acceptance_pct": 73.3,
+    "accepted_per_draft": 2.19
+  },
+  "peak_vram_mib": 11630.0,
+  "peak_vram_gib": 11.36
+}

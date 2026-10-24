@@ -1,0 +1,34 @@
+From ba6c3f9fcef8a999dbfb0823f43a983618dc09ce Mon Sep 17 00:00:00 2001
+From: Steve Miles <srmiles@srmiles.com>
+Date: Sat, 24 Oct 2026 00:58:25 +0000
+Subject: [PATCH] sycl: report OUT_PROD unsupported for non-contiguous src0/dst
+
+PLACEHOLDER MESSAGE - rewrite before submitting.
+
+ggml_sycl_op_out_prod asserts ggml_is_contiguous(src0) and (dst), but
+supports_op did not check either, so the scheduler routed a non-contiguous
+OUT_PROD to SYCL and the server aborted at outprod.cpp:12. Hit on the first
+draft pass of the Nemotron-3.5-Bolt-74B-A9B LiLiCorr DFlash drafter.
+---
+ ggml/src/ggml-sycl/ggml-sycl.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-sycl/ggml-sycl.cpp b/ggml/src/ggml-sycl/ggml-sycl.cpp
+index c9435a876..5971c7bee 100644
+--- a/ggml/src/ggml-sycl/ggml-sycl.cpp
++++ b/ggml/src/ggml-sycl/ggml-sycl.cpp
+@@ -7494,7 +7494,10 @@ static bool do_ggml_backend_sycl_device_supports_op(ggml_backend_dev_t dev, cons
+                    (op->src[0]->type == GGML_TYPE_F32 ||
+                     (op->src[0]->type == GGML_TYPE_Q1_0 && op->src[0]->ne[2] == op->src[1]->ne[2] &&
+                      op->src[0]->ne[3] == op->src[1]->ne[3])) &&
+-                   op->src[1]->type == GGML_TYPE_F32;
++                   op->src[1]->type == GGML_TYPE_F32 &&
++                   // ggml_sycl_op_out_prod asserts both of these (outprod.cpp); report them so the
++                   // scheduler falls back instead of aborting (hit by the DFlash drafter of Nemotron 3.5 Bolt 74B)
++                   ggml_is_contiguous(op->src[0]) && ggml_is_contiguous(op);
+         case GGML_OP_GET_ROWS:
+             {
+                 switch (op->src[0]->type) {
+-- 
+2.53.0
+
