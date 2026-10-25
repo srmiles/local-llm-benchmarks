@@ -4,7 +4,12 @@
 set -euo pipefail
 
 NAME=llamacpp-sycl
-IMAGE=llama.cpp:sycl-f16
+# 2026-09-18: promoted to llama.cpp:sycl-f16-b11039-patched-d6faf8d83; rollback: IMAGE=llama.cpp:sycl-f16-b10809-patched-f937ca544 ./start-llamacpp-sycl-ornith.sh
+# 2026-09-18: promoted to llama.cpp:sycl-f16-b11205-patched-569b0a794; rollback: IMAGE=llama.cpp:sycl-f16-b11039-patched-d6faf8d83 ./start-llamacpp-sycl-ornith.sh
+# 2026-09-18: promoted to llama.cpp:sycl-f16-08246a28f-patched-7cc837679; rollback: IMAGE=llama.cpp:sycl-f16-b11205-patched-569b0a794 ./start-llamacpp-sycl-ornith.sh
+# 2026-09-18: promoted to llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a; rollback: IMAGE=llama.cpp:sycl-f16-08246a28f-patched-7cc837679 ./start-llamacpp-sycl-ornith.sh
+# 2026-10-25: promoted to llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e; rollback: IMAGE=llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a ./start-llamacpp-sycl-ornith.sh
+IMAGE=${IMAGE:-llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e}   # 2026-10-25: master 9ae73e68f + 6-patch series (reports b11856-3bd0de68e); carries #29864 XMX multi-col MMVQ. Rollback: IMAGE=llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a ./this.sh
 MODEL_PATH=/data/llm/Ornith-1.5-9B-GGUF
 PORT=8002
 
@@ -20,6 +25,8 @@ docker run -d --name "$NAME" \
   --health-interval 30s --health-timeout 5s --health-start-period 120s \
   -v "$MODEL_PATH":/models:ro \
   -p "0.0.0.0:$PORT:8000" \
+  -e GGML_SYCL_FA_ONEDNN_MAX_KV=24576 \
+  -e ZE_AFFINITY_MASK=0 \
   -e ONEAPI_DEVICE_SELECTOR=level_zero:0 \
   "$IMAGE" \
   -m /models/Ornith-1.5-9B-Q4_K_M.gguf \
