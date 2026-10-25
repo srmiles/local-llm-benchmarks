@@ -8,8 +8,8 @@ All numbers below are measured on the same physical hardware. Unless a row says 
 
 | | Image | Notes |
 |---|---|---|
-| **Production** (verified on host 2026-10-24) | `llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a` | all four llama.cpp containers on llm.local (`:8002` `:8004` `:8006` `:8011`) |
-| **Bench, not cut over** | `llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e` (b11850) | carries upstream [#29864](https://github.com/ggml-org/llama.cpp/pull/29864) XMX multi-column MMVQ: **Ornith +30% decode** — `:8002` should move to it ([A/B](models/tested/2026-10-24-b11850-xmx-ab.md)) |
+| **Production — Ornith `:8002`** (promoted 2026-10-25) | `llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e` (reports `b11856-3bd0de68e`) | carries upstream [#29864](https://github.com/ggml-org/llama.cpp/pull/29864) XMX multi-column MMVQ: **Ornith +30% decode** in the isolated A/B ([A/B](models/tested/2026-10-24-b11850-xmx-ab.md)) |
+| **Production — `:8004` `:8006` `:8011`** | `llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a` (reports `b11723-def76ec9a`) | the new image measured no gain on these (Nemotron flat; Q4_0 is outside #29864's type list) |
 
 Build lineage, rebase notes and every past cutover: [`docs/updates.md`](docs/updates.md) · per-release tables: [`docs/build-history.md`](docs/build-history.md) · local `ggml-sycl` patches: [`configs/patches/`](configs/patches/README.md).
 
@@ -39,6 +39,7 @@ Card 1 carries four co-resident services (~20.5 GiB); card 2 runs Nemotron alone
 
 ## Latest
 
+- **2026-10-25** — Ornith `:8002` promoted to the b11856 image (#29864). 67–70 tok/s on real prompts with card 1 idle; drops to 22–30 while the `:8006` categorise co-tenant is busy.
 - **2026-10-24** — #29864 XMX kernel: Ornith +30%, Nemotron flat (#58). NVIDIA Bolt E4B / 74B and Nemotron-3.5-Embed / Rerank benched — none displaces an incumbent; Embed-8B wins prose at ~16× the cost (#61). **The prod reranker lowers NDCG on EmbeddingGemma's top 50** (#62). A bench-script race cost a card-2 reboot (#59).
 - **2026-09-09** — MiniCPM5-2B + DSpark: 302.65 tok/s, repo decode record (#55–#57). Spark-X2.5-4B beats Ornith undrafted (#52–#54).
 
