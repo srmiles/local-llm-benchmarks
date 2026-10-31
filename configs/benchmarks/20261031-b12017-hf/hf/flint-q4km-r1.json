@@ -1,0 +1,50 @@
+{
+  "name": "flint-q4km-r1",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T03:19:33Z",
+  "load_seconds": 25.0,
+  "prefill": {
+    "500": {
+      "n": 463,
+      "tps_mean": 998.2,
+      "tps_median": 1051.6
+    },
+    "2000": {
+      "n": 1797,
+      "tps_mean": 1193.4,
+      "tps_median": 1206.1
+    },
+    "5000": {
+      "n": 4466,
+      "tps_mean": 1067.6,
+      "tps_median": 1072.6
+    },
+    "12000": {
+      "n": 10684,
+      "tps_mean": 941.5,
+      "tps_median": 942.4
+    }
+  },
+  "decode": {
+    "mean": 67.84,
+    "median": 67.8,
+    "min": 67.59,
+    "max": 68.15,
+    "stdev": 0.17,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 23337.7,
+  "peak_vram_gib": 22.79
+}

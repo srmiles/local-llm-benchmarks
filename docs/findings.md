@@ -332,3 +332,50 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
 62. **The production reranker lowers retrieval quality on top of EmbeddingGemma — on both datasets tested, and on the production code path too.** `bge-reranker-v2-m3` rescoring EmbeddingGemma's top 50 takes **scifact NDCG@10 0.791 → 0.753 and nfcorpus 0.386 → 0.353** (sentence-transformers `CrossEncoder`, fp16 on XPU). Cross-checked on production TEI `:8008` — independent code, same weights — on 40 scifact queries × the same candidates: **0.880 → 0.871**. Same direction on both paths; the magnitudes are not comparable (40-query subset, per-query scores not saved in the harness run). The plausible mechanism is that a 2026 embedder is now stronger than a 2024 cross-encoder on these domains, but that is untested. **This is a production question, not a bench footnote: the brain's `/v1/rerank` stage may be costing quality. Rule: re-validate every pipeline stage when an upstream stage is upgraded — a reranker that helped a weaker retriever is not guaranteed to help a stronger one. Next: measure rerank on/off on the brain's own eval set before touching the route.**
 
 63. **Nemotron-3.5-Rerank-8B is not runnable on this stack today, in any of three runtimes.** TEI 1.9.3 fails three ways on the Mistral3 multimodal config (router wants top-level `max_position_embeddings`; transformers 4.51.3 lacks `ministral3`; no `TokenizersBackend`). llama.cpp's converter rejects `Ministral3ForSequenceClassification`. PyTorch-XPU 2.14.1 + transformers 5.20 loads it (17.4 GiB bf16) and then, ~47 minutes into 15,000 scifact pairs, takes card 2 down with **`Engine memory CAT error … class=ccs` → engine reset → `Timedout job … in python`**, after which the process spins on a lost device (one thread at 100%, card at 50 W). Unlike finding #59 the reset was clean and `:8011` came back without a reboot. **Rule: a CAT error is a GPU page fault from user code — kill the process and verify the card with a real workload before restoring a tenant, but do not assume the reboot path is needed until a clean tenant fails to load.**
+
+64. **b12017 is +36% decode on Gemma 4 E2B and +16% on Gemma 4 26B-A4B, and the stock build gains the same, so the gain is upstream.** These are 3-arm interleaved rounds on card 2: `old` = `9ae73e68f`-patched, `new` = b12017-patched, `clean` = b12017 stock.
+    - **E2B + MTP:** 202.4 → 274.4 tok/s. Clean: 261.3.
+    - **26B-A4B + MTP n-max 5:** 76.4 → 88.8. Clean: 86.9.
+    - **Ornith 1.5-9B + MTP:** +5% decode, which is inside its noise, but +8% prefill and +6.7 pt acceptance in every round.
+    - **Nemotron Lightning:** flat.
+
+    Every slot runs q8_0 KV with `-fa on`, and b12017 adds DPAS flash attention on quantized KV ([#31125](https://github.com/ggml-org/llama.cpp/pull/31125)). It also vectorizes the reorder dequant stores, Q4_0 included ([`bf48103`](https://github.com/ggml-org/llama.cpp/commit/bf48103)), and restores the ESIMD FFN path ([`547208d`](https://github.com/ggml-org/llama.cpp/commit/547208d)). Both Gemma models are QAT Q4_0, so they are on all three paths. **None of the three was isolated.** The local series adds only 2–5% over clean and nothing on Nemotron.
+
+    **Rules:**
+    - (a) A `clean` arm of the candidate base is what assigns a gain to upstream or to the local series. Without it, this gain would have been credited to our patches.
+    - (b) The next control is `GGML_SYCL_FA_DPAS=0` on the candidate image (finding #58 rule (a)).
+
+    [Write-up.](../models/tested/2026-10-31-b12017-ab.md)
+
+65. **Upstream's 32 MiB chunked reorder ([`5320c87`](https://github.com/ggml-org/llama.cpp/commit/5320c87)) conflicts with every local MoE reorder kernel in the same way. Port each kernel to the chunked loop instead of keeping the whole-tensor form.**
+    - Upstream changed each MoE reorder kernel to stage a few experts at a time through a 32 MiB temporary buffer. The old kernels allocated one buffer the size of the whole tensor.
+    - Our Q4_0, Q3_K and Q2_K kernels hit a 3-way conflict at the same comment line each time. The conversion is mechanical, so it is scripted ([`chunkify.py`](../configs/benchmarks/20261031-b12017-hf/ab/chunkify.py)).
+    - The `opt_for_reorder_id` gate and the `_id_reorder` dispatch cases were checked by grep after the rebase. A missing case compiles without error and silently never takes the reorder path, which is the same trap as the `e707790` gate list on 2026-10-18.
+
+    **Rule: after any rebase that touches `ggml-sycl.cpp`, grep the three places a reorder type must appear (the `reorder_qw` MoE switch, the `opt_for_reorder_id` list, the mmvq dispatch) before building.**
+
+66. **Two CCS engine resets on card 2 in about an hour of candidate benching on b12017, after zero in the 30-load A/B on the same image that morning.**
+    - **02:37:05 UTC:** Groot-19B-A3B Q4_K_M, solo, during its first decode runs. It was the 3rd load in that window.
+    - **03:28:34 UTC:** Flint Q4_K_M, round 2. It was the 4th load in that window.
+
+    Both are `engine_class=ccs` → `Timedout job … in llama-server` → the silent wedge:
+    - the server answers `/health`;
+    - the request stops making tokens;
+    - the card sits at about 50 W with VRAM held;
+    - the harness spends its 15-minute client timeouts.
+
+    A `bcs` engine reset followed each teardown. No reboot was needed. `:8011` Nemotron then loaded on card 2 and served correctly (99.7 and 96.2 tok/s). `llm-monitor` was active through all three windows, so it does not explain the difference between them.
+
+    **Coredump gotcha:** the kernel keeps only the *first* devcoredump until it is cleared. The file read after the 03:28 reset was byte-identical to the 02:37 one, so there is only one real dump for the day.
+
+    **Rules:**
+    - (a) A clean A/B window is not a soak. Hold promotion of a new build until card 2 has carried normal load on it.
+    - (b) The runner needs a stall detector: no new `n_decode_total` for 60 s while `requests_processing > 0` should abort the window. Without one, a wedge costs about 30 minutes of client timeouts before anyone looks.
+    - (c) Clear the devcoredump (write to it) after saving it, or the next reset has no dump.
+
+67. **LFM3-1.7B prefills at 9,410 tok/s at 12K on a B60, about 1.9× the previous repo record, in 3.1 GiB.** It is Q4_K_M and undrafted, on b12017.
+    - Prefill: 8,676 at 2K and 9,410 at 12K. It does not fall off with length.
+    - Comparisons: Gemma 4 E2B on the same image does 4,633 at 2K. MiniCPM5-2B's previous record was 5,029 at 12K.
+    - Decode: 186 tok/s (σ 2.8), which is 32% below E2B + MTP.
+
+    For categorise, outputs are a few tokens and inputs can be long, so this may be the better trade, but that depends on the prefill:decode ratio, which is still not measured. **Quality is untested.** [Candidates page.](../models/tested/2026-10-31-hf-candidates.md)

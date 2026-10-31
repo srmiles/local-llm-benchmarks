@@ -39,10 +39,11 @@ Card 1 carries four co-resident services (~20.5 GiB); card 2 runs Nemotron alone
 
 ## Latest
 
+- **2026-10-31** — llama.cpp **b12017**: Gemma 4 E2B **+36%**, 26B +16%, Ornith +5% / prefill +8%, Nemotron flat. The gain is upstream: the stock control gets it too (#64–#65). **Not promoted:** two card-2 CCS resets in the candidate bench that followed (#66). **LFM3-1.7B prefills 9,410 tok/s @ 12K**, about 1.9× the repo record (#67). Mellum 2.1 MTP, Flint and Spark-X2.6 don't displace an incumbent.
 - **2026-10-24** — #29864 XMX kernel: Ornith +30%, Nemotron flat (#58). NVIDIA Bolt E4B / 74B and Nemotron-3.5-Embed / Rerank benched — none displaces an incumbent; Embed-8B wins prose at ~16× the cost (#61). **The prod reranker lowers NDCG on EmbeddingGemma's top 50** (#62). A bench-script race cost a card-2 reboot (#59).
 - **2026-09-09** — MiniCPM5-2B + DSpark: 302.65 tok/s, repo decode record (#55–#57). Spark-X2.5-4B beats Ornith undrafted (#52–#54).
 
-Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#63).
+Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#67).
 
 ## Chat / instruct benchmarks
 

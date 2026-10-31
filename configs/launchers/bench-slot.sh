@@ -22,6 +22,10 @@ if [[ -n "${DRAFT:-}" ]]; then
   ARGS+=( --model-draft "/models/${DRAFT}" -ngld 99 )
   # shellcheck disable=SC2206
   ARGS+=( ${SPEC_ARGS:---spec-type draft-mtp --spec-draft-n-max 3} )
+elif [[ -n "${SPEC_ARGS:-}" ]]; then
+  # 2026-10-31: MTP head embedded in the main GGUF (load_mtp) - no --model-draft
+  # shellcheck disable=SC2206
+  ARGS+=( ${SPEC_ARGS} )
 fi
 ARGS+=( -ngl 99 -c "$CTX" --parallel 1
         --host 0.0.0.0 --port 8000 --metrics

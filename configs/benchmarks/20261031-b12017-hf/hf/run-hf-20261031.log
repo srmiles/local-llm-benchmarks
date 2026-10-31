@@ -1,0 +1,148 @@
+== 2026-10-31T02:29:55Z stopping llamacpp-nemotron ==
+llamacpp-nemotron
+nextn layers: groot=1 mellum=1
+=== mellum-q4km-solo-r1 ===
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (mellum-q4km-solo-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+      "n": 4474,
+      "tps_mean": 2339.5,
+      "tps_median": 2379.2
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 2499.8,
+      "tps_median": 2497.8
+    }
+  },
+  "decode": {
+    "mean": 81.13,
+    "median": 81.1,
+    "min": 80.69,
+    "max": 81.53,
+    "stdev": 0.25,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 10582.7,
+  "peak_vram_gib": 10.33
+}
+
+wrote /data/llm/benchmarks/20261031-hf/mellum-q4km-solo-r1.json
+-- kernel faults since start: 0
+=== mellum-q4km-mtp3-r1 ===
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (mellum-q4km-mtp3-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+      "n": 4475,
+      "tps_mean": 2100.2,
+      "tps_median": 2121.4
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 2218.4,
+      "tps_median": 2215.8
+    }
+  },
+  "decode": {
+    "mean": 66.59,
+    "median": 67.68,
+    "min": 36.08,
+    "max": 75.4,
+    "stdev": 9.19,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 2171.0,
+    "draft_tokens": 6496.0,
+    "accepted": 3801.0,
+    "acceptance_pct": 58.5,
+    "accepted_per_draft": 1.75
+  },
+  "peak_vram_mib": 11436.1,
+  "peak_vram_gib": 11.17
+}
+
+wrote /data/llm/benchmarks/20261031-hf/mellum-q4km-mtp3-r1.json
+-- kernel faults since start: 0
+=== groot-q4km-solo-r1 ===
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (groot-q4km-solo-r1) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+
+  size~2000 s1: n=1807 ms=1405.8 tps=1285
+  size~2000 s2: n=1805 ms=1187.2 tps=1520
+  size~2000 s3: n=1804 ms=1166.0 tps=1547
+  MEAN ~2000: 1451 tok/s
+
+  size~5000 s1: n=4472 ms=2882.5 tps=1551
+  size~5000 s2: n=4474 ms=2815.7 tps=1589
+  size~5000 s3: n=4474 ms=2820.6 tps=1586
+  MEAN ~5000: 1576 tok/s
+
+  size~12000 s1: n=10697 ms=6457.8 tps=1656
+  size~12000 s2: n=10696 ms=6397.2 tps=1672
+  size~12000 s3: n=10695 ms=6398.5 tps=1671
+  MEAN ~12000: 1667 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 67.27 tok/s  (predicted_n=300)
+  run 2: 67.30 tok/s  (predicted_n=300)
+  run 3: 67.74 tok/s  (predicted_n=300)
+  run 4: 67.80 tok/s  (predicted_n=300)
+  run 5: 67.24 tok/s  (predicted_n=300)
+  run 6: 67.27 tok/s  (predicted_n=300)
+  run 7: 67.01 tok/s  (predicted_n=300)
+  run 8: 67.44 tok/s  (predicted_n=300)
+  run 9: 67.10 tok/s  (predicted_n=300)
+  run10: 67.18 tok/s  (predicted_n=300)
+  run11: 67.08 tok/s  (predicted_n=300)
+  run12: ERROR timed out
+  run13: ERROR timed out
+Done                       python3 /data/llm/benchmarks/bench-candidate.py --port 8020 --card 1 --name $name --out $D/$name.json 2>&1 | tail -30
+!! groot-q4km-solo-r1 bench failed - server log:
+1.34.358.727 I slot launch_slot_: id  0 | task 2200 | processing task, is_child = 0
+1.37.785.127 I slot print_timing: id  0 | task 2200 | n_gen =    204, tg =  67.38 t/s, tg_3s =  67.72 t/s
+1.39.206.384 I slot print_timing: id  0 | task 2200 | prompt eval time =     413.76 ms /   472 tokens (    0.88 ms per token,  1140.76 tokens per second)
+1.39.206.388 I slot print_timing: id  0 | task 2200 |        eval time =    4433.87 ms /   300 tokens (   14.83 ms per token,    67.44 tokens per second)
+1.39.206.389 I slot print_timing: id  0 | task 2200 |       total time =    4847.63 ms /   772 tokens
+1.39.206.390 I slot print_timing: id  0 | task 2200 |    graphs reused =       2375
+1.39.206.390 I slot print_timing: id  0 | task 2200 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.39.206.415 I slot      release: id  0 | task 2200 | stop processing: n_tokens = 771, truncated = 0
+1.39.508.583 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 771, t_last = 523126092708
+1.39.597.152 I slot launch_slot_: id  0 | task 2502 | processing task, is_child = 0
+1.43.015.393 I slot print_timing: id  0 | task 2502 | n_gen =    202, tg =  66.95 t/s, tg_3s =  67.29 t/s
+1.44.469.060 I slot print_timing: id  0 | task 2502 | prompt eval time =     416.16 ms /   474 tokens (    0.88 ms per token,  1139.00 tokens per second)
+1.44.469.064 I slot print_timing: id  0 | task 2502 |        eval time =    4455.73 ms /   300 tokens (   14.90 ms per token,    67.10 tokens per second)
+1.44.469.064 I slot print_timing: id  0 | task 2502 |       total time =    4871.88 ms /   774 tokens
+1.44.469.065 I slot print_timing: id  0 | task 2502 |    graphs reused =       2671
+1.44.469.065 I slot print_timing: id  0 | task 2502 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.44.469.088 I slot      release: id  0 | task 2502 | stop processing: n_tokens = 773, truncated = 0
+1.44.771.577 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 773, t_last = 523131355381
+1.44.857.219 I slot launch_slot_: id  0 | task 2806 | processing task, is_child = 0
+1.48.274.793 I slot print_timing: id  0 | task 2806 | n_gen =    203, tg =  67.21 t/s, tg_3s =  67.55 t/s
+1.49.720.205 I slot print_timing: id  0 | task 2806 | prompt eval time =     412.23 ms /   475 tokens (    0.87 ms per token,  1152.27 tokens per second)
+1.49.720.209 I slot print_timing: id  0 | task 2806 |        eval time =    4450.73 ms /   300 tokens (   14.89 ms per token,    67.18 tokens per second)
+1.49.720.209 I slot print_timing: id  0 | task 2806 |       total time =    4862.96 ms /   775 tokens
+1.49.720.210 I slot print_timing: id  0 | task 2806 |    graphs reused =       2967
+1.49.720.210 I slot print_timing: id  0 | task 2806 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.49.720.234 I slot      release: id  0 | task 2806 | stop processing: n_tokens = 774, truncated = 0
+1.50.022.233 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 774, t_last = 523136606527
+1.50.111.813 I slot launch_slot_: id  0 | task 3108 | processing task, is_child = 0
+1.53.544.883 I slot print_timing: id  0 | task 3108 | n_gen =    203, tg =  67.07 t/s, tg_3s =  67.40 t/s
+1.54.990.183 I slot print_timing: id  0 | task 3108 | prompt eval time =     421.16 ms /   473 tokens (    0.89 ms per token,  1123.09 tokens per second)
+1.54.990.187 I slot print_timing: id  0 | task 3108 |        eval time =    4457.18 ms /   300 tokens (   14.91 ms per token,    67.08 tokens per second)
+1.54.990.187 I slot print_timing: id  0 | task 3108 |       total time =    4878.34 ms /   773 tokens
+1.54.990.188 I slot print_timing: id  0 | task 3108 |    graphs reused =       3263
+1.54.990.189 I slot print_timing: id  0 | task 3108 |   graph reallocs =          0    /     0        (same size) / (changed size)
+1.54.990.212 I slot      release: id  0 | task 3108 | stop processing: n_tokens = 772, truncated = 0
+1.55.292.408 I slot get_availabl: id  0 | task -1 | selected slot by LRU, n_tokens = 772, t_last = 523141876505
+1.55.377.416 I slot launch_slot_: id  0 | task 3412 | processing task, is_child = 0
+1.58.802.558 I slot print_timing: id  0 | task 3412 | n_gen =    204, tg =  67.37 t/s, tg_3s =  67.70 t/s
+16.55.368.121 W srv          stop: cancel task, id_task = 3412
+31.55.431.135 W srv          stop: cancel task, id_task = 3878
+== 2026-10-31T03:10:09Z restoring llamacpp-nemotron ==
+llamacpp-nemotron
