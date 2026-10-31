@@ -1,0 +1,50 @@
+{
+  "name": "gemma-4-E2B-clean",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T01:19:31Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 2983.9,
+      "tps_median": 3191.8
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 4298.3,
+      "tps_median": 4634.5
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 3241.8,
+      "tps_median": 4576.7
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 4481.1,
+      "tps_median": 4480.8
+    }
+  },
+  "decode": {
+    "mean": 256.28,
+    "median": 275.17,
+    "min": 184.95,
+    "max": 279.11,
+    "stdev": 29.47,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1109.0,
+    "draft_tokens": 3315.0,
+    "accepted": 3137.0,
+    "acceptance_pct": 94.6,
+    "accepted_per_draft": 2.83
+  },
+  "peak_vram_mib": 4162.0,
+  "peak_vram_gib": 4.06
+}

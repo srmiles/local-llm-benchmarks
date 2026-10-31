@@ -1,0 +1,50 @@
+{
+  "name": "gemma-4-26B-A4B-new",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T01:24:09Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 826.3,
+      "tps_median": 882.1
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 1472.6,
+      "tps_median": 1540.4
+    },
+    "5000": {
+      "n": 4478,
+      "tps_mean": 1578.8,
+      "tps_median": 1596.0
+    },
+    "12000": {
+      "n": 10699,
+      "tps_mean": 1717.4,
+      "tps_median": 1719.0
+    }
+  },
+  "decode": {
+    "mean": 76.84,
+    "median": 87.62,
+    "min": 35.06,
+    "max": 110.89,
+    "stdev": 23.21,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1173.0,
+    "draft_tokens": 5834.0,
+    "accepted": 4013.0,
+    "acceptance_pct": 68.8,
+    "accepted_per_draft": 3.42
+  },
+  "peak_vram_mib": 21254.2,
+  "peak_vram_gib": 20.76
+}

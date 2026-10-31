@@ -6,6 +6,19 @@ Journey through llama.cpp SYCL builds and the impact of each release on this sta
 
 **Also on disk:** `sycl-f16-b10809-clean-85d5703a3` — the same base with **no local patches**, built as the control arm for the engine-reset question. Rollbacks: `sycl-f16-b10742-patched-a82c13531` (previous Nemotron), `llama.cpp:sycl-f16` (previous Ornith/embed), `sycl-f16-concurrency-a6553043f` (previous categorise), plus `sycl-f16-b10433-safe`, `-b10256-safe`, `-b10215-safe`. Every launcher carries a `.bak-preB10809-20260904` and an inline rollback line. [Rebase notes, A/B, control arm and cutover.](../models/tested/2026-09-04-b10809-rebase-ab.md)
 
+## b12017 (`5047748f1`, 2026-10-31) — 167 upstream commits past `9ae73e68f`, local series carried (NOT PROMOTED)
+
+The base moved from `9ae73e68f` (b11850, on `:8002` since 2026-10-24) to `5047748f1` (tag **b12017**). The other slots are still on `9d1878a43` (b11723). The 7-commit local series was rebased as `bmg-tilekv-5047748f1`, with three conflicts, all from upstream's 32 MiB chunked MoE reorder `5320c87` (finding #65). New build option: `GGML_SYCL_SUPPORT_XMX`, default ON. [Write-up.](../models/tested/2026-10-31-b12017-ab.md)
+
+| model | decode, old → new (clean) | prefill 2K | MTP acceptance |
+|---|---|---|---|
+| Ornith 1.5-9B + MTP | 106.6 → 112.0 (109.0), +5.1% | 1,976 → **2,131 (+7.8%)** | 76.2% → **82.9%** |
+| Gemma 4 E2B + MTP | 202.4 → **274.4 (261.3), +35.6%** | 4,533 → 4,633 | 98.4% → 99.4% |
+| Gemma 4 26B-A4B + MTP | 76.4 → **88.8 (86.9), +16.2%** | 1,502 → 1,543 | 66.2% → 71.3% |
+| Nemotron 30B-A3B + MTP | 99.2 → 99.8 (99.7), parity | 1,651 → 1,661 | 99.7% → 99.7% |
+
+The gain is upstream: the stock `clean` control gets most of it (finding #64). Card 2 took two CCS resets during candidate benching on this image (finding #66), so it is held from promotion.
+
 ## b10809 rebase (2026-09-04) — 73 upstream commits, local series carried
 
 Base moved `be789c344` (b10742) → `85d5703a3` (master, b10809 series). Eight local `ggml-sycl` commits rebased; the local revert of #28159 dropped because upstream's follow-up (`d11b3cc7e`, #28173) landed in the window.
