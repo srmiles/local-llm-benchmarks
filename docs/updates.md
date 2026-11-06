@@ -15,6 +15,11 @@ Snapshot of the build notes as they stood in the README on 2026-10-24. Per-relea
 ## Updates
 
 
+- **2026-11-05** — **llama.cpp `5851a8e50` (b12111+5) is on all six slots. Gemma 4 E2B prefill is 2.0–2.4× from upstream #31356.**
+  - **[Build](../models/tested/2026-11-05-5851a8e50-gemma4-graph-opt.md):** the 7-commit series rebased onto master `5851a8e50` with zero conflicts, 99 commits past b12017. The image reports `b12123-dc0403520`.
+  - **A/B against the b12017 candidate:** E2B prefill 4,559 → 9,285 at 2K and 4,434 → 10,570 at 12K. Gemma-26B (the control) +3%. Ornith at parity over 4 rounds, Nemotron at parity (finding #68).
+  - **Card 2:** one CCS reset during the first new-image Gemma-26B run kept `:8011` down 4h45m. It was not reproduced in the re-run, which now caps each run with `timeout 1200`.
+  - **Promoted 2026-11-05 ~10:05 UTC** in runbook order: `:8011` → `:8004` → `:8006` → llm2 `:8004` → llm2 `:8009` → `:8002`. Post-promote: `:8006` 267 tok/s, llm2 `:8009` 240, `:8002` 120 (94% acceptance), `:8011` 99.5. Traefik pools 4/4 200, 0 kernel faults. This ends the hold #66 put on b12017; production `:8011` is now the card-2 soak.
 - **2026-10-31** — **b12017 is +36% on Gemma 4 E2B and +16% on Gemma 4 26B, from upstream. Five HF candidates benched. Two card-2 CCS resets held the promotion.**
   - **[Build](../models/tested/2026-10-31-b12017-ab.md):** upstream `5047748f1` (tag **b12017**) + the 7-commit series, which now includes the OUT_PROD guard `0006`. Three rebase conflicts, all from upstream's 32 MiB chunked MoE reorder. Our Q4_0/Q3_K/Q2_K kernels were ported to the chunked loop (finding #65).
   - **A/B, 3 interleaved arms:**

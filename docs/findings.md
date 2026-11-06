@@ -373,6 +373,17 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     - (b) The runner needs a stall detector: no new `n_decode_total` for 60 s while `requests_processing > 0` should abort the window. Without one, a wedge costs about 30 minutes of client timeouts before anyone looks.
     - (c) Clear the devcoredump (write to it) after saving it, or the next reset has no dump.
 
+68. **Upstream [#31356](https://github.com/ggml-org/llama.cpp/pull/31356) doubles Gemma 4 E2B prefill on SYCL, and the gain grows with prompt length: 2.0× at 2K and 2.4× at 12K. A third card-2 CCS reset hit the candidate bench.** Measured on `5851a8e50`-patched (b12111+5, reports `b12123-dc0403520`) against the b12017 candidate `5047748f1`-patched, interleaved on card 2.
+    - **E2B prefill:** 4,559 → 9,285 t/s at 2K, and 4,434 → 10,570 at 12K. Decode and MTP acceptance are at parity.
+    - **Why it scales with length:** the PR drops non-output token rows before the KV-shared upper layers, so every intermediate ubatch skips them. Upstream measured 2.2–2.85× on Metal, CPU and Hexagon, so SYCL behaves the same as the other backends.
+    - **Control:** Gemma 4 26B-A4B is +3% (all its layers feed the KV cache). Over 4 rounds Ornith is −0.6% decode / −1.5 points acceptance, and Nemotron is at parity.
+    - **Against #67:** E2B now prefills 10,570 at 12K, ahead of LFM3-1.7B's 9,410, and it keeps its MTP decode lead.
+    - **CCS reset:** 2026-11-04 16:26:33 UTC, during the first new-image Gemma-26B run, the 4th load in that window. It followed the same `ccs` → `Timedout job` → silent wedge pattern as #66. With no stall detector, the window stretched to **4h45m of `:8011` downtime**. There were 0 resets in the 3 later new-image 26B runs, a 10-load re-run, or the six-slot promotion. That makes 3 resets across the b12017 and b12111 candidate benches, all on card 2 and all in bench windows.
+    - **Rule (a) of #66 was not met:** the build went to all six slots on 2026-11-05 after a clean re-run, not after a soak. Production `:8011` on card 2 is now the soak. If card 2 wedges under normal load, roll `:8011` back to `9d1878a43`-patched first.
+    - **Rule (b) is only partly met:** `run-5851a8e50-rerun.sh` wraps each run in `timeout -k 60 1200`. That caps a wedge at 20 minutes, but it is still not the `n_decode_total` stall detector #66 asks for.
+
+    [Write-up.](../models/tested/2026-11-05-5851a8e50-gemma4-graph-opt.md)
+
 67. **LFM3-1.7B prefills at 9,410 tok/s at 12K on a B60, about 1.9× the previous repo record, in 3.1 GiB.** It is Q4_K_M and undrafted, on b12017.
     - Prefill: 8,676 at 2K and 9,410 at 12K. It does not fall off with length.
     - Comparisons: Gemma 4 E2B on the same image does 4,633 at 2K. MiniCPM5-2B's previous record was 5,029 at 12K.

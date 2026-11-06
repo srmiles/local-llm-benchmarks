@@ -8,8 +8,8 @@ All numbers below are measured on the same physical hardware. Unless a row says 
 
 | | Image | Notes |
 |---|---|---|
-| **Production** (verified on host 2026-10-24) | `llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a` | all four llama.cpp containers on llm.local (`:8002` `:8004` `:8006` `:8011`) |
-| **Bench, not cut over** | `llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e` (b11850) | carries upstream [#29864](https://github.com/ggml-org/llama.cpp/pull/29864) XMX multi-column MMVQ: **Ornith +30% decode** — `:8002` should move to it ([A/B](models/tested/2026-10-24-b11850-xmx-ab.md)) |
+| **Production** (promoted and verified 2026-11-05) | `llama.cpp:sycl-f16-5851a8e50-patched-dc0403520` (reports `b12123-dc0403520`) | all six llama.cpp slots: llm.local `:8002` `:8004` `:8006` `:8011`, llm2.local `:8004` `:8009`. Carries upstream [#31356](https://github.com/ggml-org/llama.cpp/pull/31356): **Gemma 4 E2B prefill 2.0–2.4×** ([A/B + promotion](models/tested/2026-11-05-5851a8e50-gemma4-graph-opt.md)) |
+| **Rollback** | `llama.cpp:sycl-f16-9d1878a43-patched-def76ec9a` (`:8002`: `9ae73e68f-patched-3bd0de68e`) | `IMAGE=<tag> ./<launcher>`; the line is commented in each launcher |
 
 Build lineage, rebase notes and every past cutover: [`docs/updates.md`](docs/updates.md) · per-release tables: [`docs/build-history.md`](docs/build-history.md) · local `ggml-sycl` patches: [`configs/patches/`](configs/patches/README.md).
 
@@ -18,7 +18,7 @@ Build lineage, rebase notes and every past cutover: [`docs/updates.md`](docs/upd
 | Host | Port | Container | GPU | Model | Purpose |
 |---|---|---|---|---|---|
 | llm.local | 8002 | `llamacpp-sycl` | B60 card 1 | [Ornith 1.5 9B + MTP](models/production/ornith-1.5-9b.md) ⭐ | chat + pi.dev agent — **sole backend** |
-| llm.local | **8011** | `llamacpp-nemotron` *(on `sycl-f16-9d1878a43-patched-def76ec9a`)* | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
+| llm.local | **8011** | `llamacpp-nemotron` | **B60 card 2 (whole card)** | [**Nemotron 3.5 Lightning 30B-A3B + MTP**](models/tested/nemotron-3.5-lightning-30b-a3b.md) ⭐ | **agent testing — deliberately NOT in any LB pool** |
 | llm.local | 8004 | `llamacpp-embed` | B60 card 1 | [EmbeddingGemma-300M QAT Q8_0](models/production/embeddinggemma-300m.md) | brain embeddings |
 | llm.local | 8008 | `tei-rerank` | B60 card 1 | [bge-reranker-v2-m3 fp16](models/production/bge-reranker-v2-m3.md) | rerank |
 | llm.local | 8006 | `llamacpp-categorise-c1` | B60 card 1 | [Gemma 4 E2B QAT + Google MTP](models/production/gemma-4-e2b-categorise.md) | categorise |
@@ -39,11 +39,12 @@ Card 1 carries four co-resident services (~20.5 GiB); card 2 runs Nemotron alone
 
 ## Latest
 
+- **2026-11-05** — llama.cpp **`5851a8e50`** (b12111+5) is **on all six slots**. Upstream #31356 gives Gemma 4 E2B **2.0× prefill at 2K and 2.4× at 12K** (10,570 tok/s), ahead of LFM3-1.7B's record from #67. Ornith and Nemotron at parity, Gemma-26B +3% (#68). One card-2 CCS reset in the bench, not reproduced; production `:8011` is now the soak.
 - **2026-10-31** — llama.cpp **b12017**: Gemma 4 E2B **+36%**, 26B +16%, Ornith +5% / prefill +8%, Nemotron flat. The gain is upstream: the stock control gets it too (#64–#65). **Not promoted:** two card-2 CCS resets in the candidate bench that followed (#66). **LFM3-1.7B prefills 9,410 tok/s @ 12K**, about 1.9× the repo record (#67). Mellum 2.1 MTP, Flint and Spark-X2.6 don't displace an incumbent.
 - **2026-10-24** — #29864 XMX kernel: Ornith +30%, Nemotron flat (#58). NVIDIA Bolt E4B / 74B and Nemotron-3.5-Embed / Rerank benched — none displaces an incumbent; Embed-8B wins prose at ~16× the cost (#61). **The prod reranker lowers NDCG on EmbeddingGemma's top 50** (#62). A bench-script race cost a card-2 reboot (#59).
 - **2026-09-09** — MiniCPM5-2B + DSpark: 302.65 tok/s, repo decode record (#55–#57). Spark-X2.5-4B beats Ornith undrafted (#52–#54).
 
-Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#67).
+Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#68).
 
 ## Chat / instruct benchmarks
 
