@@ -2,7 +2,22 @@
 
 Journey through llama.cpp SYCL builds and the impact of each release on this stack. Referenced from the main README.
 
-**Deployed builds (2026-09-04, after cutover):** `llama.cpp:sycl-f16-b10809-patched-f937ca544` — master `85d5703a3` + the 8-commit local `ggml-sycl` series — on **Ornith `:8002`, Gemma 4 E2B categorise `:8006`, and Nemotron `:8011`**. `llamacpp-embed :8004` and `tei-rerank :8008` are unchanged (`llama.cpp:sycl-f16` = b10688-patched `880b848f4`, and `tei:xpu-ipex-nomemleak`); **llm2.local is a separate box and was not touched.**
+**Deployed build (2026-11-05):** `llama.cpp:sycl-f16-5851a8e50-patched-dc0403520` (reports `b12123-dc0403520`) on **all six slots**: llm.local `:8002` `:8004` `:8006` `:8011` and llm2.local `:8004` `:8009`. Rollback: `sycl-f16-9d1878a43-patched-def76ec9a` (`:8002`: `9ae73e68f-patched-3bd0de68e`).
+
+## b12111+5 (`5851a8e50`, 2026-11-05) — 99 upstream commits past b12017, gemma4 #31356 (PROMOTED)
+
+The base moved from `5047748f1` (b12017, never promoted) to `5851a8e50`. The 7-commit series rebased as `bmg-tilekv-5851a8e50` with **zero conflicts**. Against the b12017 candidate on card 2, Ornith and Gemma-26B ran 4 interleaved rounds, and E2B and Nemotron ran 2. [Write-up.](../models/tested/2026-11-05-5851a8e50-gemma4-graph-opt.md)
+
+| model | prefill 2K | prefill 12K | decode | MTP acceptance |
+|---|---|---|---|---|
+| Gemma 4 E2B + MTP | 4,559 → **9,285 (2.04×)** | 4,434 → **10,570 (2.38×)** | parity | parity (~99%) |
+| Gemma 4 26B-A4B + MTP | +3% | +4% | +3.3% | +6 points |
+| Ornith 1.5-9B + MTP | parity | parity | −0.6% | −1.5 points |
+| Nemotron 30B-A3B + MTP | parity | parity | parity | parity |
+
+The E2B gain is upstream [#31356](https://github.com/ggml-org/llama.cpp/pull/31356) (finding #68). One CCS reset hit card 2 during the bench; none followed in the re-run or the promotion. **Promoted 2026-11-05 to all six slots** in runbook order, with 0 kernel faults and every slot verified by a real request.
+
+**Previous deployed builds (2026-09-04, after cutover):** `llama.cpp:sycl-f16-b10809-patched-f937ca544` — master `85d5703a3` + the 8-commit local `ggml-sycl` series — on **Ornith `:8002`, Gemma 4 E2B categorise `:8006`, and Nemotron `:8011`**. `llamacpp-embed :8004` and `tei-rerank :8008` are unchanged (`llama.cpp:sycl-f16` = b10688-patched `880b848f4`, and `tei:xpu-ipex-nomemleak`); **llm2.local is a separate box and was not touched.**
 
 **Also on disk:** `sycl-f16-b10809-clean-85d5703a3` — the same base with **no local patches**, built as the control arm for the engine-reset question. Rollbacks: `sycl-f16-b10742-patched-a82c13531` (previous Nemotron), `llama.cpp:sycl-f16` (previous Ornith/embed), `sycl-f16-concurrency-a6553043f` (previous categorise), plus `sycl-f16-b10433-safe`, `-b10256-safe`, `-b10215-safe`. Every launcher carries a `.bak-preB10809-20260904` and an inline rollback line. [Rebase notes, A/B, control arm and cutover.](../models/tested/2026-09-04-b10809-rebase-ab.md)
 
