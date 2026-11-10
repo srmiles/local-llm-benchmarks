@@ -1,6 +1,6 @@
 # Ornith 1.5 9B — Production chat (both B60s)
 
-**Status:** Production chat + pi.dev agent on **both cards** in Traefik round-robin LB (`:8002` card 1, `:8010` card 2). Cutover 2026-08-21 from Ornith 1.0-9B.
+**Status:** Production chat + pi.dev agent, **sole backend on `:8002` (B60 card 1)** since the 2026-08-22 topology change (`:8010` on card 2 retired). Cutover 2026-08-21 from Ornith 1.0-9B. **Image since 2026-10-25: `llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e`** (b11856), which carries upstream #29864 — +30% decode in the [isolated A/B](../tested/2026-10-24-b11850-xmx-ab.md); promotion notes in [`docs/updates.md`](../../docs/updates.md). The sections below are from the original cutover and keep their historical build numbers.
 **HF (base):** [`ornith-ai/Ornith-1.5-9B-GGUF`](https://huggingface.co/ornith-ai/Ornith-1.5-9B-GGUF) · Q4_K_M 5.63 GB
 **HF (MTP drafter):** [`protoLabsAI/Ornith-1.5-9B-MTP-GGUF`](https://huggingface.co/protoLabsAI/Ornith-1.5-9B-MTP-GGUF) · Q8_0 2.43 GB (same publisher as 1.0's drafter — direct successor, purpose-trained against the full-precision base)
 **Base:** Qwen 3.5 9B fine-tune (arch `qwen3_5`) — recognized cleanly by llama.cpp SYCL b10433
