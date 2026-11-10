@@ -1,0 +1,50 @@
+{
+  "name": "lfm3-1.7b-q4km-r1",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T03:22:46Z",
+  "load_seconds": 5.0,
+  "prefill": {
+    "500": {
+      "n": 465,
+      "tps_mean": 4869.0,
+      "tps_median": 5719.2
+    },
+    "2000": {
+      "n": 1799,
+      "tps_mean": 6945.9,
+      "tps_median": 8675.5
+    },
+    "5000": {
+      "n": 4463,
+      "tps_mean": 8527.6,
+      "tps_median": 8964.9
+    },
+    "12000": {
+      "n": 10685,
+      "tps_mean": 9404.9,
+      "tps_median": 9409.8
+    }
+  },
+  "decode": {
+    "mean": 186.01,
+    "median": 186.2,
+    "min": 179.4,
+    "max": 189.81,
+    "stdev": 2.82,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 3147.3,
+  "peak_vram_gib": 3.07
+}

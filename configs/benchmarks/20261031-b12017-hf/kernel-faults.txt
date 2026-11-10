@@ -1,0 +1,13 @@
+Oct 31 01:09:30 llm kernel: xe 0000:0b:00.0: Using 46-bit DMA addresses
+Oct 31 02:37:05 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine reset: engine_class=ccs, logical_mask: 0x1, guc_id=10, state=0x3
+Oct 31 02:37:05 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=283, lrc_seqno=283, guc_id=10, flags=0x20 in llama-server [3183401]
+Oct 31 02:37:05 llm kernel: xe 0000:0b:00.0: [drm] Xe device coredump has been created
+Oct 31 02:37:05 llm kernel: xe 0000:0b:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+Oct 31 03:10:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine reset: engine_class=bcs, logical_mask: 0x1, guc_id=18, state=0x289
+Oct 31 03:10:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: 
+Oct 31 03:10:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Oct 31 03:28:34 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine reset: engine_class=ccs, logical_mask: 0x1, guc_id=10, state=0x3
+Oct 31 03:28:34 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Timedout job: seqno=38, lrc_seqno=38, guc_id=10, flags=0x20 in llama-server [3500008]
+Oct 31 03:31:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: 
+Oct 31 03:31:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Oct 31 03:31:07 llm kernel: xe 0000:0b:00.0: [drm] Tile0: GT0: Engine reset: engine_class=bcs, logical_mask: 0x1, guc_id=18, state=0x289

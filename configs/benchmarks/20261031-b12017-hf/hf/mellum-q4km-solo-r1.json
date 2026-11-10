@@ -1,0 +1,50 @@
+{
+  "name": "mellum-q4km-solo-r1",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T02:30:11Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 478,
+      "tps_mean": 1133.0,
+      "tps_median": 1224.0
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 2233.3,
+      "tps_median": 2349.9
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 2339.5,
+      "tps_median": 2379.2
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 2499.8,
+      "tps_median": 2497.8
+    }
+  },
+  "decode": {
+    "mean": 81.13,
+    "median": 81.1,
+    "min": 80.69,
+    "max": 81.53,
+    "stdev": 0.25,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 10582.7,
+  "peak_vram_gib": 10.33
+}

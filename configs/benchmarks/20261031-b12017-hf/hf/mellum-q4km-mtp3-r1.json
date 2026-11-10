@@ -1,0 +1,50 @@
+{
+  "name": "mellum-q4km-mtp3-r1",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-10-31T02:32:28Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 1021.3,
+      "tps_median": 1100.5
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 2035.3,
+      "tps_median": 2118.4
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 2100.2,
+      "tps_median": 2121.4
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 2218.4,
+      "tps_median": 2215.8
+    }
+  },
+  "decode": {
+    "mean": 66.59,
+    "median": 67.68,
+    "min": 36.08,
+    "max": 75.4,
+    "stdev": 9.19,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 2171.0,
+    "draft_tokens": 6496.0,
+    "accepted": 3801.0,
+    "acceptance_pct": 58.5,
+    "accepted_per_draft": 1.75
+  },
+  "peak_vram_mib": 11436.1,
+  "peak_vram_gib": 11.17
+}

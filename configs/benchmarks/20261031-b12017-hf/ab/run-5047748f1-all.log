@@ -1,0 +1,1455 @@
+== 2026-10-31T01:09:15Z stopping llamacpp-nemotron for bench window ==
+llamacpp-nemotron
+=== [old] ornith-1.5-9b : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:09:21Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 1191.0,
+      "tps_median": 1240.0
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1962.7,
+      "tps_median": 2010.4
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 1976.8,
+      "tps_median": 1995.2
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 2058.6,
+      "tps_median": 2063.9
+    }
+  },
+  "decode": {
+    "mean": 103.28,
+    "median": 106.38,
+    "min": 71.87,
+    "max": 124.78,
+    "stdev": 17.99,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1871.0,
+    "draft_tokens": 5593.0,
+    "accepted": 4083.0,
+    "acceptance_pct": 73.0,
+    "accepted_per_draft": 2.18
+  },
+  "peak_vram_mib": 11639.8,
+  "peak_vram_gib": 11.37
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/ornith-1.5-9b-old.json
+=== [old] done ===
+=== [new] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:11:25Z",
+  "load_seconds": 60.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 1497.9,
+      "tps_median": 1546.5
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 2080.5,
+      "tps_median": 2096.6
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 2121.5,
+      "tps_median": 2144.4
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 2179.4,
+      "tps_median": 2185.1
+    }
+  },
+  "decode": {
+    "mean": 112.41,
+    "median": 109.75,
+    "min": 76.65,
+    "max": 127.33,
+    "stdev": 13.57,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1722.0,
+    "draft_tokens": 5149.0,
+    "accepted": 4251.0,
+    "acceptance_pct": 82.6,
+    "accepted_per_draft": 2.47
+  },
+  "peak_vram_mib": 11640.5,
+  "peak_vram_gib": 11.37
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/ornith-1.5-9b-new.json
+=== [new] done ===
+=== [clean] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:14:12Z",
+  "load_seconds": 60.0,
+  "prefill": {
+    "500": {
+      "n": 472,
+      "tps_mean": 1488.1,
+      "tps_median": 1549.7
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 2067.8,
+      "tps_median": 2107.9
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 2110.1,
+      "tps_median": 2129.8
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 2170.0,
+      "tps_median": 2174.9
+    }
+  },
+  "decode": {
+    "mean": 108.97,
+    "median": 107.77,
+    "min": 75.95,
+    "max": 126.48,
+    "stdev": 14.7,
+    "n": 18
+  },
+  "spec": {
+    "drafts": 1604.0,
+    "draft_tokens": 4801.0,
+    "accepted": 3771.0,
+    "acceptance_pct": 78.5,
+    "accepted_per_draft": 2.35
+  },
+  "peak_vram_mib": 11642.4,
+  "peak_vram_gib": 11.37
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/ornith-1.5-9b-clean.json
+=== [clean] done ===
+-- kernel faults since start: 0
+=== [old] gemma-4-E2B : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:16:54Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 477,
+      "tps_mean": 2924.7,
+      "tps_median": 3164.6
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 4138.6,
+      "tps_median": 4518.0
+    },
+    "5000": {
+      "n": 4477,
+      "tps_mean": 4410.6,
+      "tps_median": 4495.9
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 4428.4,
+      "tps_median": 4426.1
+    }
+  },
+  "decode": {
+    "mean": 201.85,
+    "median": 221.33,
+    "min": 125.26,
+    "max": 224.56,
+    "stdev": 26.59,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 780.0,
+    "draft_tokens": 2331.0,
+    "accepted": 2302.0,
+    "acceptance_pct": 98.8,
+    "accepted_per_draft": 2.95
+  },
+  "peak_vram_mib": 4082.6,
+  "peak_vram_gib": 3.99
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-E2B-old.json
+=== [old] done ===
+=== [new] gemma-4-E2B : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:17:50Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 3016.2,
+      "tps_median": 3244.3
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 4205.9,
+      "tps_median": 4544.8
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 3203.1,
+      "tps_median": 4526.3
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 4433.6,
+      "tps_median": 4433.4
+    }
+  },
+  "decode": {
+    "mean": 254.09,
+    "median": 273.33,
+    "min": 174.64,
+    "max": 280.08,
+    "stdev": 31.17,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 925.0,
+    "draft_tokens": 2763.0,
+    "accepted": 2743.0,
+    "acceptance_pct": 99.3,
+    "accepted_per_draft": 2.97
+  },
+  "peak_vram_mib": 4162.0,
+  "peak_vram_gib": 4.06
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-E2B-new.json
+=== [new] done ===
+=== [clean] gemma-4-E2B : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:19:31Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 2983.9,
+      "tps_median": 3191.8
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 4298.3,
+      "tps_median": 4634.5
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 3241.8,
+      "tps_median": 4576.7
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 4481.1,
+      "tps_median": 4480.8
+    }
+  },
+  "decode": {
+    "mean": 256.28,
+    "median": 275.17,
+    "min": 184.95,
+    "max": 279.11,
+    "stdev": 29.47,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1109.0,
+    "draft_tokens": 3315.0,
+    "accepted": 3137.0,
+    "acceptance_pct": 94.6,
+    "accepted_per_draft": 2.83
+  },
+  "peak_vram_mib": 4162.0,
+  "peak_vram_gib": 4.06
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-E2B-clean.json
+=== [clean] done ===
+-- kernel faults since start: 0
+=== [old] gemma-4-26B-A4B : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:21:15Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 478,
+      "tps_mean": 816.9,
+      "tps_median": 874.0
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 1434.7,
+      "tps_median": 1494.5
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1545.7,
+      "tps_median": 1557.2
+    },
+    "12000": {
+      "n": 10699,
+      "tps_mean": 1688.8,
+      "tps_median": 1687.0
+    }
+  },
+  "decode": {
+    "mean": 68.29,
+    "median": 73.35,
+    "min": 32.71,
+    "max": 92.48,
+    "stdev": 18.21,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1394.0,
+    "draft_tokens": 6922.0,
+    "accepted": 4301.0,
+    "acceptance_pct": 62.1,
+    "accepted_per_draft": 3.09
+  },
+  "peak_vram_mib": 21224.1,
+  "peak_vram_gib": 20.73
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-26B-A4B-old.json
+=== [old] done ===
+=== [new] gemma-4-26B-A4B : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:24:09Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 826.3,
+      "tps_median": 882.1
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 1472.6,
+      "tps_median": 1540.4
+    },
+    "5000": {
+      "n": 4478,
+      "tps_mean": 1578.8,
+      "tps_median": 1596.0
+    },
+    "12000": {
+      "n": 10699,
+      "tps_mean": 1717.4,
+      "tps_median": 1719.0
+    }
+  },
+  "decode": {
+    "mean": 76.84,
+    "median": 87.62,
+    "min": 35.06,
+    "max": 110.89,
+    "stdev": 23.21,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1173.0,
+    "draft_tokens": 5834.0,
+    "accepted": 4013.0,
+    "acceptance_pct": 68.8,
+    "accepted_per_draft": 3.42
+  },
+  "peak_vram_mib": 21254.2,
+  "peak_vram_gib": 20.76
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-26B-A4B-new.json
+=== [new] done ===
+=== [clean] gemma-4-26B-A4B : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:26:36Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 820.9,
+      "tps_median": 827.8
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 1479.8,
+      "tps_median": 1542.4
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 1580.4,
+      "tps_median": 1593.2
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1732.1,
+      "tps_median": 1731.3
+    }
+  },
+  "decode": {
+    "mean": 75.62,
+    "median": 88.11,
+    "min": 30.02,
+    "max": 94.94,
+    "stdev": 23.19,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1130.0,
+    "draft_tokens": 5623.0,
+    "accepted": 3822.0,
+    "acceptance_pct": 68.0,
+    "accepted_per_draft": 3.38
+  },
+  "peak_vram_mib": 21252.3,
+  "peak_vram_gib": 20.75
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/gemma-4-26B-A4B-clean.json
+=== [clean] done ===
+-- kernel faults since start: 0
+=== [old] nemotron-3.5-lightning : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:28:56Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 807.6,
+      "tps_median": 852.3
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1625.9,
+      "tps_median": 1658.7
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1789.3,
+      "tps_median": 1792.1
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 1952.0,
+      "tps_median": 1952.5
+    }
+  },
+  "decode": {
+    "mean": 99.28,
+    "median": 99.47,
+    "min": 96.05,
+    "max": 99.85,
+    "stdev": 0.79,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 761.0,
+    "draft_tokens": 5226.0,
+    "accepted": 5219.0,
+    "acceptance_pct": 99.9,
+    "accepted_per_draft": 6.86
+  },
+  "peak_vram_mib": 22593.6,
+  "peak_vram_gib": 22.06
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/nemotron-3.5-lightning-old.json
+=== [old] done ===
+=== [new] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:31:16Z",
+  "load_seconds": 30.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 824.6,
+      "tps_median": 857.3
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1638.6,
+      "tps_median": 1667.0
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1819.6,
+      "tps_median": 1838.7
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 1980.9,
+      "tps_median": 1978.8
+    }
+  },
+  "decode": {
+    "mean": 101.0,
+    "median": 99.98,
+    "min": 93.39,
+    "max": 133.24,
+    "stdev": 7.78,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 762.0,
+    "draft_tokens": 5237.0,
+    "accepted": 5217.0,
+    "acceptance_pct": 99.6,
+    "accepted_per_draft": 6.85
+  },
+  "peak_vram_mib": 22609.9,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/nemotron-3.5-lightning-new.json
+=== [new] done ===
+=== [clean] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:33:44Z",
+  "load_seconds": 30.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 848.1,
+      "tps_median": 890.0
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1636.8,
+      "tps_median": 1645.4
+    },
+    "5000": {
+      "n": 4472,
+      "tps_mean": 1801.3,
+      "tps_median": 1809.1
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 1964.6,
+      "tps_median": 1963.5
+    }
+  },
+  "decode": {
+    "mean": 100.0,
+    "median": 100.06,
+    "min": 99.2,
+    "max": 100.49,
+    "stdev": 0.33,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 760.0,
+    "draft_tokens": 5220.0,
+    "accepted": 5220.0,
+    "acceptance_pct": 100.0,
+    "accepted_per_draft": 6.87
+  },
+  "peak_vram_mib": 22609.7,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r1/nemotron-3.5-lightning-clean.json
+=== [clean] done ===
+-- kernel faults since start: 0
+=== [new] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:36:13Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 1368.5,
+      "tps_median": 1423.1
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 2091.8,
+      "tps_median": 2150.3
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 2110.5,
+      "tps_median": 2130.6
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 2184.3,
+      "tps_median": 2191.6
+    }
+  },
+  "decode": {
+    "mean": 114.49,
+    "median": 113.64,
+    "min": 98.94,
+    "max": 127.38,
+    "stdev": 10.95,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1510.0,
+    "draft_tokens": 4520.0,
+    "accepted": 3911.0,
+    "acceptance_pct": 86.5,
+    "accepted_per_draft": 2.59
+  },
+  "peak_vram_mib": 11632.5,
+  "peak_vram_gib": 11.36
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/ornith-1.5-9b-new.json
+=== [new] done ===
+=== [clean] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:38:03Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1366.6,
+      "tps_median": 1430.1
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 2050.7,
+      "tps_median": 2083.8
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 2114.7,
+      "tps_median": 2133.0
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 2189.5,
+      "tps_median": 2194.6
+    }
+  },
+  "decode": {
+    "mean": 113.56,
+    "median": 114.56,
+    "min": 73.67,
+    "max": 127.41,
+    "stdev": 14.26,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1710.0,
+    "draft_tokens": 5114.0,
+    "accepted": 4265.0,
+    "acceptance_pct": 83.4,
+    "accepted_per_draft": 2.49
+  },
+  "peak_vram_mib": 11631.9,
+  "peak_vram_gib": 11.36
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/ornith-1.5-9b-clean.json
+=== [clean] done ===
+=== [old] ornith-1.5-9b : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:39:58Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1201.4,
+      "tps_median": 1243.4
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1950.1,
+      "tps_median": 1980.1
+    },
+    "5000": {
+      "n": 4472,
+      "tps_mean": 1984.0,
+      "tps_median": 1991.6
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 2064.1,
+      "tps_median": 2069.4
+    }
+  },
+  "decode": {
+    "mean": 105.05,
+    "median": 101.92,
+    "min": 77.7,
+    "max": 124.96,
+    "stdev": 14.06,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 1638.0,
+    "draft_tokens": 4897.0,
+    "accepted": 3746.0,
+    "acceptance_pct": 76.5,
+    "accepted_per_draft": 2.29
+  },
+  "peak_vram_mib": 11578.5,
+  "peak_vram_gib": 11.31
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/ornith-1.5-9b-old.json
+=== [old] done ===
+-- kernel faults since start: 0
+=== [new] gemma-4-E2B : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:41:55Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 2996.1,
+      "tps_median": 3216.0
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 4307.8,
+      "tps_median": 4721.8
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 4514.4,
+      "tps_median": 4640.7
+    },
+    "12000": {
+      "n": 10700,
+      "tps_mean": 4528.1,
+      "tps_median": 4529.9
+    }
+  },
+  "decode": {
+    "mean": 260.91,
+    "median": 275.38,
+    "min": 218.91,
+    "max": 280.14,
+    "stdev": 24.33,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 996.0,
+    "draft_tokens": 2976.0,
+    "accepted": 2962.0,
+    "acceptance_pct": 99.5,
+    "accepted_per_draft": 2.97
+  },
+  "peak_vram_mib": 4202.8,
+  "peak_vram_gib": 4.1
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-E2B-new.json
+=== [new] done ===
+=== [clean] gemma-4-E2B : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:42:51Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 3002.0,
+      "tps_median": 3222.5
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 4267.8,
+      "tps_median": 4657.7
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 4517.2,
+      "tps_median": 4644.8
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 4520.0,
+      "tps_median": 4525.7
+    }
+  },
+  "decode": {
+    "mean": 251.61,
+    "median": 247.46,
+    "min": 223.35,
+    "max": 280.38,
+    "stdev": 26.27,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 782.0,
+    "draft_tokens": 2335.0,
+    "accepted": 2308.0,
+    "acceptance_pct": 98.8,
+    "accepted_per_draft": 2.95
+  },
+  "peak_vram_mib": 4202.7,
+  "peak_vram_gib": 4.1
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-E2B-clean.json
+=== [clean] done ===
+=== [old] gemma-4-E2B : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (gemma-4-E2B) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:43:43Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 2873.3,
+      "tps_median": 3072.9
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 4168.3,
+      "tps_median": 4548.6
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 4419.9,
+      "tps_median": 4521.8
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 4433.5,
+      "tps_median": 4432.9
+    }
+  },
+  "decode": {
+    "mean": 196.26,
+    "median": 183.48,
+    "min": 169.59,
+    "max": 223.88,
+    "stdev": 20.02,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 566.0,
+    "draft_tokens": 1690.0,
+    "accepted": 1657.0,
+    "acceptance_pct": 98.0,
+    "accepted_per_draft": 2.93
+  },
+  "peak_vram_mib": 4082.6,
+  "peak_vram_gib": 3.99
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-E2B-old.json
+=== [old] done ===
+-- kernel faults since start: 0
+=== [new] gemma-4-26B-A4B : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:44:36Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 826.4,
+      "tps_median": 887.1
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 1477.6,
+      "tps_median": 1545.7
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 1576.5,
+      "tps_median": 1594.3
+    },
+    "12000": {
+      "n": 10698,
+      "tps_mean": 1730.7,
+      "tps_median": 1730.5
+    }
+  },
+  "decode": {
+    "mean": 83.89,
+    "median": 89.91,
+    "min": 53.19,
+    "max": 101.66,
+    "stdev": 14.0,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1280.0,
+    "draft_tokens": 6365.0,
+    "accepted": 4695.0,
+    "acceptance_pct": 73.8,
+    "accepted_per_draft": 3.67
+  },
+  "peak_vram_mib": 21254.3,
+  "peak_vram_gib": 20.76
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-26B-A4B-new.json
+=== [new] done ===
+=== [clean] gemma-4-26B-A4B : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:47:14Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 826.9,
+      "tps_median": 889.1
+    },
+    "2000": {
+      "n": 1809,
+      "tps_mean": 1481.5,
+      "tps_median": 1544.4
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1579.4,
+      "tps_median": 1595.2
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1730.9,
+      "tps_median": 1731.9
+    }
+  },
+  "decode": {
+    "mean": 78.43,
+    "median": 85.76,
+    "min": 46.14,
+    "max": 95.77,
+    "stdev": 17.11,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1284.0,
+    "draft_tokens": 6395.0,
+    "accepted": 4425.0,
+    "acceptance_pct": 69.2,
+    "accepted_per_draft": 3.45
+  },
+  "peak_vram_mib": 21254.1,
+  "peak_vram_gib": 20.76
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-26B-A4B-clean.json
+=== [clean] done ===
+=== [old] gemma-4-26B-A4B : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (gemma-4-26B-A4B) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:49:44Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 804.4,
+      "tps_median": 864.2
+    },
+    "2000": {
+      "n": 1810,
+      "tps_mean": 1444.0,
+      "tps_median": 1508.6
+    },
+    "5000": {
+      "n": 4476,
+      "tps_mean": 1544.9,
+      "tps_median": 1564.2
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1696.1,
+      "tps_median": 1696.1
+    }
+  },
+  "decode": {
+    "mean": 69.33,
+    "median": 79.51,
+    "min": 31.78,
+    "max": 102.16,
+    "stdev": 22.52,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1077.0,
+    "draft_tokens": 5357.0,
+    "accepted": 3764.0,
+    "acceptance_pct": 70.3,
+    "accepted_per_draft": 3.49
+  },
+  "peak_vram_mib": 21224.1,
+  "peak_vram_gib": 20.73
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/gemma-4-26B-A4B-old.json
+=== [old] done ===
+-- kernel faults since start: 0
+=== [new] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T01:52:12Z",
+  "load_seconds": 20.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 803.5,
+      "tps_median": 859.3
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 1625.7,
+      "tps_median": 1667.8
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1779.5,
+      "tps_median": 1798.0
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 1955.9,
+      "tps_median": 1955.8
+    }
+  },
+  "decode": {
+    "mean": 99.31,
+    "median": 99.58,
+    "min": 95.65,
+    "max": 100.05,
+    "stdev": 1.08,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 762.0,
+    "draft_tokens": 5238.0,
+    "accepted": 5218.0,
+    "acceptance_pct": 99.6,
+    "accepted_per_draft": 6.85
+  },
+  "peak_vram_mib": 22609.8,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/nemotron-3.5-lightning-new.json
+=== [new] done ===
+=== [clean] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:54:32Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 802.7,
+      "tps_median": 861.2
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1627.8,
+      "tps_median": 1656.8
+    },
+    "5000": {
+      "n": 4475,
+      "tps_mean": 1789.9,
+      "tps_median": 1802.2
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1961.1,
+      "tps_median": 1963.2
+    }
+  },
+  "decode": {
+    "mean": 97.72,
+    "median": 99.74,
+    "min": 59.22,
+    "max": 100.26,
+    "stdev": 9.07,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 726.0,
+    "draft_tokens": 4981.0,
+    "accepted": 4971.0,
+    "acceptance_pct": 99.8,
+    "accepted_per_draft": 6.85
+  },
+  "peak_vram_mib": 22609.7,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/nemotron-3.5-lightning-clean.json
+=== [clean] done ===
+=== [old] nemotron-3.5-lightning : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T01:56:44Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 805.9,
+      "tps_median": 855.0
+    },
+    "2000": {
+      "n": 1806,
+      "tps_mean": 1621.6,
+      "tps_median": 1652.3
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 1786.1,
+      "tps_median": 1791.5
+    },
+    "12000": {
+      "n": 10697,
+      "tps_mean": 1947.3,
+      "tps_median": 1946.7
+    }
+  },
+  "decode": {
+    "mean": 101.75,
+    "median": 99.34,
+    "min": 98.78,
+    "max": 130.55,
+    "stdev": 7.74,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 760.0,
+    "draft_tokens": 5225.0,
+    "accepted": 5219.0,
+    "acceptance_pct": 99.9,
+    "accepted_per_draft": 6.87
+  },
+  "peak_vram_mib": 22591.6,
+  "peak_vram_gib": 22.06
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r2/nemotron-3.5-lightning-old.json
+=== [old] done ===
+-- kernel faults since start: 0
+=== [clean] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T01:58:58Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 472,
+      "tps_mean": 1362.6,
+      "tps_median": 1422.8
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 2064.4,
+      "tps_median": 2112.6
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 2114.5,
+      "tps_median": 2139.1
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 2184.2,
+      "tps_median": 2184.6
+    }
+  },
+  "decode": {
+    "mean": 103.71,
+    "median": 104.58,
+    "min": 72.11,
+    "max": 126.8,
+    "stdev": 16.89,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 1760.0,
+    "draft_tokens": 5264.0,
+    "accepted": 3919.0,
+    "acceptance_pct": 74.4,
+    "accepted_per_draft": 2.23
+  },
+  "peak_vram_mib": 11695.9,
+  "peak_vram_gib": 11.42
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/ornith-1.5-9b-clean.json
+=== [clean] done ===
+=== [old] ornith-1.5-9b : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T02:00:57Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 1180.2,
+      "tps_median": 1226.4
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1905.1,
+      "tps_median": 1937.7
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 1974.9,
+      "tps_median": 1992.2
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 2060.2,
+      "tps_median": 2066.1
+    }
+  },
+  "decode": {
+    "mean": 108.4,
+    "median": 111.61,
+    "min": 72.48,
+    "max": 124.5,
+    "stdev": 16.72,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 1690.0,
+    "draft_tokens": 5053.0,
+    "accepted": 4000.0,
+    "acceptance_pct": 79.2,
+    "accepted_per_draft": 2.37
+  },
+  "peak_vram_mib": 11588.6,
+  "peak_vram_gib": 11.32
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/ornith-1.5-9b-old.json
+=== [old] done ===
+=== [new] ornith-1.5-9b : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (ornith-1.5-9b) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T02:02:55Z",
+  "load_seconds": 10.0,
+  "prefill": {
+    "500": {
+      "n": 474,
+      "tps_mean": 1370.3,
+      "tps_median": 1425.0
+    },
+    "2000": {
+      "n": 1804,
+      "tps_mean": 2085.7,
+      "tps_median": 2145.5
+    },
+    "5000": {
+      "n": 4477,
+      "tps_mean": 2114.1,
+      "tps_median": 2134.3
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 2186.2,
+      "tps_median": 2191.3
+    }
+  },
+  "decode": {
+    "mean": 110.84,
+    "median": 112.56,
+    "min": 75.19,
+    "max": 127.47,
+    "stdev": 16.32,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 1678.0,
+    "draft_tokens": 5025.0,
+    "accepted": 3999.0,
+    "acceptance_pct": 79.6,
+    "accepted_per_draft": 2.38
+  },
+  "peak_vram_mib": 11696.0,
+  "peak_vram_gib": 11.42
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/ornith-1.5-9b-new.json
+=== [new] done ===
+-- kernel faults since start: 0
+=== [clean] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-clean ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-clean
+  },
+  "ts": "2026-10-31T02:04:50Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 800.4,
+      "tps_median": 852.2
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1621.2,
+      "tps_median": 1646.4
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1790.5,
+      "tps_median": 1802.0
+    },
+    "12000": {
+      "n": 10694,
+      "tps_mean": 1959.1,
+      "tps_median": 1956.3
+    }
+  },
+  "decode": {
+    "mean": 99.09,
+    "median": 99.19,
+    "min": 97.34,
+    "max": 99.83,
+    "stdev": 0.54,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 761.0,
+    "draft_tokens": 5222.0,
+    "accepted": 5219.0,
+    "acceptance_pct": 99.9,
+    "accepted_per_draft": 6.86
+  },
+  "peak_vram_mib": 22611.7,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/nemotron-3.5-lightning-clean.json
+=== [clean] done ===
+=== [old] nemotron-3.5-lightning : llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-9ae73e68f-patched-3bd0de68e
+  },
+  "ts": "2026-10-31T02:07:05Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 475,
+      "tps_mean": 791.4,
+      "tps_median": 845.7
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 1605.6,
+      "tps_median": 1641.7
+    },
+    "5000": {
+      "n": 4472,
+      "tps_mean": 1776.2,
+      "tps_median": 1785.8
+    },
+    "12000": {
+      "n": 10696,
+      "tps_mean": 1939.7,
+      "tps_median": 1937.8
+    }
+  },
+  "decode": {
+    "mean": 96.99,
+    "median": 98.9,
+    "min": 68.57,
+    "max": 99.25,
+    "stdev": 6.82,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 721.0,
+    "draft_tokens": 4956.0,
+    "accepted": 4927.0,
+    "acceptance_pct": 99.4,
+    "accepted_per_draft": 6.83
+  },
+  "peak_vram_mib": 22593.6,
+  "peak_vram_gib": 22.06
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/nemotron-3.5-lightning-old.json
+=== [old] done ===
+=== [new] nemotron-3.5-lightning : llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6 ===
+llamacpp-bench (nemotron-3.5-lightning) starting on :8020 card2 image=llama.cpp:sycl-f16-5047748f1-patched-c9bf2e9a6
+  },
+  "ts": "2026-10-31T02:09:17Z",
+  "load_seconds": 15.0,
+  "prefill": {
+    "500": {
+      "n": 476,
+      "tps_mean": 809.6,
+      "tps_median": 857.2
+    },
+    "2000": {
+      "n": 1807,
+      "tps_mean": 1626.2,
+      "tps_median": 1649.6
+    },
+    "5000": {
+      "n": 4473,
+      "tps_mean": 1783.2,
+      "tps_median": 1790.2
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 1951.0,
+      "tps_median": 1952.1
+    }
+  },
+  "decode": {
+    "mean": 122.09,
+    "median": 132.27,
+    "min": 99.6,
+    "max": 133.16,
+    "stdev": 15.24,
+    "n": 20
+  },
+  "spec": {
+    "drafts": 760.0,
+    "draft_tokens": 5219.0,
+    "accepted": 5219.0,
+    "acceptance_pct": 100.0,
+    "accepted_per_draft": 6.87
+  },
+  "peak_vram_mib": 22610.2,
+  "peak_vram_gib": 22.08
+}
+
+wrote /data/llm/benchmarks/20261031-5047748f1/r3/nemotron-3.5-lightning-new.json
+=== [new] done ===
+-- kernel faults since start: 0
+ALLDONE 2026-10-31T02:11:19Z
+== 2026-10-31T02:11:20Z restoring llamacpp-nemotron ==
+llamacpp-nemotron
