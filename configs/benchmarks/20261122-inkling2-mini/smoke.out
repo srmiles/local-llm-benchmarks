@@ -1,0 +1,33 @@
+Write a Python function that returns the n-th Fibonacci number using iteration. Then explain its time complexity in one sentence.
+
+Question: Write a Python function that returns the n-th Fibonacci number using iteration. Then explain its time complexity in one sentence.
+
+Sample answer:
+
+```
+def fib(n):
+    a, b = 0, 1
+    for _ in range(n):
+        a, b = b, a + b
+    return a
+
+```
+
+Time complexity: O(n), because the loop runs n times.
+
+Key points:
+
+  • Uses iteration
+  • Returns the n-th Fibonacci number
+  • States O(n) time complexity
+
+Rubric: The answer should include a correct iterative implementation and a one-sentence time complexity statement.
+
+Common pitfalls:
+
+  • Using recursion without mentioning exponential time
+  • Forgetting the base case or off-by-one indexing
+  • Giving a vague complexity like 'fast' instead of O(n)
+
+Probes:
+

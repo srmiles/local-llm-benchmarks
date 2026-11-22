@@ -39,12 +39,13 @@ Card 1 carries four co-resident services (~20.5 GiB); card 2 runs Nemotron alone
 
 ## Latest
 
+- **2026-11-22** — **Inkling 2 Mini** (26.4B / 5.4B active, looped layers, NVFP4 experts) loads on one B60 with correct output, but banded flash attention and the router `SCALE` fall back to the CPU every layer pass: **14.4 tok/s decode, pp512 93.6, pp4096 crashes** (#69). Not viable until ggml-sycl gets those kernels.
 - **2026-11-05** — llama.cpp **`5851a8e50`** (b12111+5) is **on all six slots**. Upstream #31356 gives Gemma 4 E2B **2.0× prefill at 2K and 2.4× at 12K** (10,570 tok/s), ahead of LFM3-1.7B's record from #67. Ornith and Nemotron at parity, Gemma-26B +3% (#68). One card-2 CCS reset in the bench, not reproduced; production `:8011` is now the soak.
 - **2026-10-31** — llama.cpp **b12017**: Gemma 4 E2B **+36%**, 26B +16%, Ornith +5% / prefill +8%, Nemotron flat. The gain is upstream: the stock control gets it too (#64–#65). **Not promoted:** two card-2 CCS resets in the candidate bench that followed (#66). **LFM3-1.7B prefills 9,410 tok/s @ 12K**, about 1.9× the repo record (#67). Mellum 2.1 MTP, Flint and Spark-X2.6 don't displace an incumbent.
 - **2026-10-24** — #29864 XMX kernel: Ornith +30%, Nemotron flat (#58). NVIDIA Bolt E4B / 74B and Nemotron-3.5-Embed / Rerank benched — none displaces an incumbent; Embed-8B wins prose at ~16× the cost (#61). **The prod reranker lowers NDCG on EmbeddingGemma's top 50** (#62). A bench-script race cost a card-2 reboot (#59).
 - **2026-09-09** — MiniCPM5-2B + DSpark: 302.65 tok/s, repo decode record (#55–#57). Spark-X2.5-4B beats Ornith undrafted (#52–#54).
 
-Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#68).
+Full dated log: **[`docs/updates.md`](docs/updates.md)** · numbered findings: **[`docs/findings.md`](docs/findings.md)** (#1–#69).
 
 ## Chat / instruct benchmarks
 
@@ -108,6 +109,7 @@ Decode = steady-state single-stream tok/s. Prefill measured at the context noted
 | [**LFM2.5-8B-A1B + DSpark**](models/tested/lfm2.5-8b-a1b-dspark.md) (b10566) | Q4_K_M + DSpark Q8_0 | 8B / 1B | **168.25** | 3,156 @ 5K / **3,665 @ 12K** | 8.63 GiB | Fastest categorise candidate — vs Gemma 4 E2B's 138.8 and 3,681 @ *2K*. DSpark drafts **wide**: 5.51 accepted/draft at n-max 7 vs MTP's ~3 (finding #29). Blocked on the 3.4 GiB categorise budget, not on merit |
 | [Nemotron 3.5 Bolt E4B + DFlash](models/tested/nemotron-3.5-bolt.md) (b11850) | Q4_K_M + DFlash BF16, n-max 7 | ~4B (`gemma4`) + 360M drafter | 98.0 / 111.8 median (bimodal, 69–269) · 66.3 solo | 2,630 @ 12K · **3,399 solo** | 9.5 GiB · 4.68 solo | 32–44% DFlash acceptance at `--reasoning off`; no case vs Gemma 4 E2B on speed |
 | [Nemotron 3.5 Bolt 74B-A9B-24GB](models/tested/nemotron-3.5-bolt.md) (b11850) | native 2-bit: IQ2_XXS experts + NVFP4 SSM | 74B / 9B (`nemotron_h_moe`) | 15.8 (σ 0.03) | 494 @ 12K | 21.7 GiB | fits one B60; slow, cause not established. DFlash drafter **crashes** on an ggml-sycl `supports_op` gap (finding #60) |
+| [Inkling 2 Mini](models/tested/2026-11-22-inkling-2-mini.md) (Unsloth fork b12588) | UD-Q4_K_XL (NVFP4 experts) | 26.4B / 5.4B (`inkling2`, layers 6–17 × 3) | 14.4 (`llama-bench` tg128) | 93.6 @ 512 · 55.6 @ 2K · **crash @ 4K** | 16.3 GiB weights | **not viable on SYCL:** banded FA + router SCALE on CPU, 290 splits (finding #69). Output correct |
 | [Ling-3.0-tiny](models/tested/ling-3.0-tiny.md) (b10566) | Q4_K_M | 7.9B / 0.8B (`bailingmoe3`) | 91.86 | 1,811 @ 5K / **1,218 @ 12K** | 5.72 GiB | **Rejected** — prefill *decreases* with context (2,293 @ 2K → 1,218 @ 12K), backwards vs every other model, and categorise is prefill-heavy. No drafter available. Needed the b10566 build to load at all |
 | [**Muse Glimmer-30B + DFlash**](models/tested/muse-glimmer-30b.md) | K-Quant-17GB (Meta official) | 29.6B dense + 1.8B ViT-G/14 | 25.3 (100% DFlash acc) | 682 @ 5K | 21.9 GiB | Meta 2026-08 drop; multimodal; DFlash drafter; **bandwidth-bound at ~24 tps ceiling on B60**; only vision-capable option in tested lineup |
 | [Laguna XS-2.1](models/tested/2026-08-06-new-candidates-sweep.md#laguna-xs2-poolside-33b-a3b-moe) | Q4_K_M | 33B / 3B | 29.5 | 1,213 @ 5K | 22.1 GiB | MoE + SWA; DFlash drafter needs Poolside fork; deferred |

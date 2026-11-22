@@ -1,0 +1,10 @@
+--- /data/llm/build/unsloth-b12588/llama.cpp-b12588-mix-c0c3de8/.devops/intel.Dockerfile	2026-11-20 22:56:33.000000000 +0000
++++ /data/llm/build/unsloth-b12588/llama.cpp-b12588-mix-c0c3de8/.devops/intel-bench.Dockerfile	2026-11-22 00:33:55.230476930 +0000
+@@ -20,6 +20,7 @@
+ # the app compiles Llama UI from its source next to it
+ COPY ui/lib/ui/package.json /app/ui/lib/ui/package.json
+ COPY ui/lib/ui/src/lib/ /app/ui/lib/ui/src/lib/
++COPY ui/lib/voice/ /app/ui/lib/voice/
+ RUN LLAMA_BUILD_NUMBER="$APP_VERSION" npm run build
+ 
+ FROM docker.io/intel/deep-learning-essentials:$ONEAPI_VERSION AS build

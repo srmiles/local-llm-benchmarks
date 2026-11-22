@@ -390,3 +390,11 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     - Decode: 186 tok/s (σ 2.8), which is 32% below E2B + MTP.
 
     For categorise, outputs are a few tokens and inputs can be long, so this may be the better trade, but that depends on the prefill:decode ratio, which is still not measured. **Quality is untested.** [Candidates page.](../models/tested/2026-10-31-hf-candidates.md)
+
+69. **Inkling 2 Mini (`inkling2`, looped layers) runs on SYCL with 290 graph splits: two ops per layer pass fall back to the CPU. Result: decode 14.4 tok/s and pp512 93.6 tok/s, against 74.3 / 1,073 for Nemotron 3.5 Lightning on the same binary.**
+    - Unsloth fork `b12588-mix-c0c3de8`, UD-Q4_K_XL, card 2. `GGML_SCHED_DEBUG=2` gives 12,658 nodes and 290 splits per graph.
+    - CPU splits by first op: `FLASH_ATTN` (inputs include `kq_mask_rel_pos`: the banded / relative-position attention with per-token sinks) and `SCALE` on `ffn_moe_gate` (the softcapped router), twice per FA. The loop (layers 6–17 × 3) adds passes. Summary: [`sched-splits-summary.txt`](../configs/benchmarks/20261122-inkling2-mini/sched-splits-summary.txt).
+    - All weights are on SYCL0 and NVFP4 output is correct, so the gap is missing kernels, not memory.
+    - pp4096 crashes in `GET_ROWS`: the SYCL kernel is built with `-fsycl-id-queries-range=int` and the range overflows int.
+    - **Rule:** for a new architecture, run one short `GGML_SCHED_DEBUG=2` load and read the split count *before* a full bench. Splits ≫ layer count mean CPU fallback; stop there. [Write-up.](../models/tested/2026-11-22-inkling-2-mini.md)
+
