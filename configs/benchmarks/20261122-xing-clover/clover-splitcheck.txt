@@ -1,0 +1,2 @@
+0.00.887.700 I print_info: n_layer               = 40
+0.16.660.911 I sched_reserve: graph: nodes = 3939, splits = 2, input objects = 4, input tensors = 10

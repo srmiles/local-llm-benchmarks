@@ -1,0 +1,15 @@
+== 2026-11-22T02:02:47Z STOPPED nemotron
+card2 empty (dev 1, 46 MiB)
+== 2026-11-22T02:02:47Z split check
+0.00.887.700 I print_info: n_layer               = 40
+0.16.660.911 I sched_reserve: graph: nodes = 3939, splits = 2, input objects = 4, input tensors = 10
+== 2026-11-22T02:03:08Z splits=2
+card2 empty (dev 1, 46 MiB)
+llamacpp-bench (clover-35b-a3b-solo) starting on :8020 card2 image=llama.cpp:sycl-f16-unsloth-b12588-c0c3de8
+== 2026-11-22T02:03:29Z healthy ctx=131072
+== 2026-11-22T02:06:27Z harness rc=0
+== 2026-11-22T02:06:31Z llama-bench
+== 2026-11-22T02:07:00Z llama-bench rc=0
+== 2026-11-22T02:07:00Z DONE
+== 2026-11-22T02:07:00Z teardown + restore nemotron
+== 2026-11-22T02:07:25Z nemotron health 200

@@ -15,6 +15,12 @@ Snapshot of the build notes as they stood in the README on 2026-10-24. Per-relea
 ## Updates
 
 
+- **2026-11-22** — **Xing4.0-29B-A4B and Clover-35B-A3B-Preview benched on card 2. Neither displaces Nemotron. One CCS reset during Xing.**
+  - **[Bench](../models/tested/2026-11-22-xing4.0-clover.md):** the same unpatched Unsloth b12588 binary as the Inkling run, bartowski Q4_0.
+  - **Clover:** 2 splits, decode 70.3 undrafted, tg128 73.0 vs Nemotron 74.3, pp4096 1,404 vs 1,883, 21.2 GiB at 128K. No MTP head (#71).
+  - **Xing:** decode about 24, prefill 138 @12K. A CCS reset at 01:47:55 UTC stopped the window, and the MTP and `llama-bench` arms were not run (#70).
+  - The Clover window ran with a split check and a ccs / stall watcher, and finished cleanly.
+
 - **2026-11-22** — **Inkling 2 Mini (Thinking Machines, 26.4B / 5.4B active, looped layers) is not viable on SYCL yet: 14.4 tok/s decode, pp4096 crashes.**
   - **[Bench](../models/tested/2026-11-22-inkling-2-mini.md):** Unsloth fork `b12588-mix-c0c3de8` built from source for SYCL (no SYCL prebuilt; the fork's Dockerfile needed `ui/lib/voice`). Card 2, `:8011` stopped about 12 min.
   - Banded flash attention and the router `SCALE` run on the CPU in every layer pass, 290 splits per graph (#69). Nemotron control on the same binary: 74.3 tok/s decode, 1,073 pp512.
