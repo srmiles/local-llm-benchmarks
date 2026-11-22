@@ -1,0 +1,11 @@
+# GGML_SCHED_DEBUG=2 summary of diag2.err (Inkling 2 Mini UD-Q4_K_XL, 5-token prompt, -c 4096, -fa on)
+graph: nodes = 12658, splits = 290, input objects = 4, input tensors = 12
+CPU splits in log (all graphs incl. reserve): 2030
+First op of each CPU split:
+   1344 SCALE
+    672 FLASH_ATTN
+     14 GET_ROWS
+
+Example (layer 0):
+## SPLIT #2: CPU # 5 inputs0.00.421.691 D : 0.00.421.691 D [Qcur-0 (view) (permuted) (  12K)] 0.00.421.692 D [cache_k_l0 (view) (permuted) (   3M)] 0.00.421.692 D [cache_v_l0 (view) (permuted) (   3M)] 0.00.421.693 D [kq_mask_rel_pos-0 (  72K)] 0.00.421.693 D [node_95 (   0K)] 0.00.421.693 D 
+## SPLIT #4: CPU # 1 inputs0.00.421.755 D : 0.00.421.755 D [ffn_moe_gate-0 (  67K)] 0.00.421.755 D 

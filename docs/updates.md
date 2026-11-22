@@ -15,6 +15,12 @@ Snapshot of the build notes as they stood in the README on 2026-10-24. Per-relea
 ## Updates
 
 
+- **2026-11-22** — **Inkling 2 Mini (Thinking Machines, 26.4B / 5.4B active, looped layers) is not viable on SYCL yet: 14.4 tok/s decode, pp4096 crashes.**
+  - **[Bench](../models/tested/2026-11-22-inkling-2-mini.md):** Unsloth fork `b12588-mix-c0c3de8` built from source for SYCL (no SYCL prebuilt; the fork's Dockerfile needed `ui/lib/voice`). Card 2, `:8011` stopped about 12 min.
+  - Banded flash attention and the router `SCALE` run on the CPU in every layer pass, 290 splits per graph (#69). Nemotron control on the same binary: 74.3 tok/s decode, 1,073 pp512.
+  - The docs page's PR #32187 is stale. Root GGUFs need the Unsloth fork; mainline ≥ `690b87d88` reads the `Mainline_Support` files.
+  - Host: Docker build cache cleared on llm.local, root disk 94 % → 75 %.
+
 - **2026-11-05** — **llama.cpp `5851a8e50` (b12111+5) is on all six slots. Gemma 4 E2B prefill is 2.0–2.4× from upstream #31356.**
   - **[Build](../models/tested/2026-11-05-5851a8e50-gemma4-graph-opt.md):** the 7-commit series rebased onto master `5851a8e50` with zero conflicts, 99 commits past b12017. The image reports `b12123-dc0403520`.
   - **A/B against the b12017 candidate:** E2B prefill 4,559 → 9,285 at 2K and 4,434 → 10,570 at 12K. Gemma-26B (the control) +3%. Ornith at parity over 4 rounds, Nemotron at parity (finding #68).
