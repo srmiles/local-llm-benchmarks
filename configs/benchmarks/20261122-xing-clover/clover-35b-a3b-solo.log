@@ -1,0 +1,100 @@
+=== clover-35b-a3b-solo healthy after 0s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=475 ms=1005.8 tps=472
+  size~500 s2: n=472 ms=638.0 tps=740
+  size~500 s3: n=471 ms=638.2 tps=738
+  MEAN ~500: 650 tok/s
+
+  size~2000 s1: n=1807 ms=1394.5 tps=1296
+  size~2000 s2: n=1808 ms=1328.9 tps=1360
+  size~2000 s3: n=1808 ms=1293.7 tps=1398
+  MEAN ~2000: 1351 tok/s
+
+  size~5000 s1: n=4475 ms=3198.2 tps=1399
+  size~5000 s2: n=4473 ms=3064.1 tps=1460
+  size~5000 s3: n=4473 ms=3121.5 tps=1433
+  MEAN ~5000: 1431 tok/s
+
+  size~12000 s1: n=10696 ms=6736.6 tps=1588
+  size~12000 s2: n=10695 ms=6731.9 tps=1589
+  size~12000 s3: n=10695 ms=6786.4 tps=1576
+  MEAN ~12000: 1584 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 69.80 tok/s  (predicted_n=300)
+  run 2: 70.01 tok/s  (predicted_n=300)
+  run 3: 69.10 tok/s  (predicted_n=300)
+  run 4: 69.98 tok/s  (predicted_n=300)
+  run 5: 70.16 tok/s  (predicted_n=300)
+  run 6: 69.91 tok/s  (predicted_n=300)
+  run 7: 70.12 tok/s  (predicted_n=300)
+  run 8: 70.55 tok/s  (predicted_n=300)
+  run9: DROPPED (server reported 0 tok/s)
+  run 9: 0.00 tok/s  (predicted_n=1)
+  run10: 70.27 tok/s  (predicted_n=300)
+  run11: 70.66 tok/s  (predicted_n=62)
+  run12: 70.45 tok/s  (predicted_n=300)
+  run13: 70.54 tok/s  (predicted_n=300)
+  run14: 70.35 tok/s  (predicted_n=300)
+  run15: 70.62 tok/s  (predicted_n=300)
+  run16: 70.20 tok/s  (predicted_n=300)
+  run17: 70.66 tok/s  (predicted_n=300)
+  run18: 70.10 tok/s  (predicted_n=300)
+  run19: 70.65 tok/s  (predicted_n=300)
+  run20: 70.25 tok/s  (predicted_n=300)
+
+=== summary ===
+{
+  "name": "clover-35b-a3b-solo",
+  "port": 8020,
+  "sampling": {
+    "temp": 0.6,
+    "top_p": 0.95,
+    "top_k": 20
+  },
+  "ts": "2026-11-22T02:03:29Z",
+  "load_seconds": 0.0,
+  "prefill": {
+    "500": {
+      "n": 473,
+      "tps_mean": 650.0,
+      "tps_median": 738.0
+    },
+    "2000": {
+      "n": 1808,
+      "tps_mean": 1351.3,
+      "tps_median": 1360.5
+    },
+    "5000": {
+      "n": 4474,
+      "tps_mean": 1430.7,
+      "tps_median": 1433.0
+    },
+    "12000": {
+      "n": 10695,
+      "tps_mean": 1584.1,
+      "tps_median": 1587.7
+    }
+  },
+  "decode": {
+    "mean": 70.23,
+    "median": 70.25,
+    "min": 69.1,
+    "max": 70.66,
+    "stdev": 0.39,
+    "n": 19
+  },
+  "spec": {
+    "drafts": 0.0,
+    "draft_tokens": 0.0,
+    "accepted": 0.0,
+    "acceptance_pct": null,
+    "accepted_per_draft": null
+  },
+  "peak_vram_mib": 21741.5,
+  "peak_vram_gib": 21.23
+}
+
+wrote /data/llm/benchmarks/xing-clover-20261122/clover-35b-a3b-solo.json

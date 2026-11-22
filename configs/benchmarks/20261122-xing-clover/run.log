@@ -1,0 +1,12 @@
+== 2026-11-22T01:21:01Z waiting for downloads
+-rw-rw-r-- 1 srmiles srmiles 19942611872 Nov 22 01:38 /data/llm/clover-35b-a3b-GGUF/Diffuspace_Clover-35B-A3B-Preview-Q4_0.gguf
+-rw-rw-r-- 1 srmiles srmiles 17985076160 Nov 22 01:36 /data/llm/xing4.0-29b-a4b-GGUF/XingChen-AGI_Xing4.0-29B-A4B-Q4_0.gguf
+== 2026-11-22T01:38:22Z card2 xpu-smi dev=1
+== 2026-11-22T01:38:23Z STOPPED nemotron
+card2 empty (dev 1, 46 MiB)
+== 2026-11-22T01:38:23Z slot xing4.0-29b-a4b-solo ctx=131072
+llamacpp-bench (xing4.0-29b-a4b-solo) starting on :8020 card2 image=llama.cpp:sycl-f16-unsloth-b12588-c0c3de8
+== 2026-11-22T01:38:53Z xing4.0-29b-a4b-solo health=healthy
+== 2026-11-22T01:38:53Z xing4.0-29b-a4b-solo splits=?
+== 2026-11-22T02:00:12Z ABORTED window: CCS reset 01:47:55Z during xing solo decode run20
+== 2026-11-22T02:00:44Z nemotron restored

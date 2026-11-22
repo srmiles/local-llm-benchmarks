@@ -398,3 +398,17 @@ Numbered findings accumulated over the stack's build-out. Referenced from the ma
     - pp4096 crashes in `GET_ROWS`: the SYCL kernel is built with `-fsycl-id-queries-range=int` and the range overflows int.
     - **Rule:** for a new architecture, run one short `GGML_SCHED_DEBUG=2` load and read the split count *before* a full bench. Splits ≫ layer count mean CPU fallback; stop there. [Write-up.](../models/tested/2026-11-22-inkling-2-mini.md)
 
+70. **Xing4.0-29B-A4B (`xing4_0`, MLA MoE) is CPU-bound-looking on SYCL, and card 2 had a CCS engine reset during its decode runs.**
+    - Unpatched Unsloth fork b12588, Q4_0, 128K ctx. Decode about 24 tok/s. Prefill 456 → 266 → 138 tok/s at 2K → 5K → 12K. The fall-off with length matches CPU attention (compare #69), but **the split count was not measured**.
+    - **01:47:55 UTC:** `engine_class=ccs` → `Timedout job … in llama-server` during the 20th decode run. This is the #66 silent wedge: `/health` 200, `requests_processing 1`, `n_decode_total` frozen, card at about 50 W with 21.6 GiB held. A `bcs` reset followed at teardown (01:59:53). No reboot was needed. `:8011` Nemotron restarted and served correctly.
+    - The coredump was saved and then cleared (#66 rule c): [`devcoredump-20261122T014755Z.txt.gz`](../configs/benchmarks/20261122-xing-clover/devcoredump-20261122T014755Z.txt.gz).
+    - The runner had no stall detector, so the wedge cost about 11 minutes before anyone noticed. Rule #66b is now built into [`clover.sh`](../configs/benchmarks/20261122-xing-clover/clover.sh): a watcher on dmesg ccs lines plus a 60 s `n_decode_total` freeze check.
+    - **Process gotcha:** `pkill -f '<pattern>'` run over ssh matches its own `bash -c` command line and kills the shell before the later steps run. Kill by PID instead.
+    - [Write-up.](../models/tested/2026-11-22-xing4.0-clover.md)
+
+71. **Clover-35B-A3B-Preview runs fully on the GPU (2 splits) and decodes 70.3 tok/s undrafted at Q4_0. That is about 5 % below undrafted Nemotron 3.5 Lightning on the same binary (tg128 73.0 vs 74.3), with about 25 % lower prefill (pp4096 1,404 vs 1,883).**
+    - It has no MTP head, so it cannot match Nemotron + MTP (about 92 at n-max 7) on decode.
+    - Peak VRAM is 21.23 GiB at 128K ctx, so 128K fits on one B60 at Q4_0.
+    - Harness prefill *rises* with length (738 @500 → 1,588 @12K). This is the healthy shape, the opposite of #69 / #70.
+    - **Quality is untested.** It only earns a bake-off if a quality eval shows it clearly ahead of Nemotron. [Write-up.](../models/tested/2026-11-22-xing4.0-clover.md)
+

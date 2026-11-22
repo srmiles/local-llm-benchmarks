@@ -1,0 +1,44 @@
+=== xing4.0-29b-a4b-solo healthy after 0s ===
+=== warmup ===
+
+=== prefill (3 samples/size, cache_prompt=false, server prompt_ms) ===
+  size~500 s1: n=474 ms=1206.4 tps=393
+  size~500 s2: n=477 ms=1071.9 tps=445
+  size~500 s3: n=477 ms=1067.6 tps=447
+  MEAN ~500: 428 tok/s
+
+  size~2000 s1: n=1808 ms=4025.5 tps=449
+  size~2000 s2: n=1811 ms=3909.5 tps=463
+  size~2000 s3: n=1808 ms=3962.0 tps=456
+  MEAN ~2000: 456 tok/s
+
+  size~5000 s1: n=4477 ms=16824.0 tps=266
+  size~5000 s2: n=4477 ms=16830.5 tps=266
+  size~5000 s3: n=4476 ms=16923.8 tps=264
+  MEAN ~5000: 266 tok/s
+
+  size~12000 s1: n=10699 ms=77272.4 tps=138
+  size~12000 s2: n=10700 ms=77474.7 tps=138
+  size~12000 s3: n=10700 ms=77417.5 tps=138
+  MEAN ~12000: 138 tok/s
+
+=== decode + acceptance (20 runs x 300 tok, temp=0.6 top-p=0.95 top-k=20) ===
+  run 1: 23.91 tok/s  (predicted_n=300)
+  run 2: 23.69 tok/s  (predicted_n=300)
+  run 3: 23.93 tok/s  (predicted_n=300)
+  run 4: 23.96 tok/s  (predicted_n=300)
+  run 5: 23.93 tok/s  (predicted_n=300)
+  run 6: 23.94 tok/s  (predicted_n=300)
+  run 7: 23.95 tok/s  (predicted_n=300)
+  run 8: 24.36 tok/s  (predicted_n=15)
+  run 9: 23.95 tok/s  (predicted_n=300)
+  run10: 24.00 tok/s  (predicted_n=300)
+  run11: 24.02 tok/s  (predicted_n=300)
+  run12: 23.97 tok/s  (predicted_n=300)
+  run13: 23.94 tok/s  (predicted_n=300)
+  run14: 23.97 tok/s  (predicted_n=300)
+  run15: 23.95 tok/s  (predicted_n=300)
+  run16: 23.79 tok/s  (predicted_n=300)
+  run17: 23.98 tok/s  (predicted_n=300)
+  run18: 23.93 tok/s  (predicted_n=12)
+  run19: 23.83 tok/s  (predicted_n=300)
